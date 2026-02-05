@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: recruitment_db
+    restart: always
+    environment:
+      - POSTGRES_USER: ${DB_USER}
+      - POSTGRES_PASSWORD: ${DB_PASSWORD}
+      - POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Công cụ quản lý DB giao diện Web (tùy chọn nhưng nên có)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: recruitment_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+  # Redis dùng cho Caching và Queue (cho các tính năng nâng cao sau này)
+  redis:
+    image: redis:alpine
+    container_name: recruitment_redis
+    ports:
+      - "6380:6379"
+
+volumes:
+  postgres_data:
