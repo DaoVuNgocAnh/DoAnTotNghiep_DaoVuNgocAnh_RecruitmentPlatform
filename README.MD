@@ -1,37 +1,85 @@
-1. Backend (BE) - "Bộ não" hệ thống
-Ngôn ngữ chính: TypeScript (Giúp code chặt chẽ, ít lỗi hơn JavaScript thuần).
-Framework: NestJS (Dòng framework Node.js mạnh mẽ nhất hiện nay, thiết kế theo hướng Modular giống Angular/Spring Boot, cực kỳ chuyên nghiệp).
-ORM (Object-Relational Mapping): Prisma v6 (Công cụ quản lý Database thế hệ mới, giúp truy vấn dữ liệu nhanh và Type-safe).
-Database (Cơ sở dữ liệu):
-PostgreSQL 15+: Cơ sở dữ liệu quan hệ mạnh mẽ, xử lý dữ liệu phức tạp tốt.
-Redis: Dùng để Caching (tăng tốc độ tải trang) và quản lý hàng đợi (Queue).
-Xác thực và Bảo mật (Security):
-JWT (JSON Web Token): Để duy trì đăng nhập.
-Passport.js: Thư viện chuẩn để xử lý Login/Social Login.
-Bcrypt: Mã hóa mật khẩu người dùng.
-Giao tiếp & Tài liệu:
-Swagger (OpenAPI): Tự động tạo trang tài liệu API (Giúp hội đồng thấy bạn làm việc rất bài bản).
-Socket.io: Xử lý thông báo thời gian thực (Real-time notifications).
-Lưu trữ file: Cloudinary API hoặc AWS S3: Lưu trữ ảnh đại diện công ty và file PDF CV của ứng viên.
-2. Frontend (FE) - "Giao diện" trải nghiệm
-Ngôn ngữ chính: TypeScript.
-Thư viện UI chính: ReactJS (phiên bản mới nhất).
-Công cụ build: Vite (Nhanh gấp nhiều lần so với Create-React-App truyền thống).
-Styling (Giao diện):
-Tailwind CSS: Framework CSS hiện đại nhất để làm giao diện nhanh và đẹp.
-Shadcn/UI hoặc Ant Design: Bộ thư viện Component có sẵn để làm Dashboard nhà tuyển dụng cực kỳ chuyên nghiệp.
-Quản lý trạng thái (State Management):
-Zustand: Nhẹ, nhanh, thay thế hoàn hảo cho Redux rườm rà.
-TanStack Query (React Query) v5: Quản lý việc gọi API, tự động lưu bộ nhớ đệm (Cache) và loading state (Đây là thư viện "phải có" để được điểm cao).
-Quản lý Form:
-React Hook Form: Xử lý form mượt mà, không bị giật (lag).
-Zod: Thư viện dùng để kiểm tra tính hợp lệ của dữ liệu đầu vào (Validation).
-Routing: React Router DOM v6.
-Icons: Lucide React.
-3. DevOps & Công cụ hỗ trợ
-Containerization: Docker & Docker Compose (Đóng gói môi trường, giúp hội đồng có thể chạy dự án của bạn chỉ bằng 1 lệnh duy nhất).
-Quản lý mã nguồn: Git & GitHub.
-API Testing: Postman hoặc Insomnia.
-Deployment (Triển khai - Nếu có):
-Vercel: Cho Frontend.
-Render hoặc Railway: Cho Backend & Database.
+🚀 SmartCV - Hệ thống Tuyển dụng & Quản lý Hồ sơ Thông minh
+SmartCV là nền tảng kết nối giữa Ứng viên và Nhà tuyển dụng, được xây dựng với mục tiêu tối ưu hóa quy trình tuyển dụng thông qua công nghệ hiện đại. Dự án tập trung vào trải nghiệm người dùng, hiệu năng cao và khả năng mở rộng linh hoạt.
+________________________________________
+🛠 Công nghệ sử dụng (Tech Stack)
+🔵 Backend (recruitment-be)
+•	Framework: NestJS (Node.js framework mạnh mẽ theo hướng Modular).
+•	Ngôn ngữ: TypeScript.
+•	ORM: Prisma v6 (Type-safe database access).
+•	Database chính: PostgreSQL 15+.
+•	Caching & Queue: Redis.
+•	Bảo mật: JWT (JSON Web Token), Passport.js, Bcrypt (Mã hóa mật khẩu).
+•	Tài liệu API: Swagger / OpenAPI.
+•	Khác: WebSockets (Socket.io) cho thông báo thời gian thực.
+🟢 Frontend (recruitment-fe)
+•	Thư viện chính: ReactJS v18+.
+•	Công cụ Build: Vite (Tốc độ cao).
+•	Styling: Tailwind CSS & Shadcn/UI.
+•	Quản lý trạng thái:
+o	Server State: TanStack Query v5 (React Query).
+o	Client State: Zustand.
+•	Xử lý Form: React Hook Form & Zod (Validation).
+•	Giao tiếp API: Axios.
+🐳 Infrastructure & DevOps
+•	Docker & Docker Compose: Đóng gói môi trường Database (Postgres, Redis, pgAdmin).
+•	Git: Quản lý mã nguồn theo mô hình Monorepo.
+________________________________________
+⚙️ Cấu trúc thư mục (Project Structure)
+codeText
+recruitment-platform/
+├── recruitment-be/     # Mã nguồn Backend (NestJS)
+├── recruitment-fe/     # Mã nguồn Frontend (ReactJS)
+└── docker-compose.yml  # Cấu hình dịch vụ Docker
+________________________________________
+🚀 Hướng dẫn chạy hệ thống
+1. Yêu cầu hệ thống
+•	Đã cài đặt Node.js (LTS version).
+•	Đã cài đặt Docker & Docker Desktop.
+•	Đã cài đặt Git.
+2. Khởi chạy cơ sở dữ liệu (Docker)
+Tại thư mục gốc của dự án:
+codeBash
+docker-compose up -d
+•	PostgreSQL: localhost:5433
+•	Redis: localhost:6380
+•	pgAdmin: localhost:8080 (User: admin@admin.com, Pass: admin)
+3. Cài đặt Backend
+codeBash
+cd recruitment-be
+npm install
+
+# Tạo file .env từ mẫu (nếu chưa có)
+# Chạy migration để tạo bảng trong database
+npx prisma migrate dev --name init_db
+
+# Chạy ở chế độ phát triển
+npm run start:dev
+4. Cài đặt Frontend
+codeBash
+cd recruitment-fe
+npm install
+
+# Chạy ở chế độ phát triển
+npm run dev
+________________________________________
+📝 Các lệnh hữu ích thường dùng
+Backend (recruitment-be)
+Lệnh	Mô tả
+npx prisma studio	Mở giao diện web quản lý Database (cực hay)
+npx prisma generate	Cập nhật TypeScript types cho Prisma Client
+npx prisma migrate dev	Áp dụng thay đổi Schema vào Database thực tế
+npm run start:debug	Chạy backend kèm chế độ Debug để sửa lỗi
+Frontend (recruitment-fe)
+Lệnh	Mô tả
+npx shadcn@latest add [name]	Cài đặt thêm UI component mới (ví dụ: button, dialog)
+npm run build	Build dự án cho môi trường Production
+npm run preview	Xem trước bản build chính thức
+________________________________________
+🌟 Tính năng nổi bật (Dự kiến)
+•	CV Builder: Tạo CV online và xuất PDF chuyên nghiệp.
+•	Smart Matching: Chấm điểm độ phù hợp giữa ứng viên và việc làm.
+•	ATS Dashboard: Bảng điều khiển quản lý ứng viên cho Nhà tuyển dụng.
+•	Real-time Notification: Thông báo tức thời khi có lịch phỏng vấn hoặc hồ sơ được duyệt.
+________________________________________
+© 2026 - Đào Vũ Ngọc Anh - Đồ án tốt nghiệp chuyên ngành Công nghệ phần mềm.
+
