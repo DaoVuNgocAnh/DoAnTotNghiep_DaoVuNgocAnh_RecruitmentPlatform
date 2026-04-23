@@ -1,0 +1,1 @@
+export const CompanyProfilePage = () => <div>Company Profile Page</div>;

@@ -25,11 +25,35 @@ o	Client State: Zustand.
 •	Git: Quản lý mã nguồn theo mô hình Monorepo.
 ________________________________________
 ⚙️ Cấu trúc thư mục (Project Structure)
-codeText
-recruitment-platform/
-├── recruitment-be/     # Mã nguồn Backend (NestJS)
-├── recruitment-fe/     # Mã nguồn Frontend (ReactJS)
-└── docker-compose.yml  # Cấu hình dịch vụ Docker
+src/
+├── api/              # Cấu hình Axios, Interceptors (Đã có)
+├── assets/           # Hình ảnh, Fonts, SVG (Đã có)
+├── components/       # Các component dùng chung toàn hệ thống
+│   ├── ui/           # Shadcn UI (Nguyên tử - Atoms) (Đã có)
+│   └── shared/       # Các khối dùng ở nhiều trang (ví dụ: JobCard, CompanyCard)
+├── constants/        # Lưu Enums, mảng dữ liệu tĩnh (Ví dụ: Danh sách tỉnh thành)
+├── hooks/            # Custom hooks dùng chung (Đã có)
+├── layouts/          # Quản lý khung giao diện (Đã có)
+│   ├── components/   # Header, Footer riêng cho Layout (Đã có)
+│   ├── MainLayout.tsx
+│   └── AuthLayout.tsx
+├── lib/              # Cấu hình thư viện (utils.ts cho tailwind-merge) (Đã có)
+├── modules/          # <--- TRÁI TIM HỆ THỐNG (Chia theo nghiệp vụ)
+│   ├── auth/         # Module xác thực (Đã có)
+│   │   ├── components/ # Các Form con (LoginForm, RegisterForm)
+│   │   ├── pages/    # (Đã có)
+│   │   ├── services/ # Logic gọi API riêng cho Auth
+│   │   └── types/    # Interface riêng cho Auth
+│   ├── home/         # Module trang chủ
+│   │   ├── components/ # HeroSection, JobGrid, BrandSlider
+│   │   └── pages/    # (Đã có)
+│   ├── jobs/         # Module tìm kiếm & chi tiết việc làm
+│   ├── cv-builder/   # Module tạo CV (Cực kỳ quan trọng cho đồ án)
+│   └── user/         # Quản lý Profile ứng viên (Đã có)
+├── routes/           # Phân trang và Bảo vệ Route (Đã có)
+├── store/            # Quản lý Global State (Zustand) (Đã có)
+├── types/            # Định nghĩa kiểu dữ liệu toàn hệ thống (Đã có)
+└── utils/            # Hàm bổ trợ (Format tiền, ngày tháng) (Đã có)
 ________________________________________
 🚀 Hướng dẫn chạy hệ thống
 1. Yêu cầu hệ thống

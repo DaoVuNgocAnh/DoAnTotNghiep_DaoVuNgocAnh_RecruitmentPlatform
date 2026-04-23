@@ -1,0 +1,1 @@
+export const AdminUserList = () => <div>Admin User List</div>;

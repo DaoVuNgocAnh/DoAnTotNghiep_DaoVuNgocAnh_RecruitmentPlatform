@@ -1,0 +1,1 @@
+export const JobDetailPage = () => <div>Job Detail Page</div>;

@@ -1,9 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
+// This is your Prisma schema file
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,18 +8,266 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  fullName  String
-  role      Role     @default(CANDIDATE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+// --- ENUMS ---
 
 enum Role {
   ADMIN
   EMPLOYER
   CANDIDATE
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+}
+
+enum CompanyStatus {
+  PENDING    // Chờ Admin hệ thống duyệt mã số thuế
+  VERIFIED   // Đã duyệt, được hoạt động
+  REJECTED   // Bị từ chối duyệt
+  BLACKLISH  // Vi phạm quy định
+}
+
+enum RequestStatus {
+  PENDING    // Chờ chủ công ty duyệt HR
+  ACCEPTED   // Đã vào công ty
+  REJECTED   // Bị từ chối
+}
+
+enum JobStatus {
+  PENDING
+  ACTIVE
+  CLOSED
+  REJECTED
+}
+
+enum ApplicationStatus {
+  PENDING
+  INTERVIEW
+  REJECTED
+  ACCEPTED
+  WITHDRAWN
+}
+
+enum InterviewStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
+enum TargetType {
+  JOB
+  CANDIDATE
+}
+
+// --- MODELS ---
+
+model User {
+  id         String     @id @default(uuid()) @db.Char(36)
+  email      String     @unique
+  password   String
+  role       Role       @default(CANDIDATE)
+  fullName   String     @map("full_name")
+  phone      String?
+  address    String?    @db.Text
+  avatarUrl  String?    @db.Text @map("avatar_url")
+  status     UserStatus @default(ACTIVE)
+  isDeleted  Boolean    @default(false) @map("is_deleted")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  // Quan hệ nhân sự: 1 HR thuộc 1 Công ty
+  companyId  String?    @map("company_id") @db.Char(36)
+  company    Company?   @relation("CompanyMembers", fields: [companyId], references: [id])
+
+  // Quan hệ sở hữu: 1 User có thể sở hữu 1 Công ty (Chủ doanh nghiệp)
+  ownedCompany Company? @relation("CompanyOwner")
+
+  // Quan hệ khác
+  resumes        Resume[]
+  applications   Application[]
+  interviews     Interview[]    @relation("EmployerInterviews")
+  joinRequests   JoinRequest[]
+  notifications  Notification[]
+  logs           SystemLog[]
+  savedItems     SavedItem[]
+
+  @@map("users")
+}
+
+model Company {
+  id          String        @id @default(uuid()) @db.Char(36)
+  name        String        @map("company_name")
+  taxCode     String        @unique @map("tax_code") // Mã số thuế duy nhất
+  description String        @db.Text
+  websiteUrl  String?       @map("website_url")
+  logoUrl     String?       @map("logo_url")
+  status      CompanyStatus @default(PENDING)
+  isPremium   Boolean       @default(false) @map("is_premium")
+  isDeleted   Boolean       @default(false) @map("is_deleted")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  // Ai là chủ sở hữu (Người tạo)
+  ownerId     String        @unique @map("owner_id") @db.Char(36)
+  owner       User          @relation("CompanyOwner", fields: [ownerId], references: [id])
+
+  // Danh sách HR thuộc công ty
+  members     User[]        @relation("CompanyMembers")
+  
+  // Các yêu cầu xin gia nhập từ HR khác
+  joinRequests JoinRequest[]
+  
+  jobs        Job[]
+  
+  // Admin hệ thống tạo/duyệt
+  createdById String?       @map("created_by") @db.Char(36)
+
+  @@map("companies")
+}
+
+model JoinRequest {
+  id        String        @id @default(uuid()) @db.Char(36)
+  userId    String        @map("user_id") @db.Char(36)
+  companyId String        @map("company_id") @db.Char(36)
+  status    RequestStatus @default(PENDING)
+  message   String?       @db.Text
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  user      User    @relation(fields: [userId], references: [id])
+  company   Company @relation(fields: [companyId], references: [id])
+
+  @@unique([userId, companyId]) // Một người chỉ gửi 1 yêu cầu tới 1 công ty
+  @@map("join_requests")
+}
+
+model JobCategory {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String   @map("category_name")
+  description String?  @db.Text
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  jobs        Job[]
+
+  @@map("job_categories")
+}
+
+model Job {
+  id          String     @id @default(uuid()) @db.Char(36)
+  categoryId  String     @map("category_id") @db.Char(36)
+  companyId   String     @map("company_id") @db.Char(36)
+  title       String
+  description String     @db.Text
+  requirement String     @db.Text
+  salary      String     @db.VarChar(100)
+  location    String
+  status      JobStatus  @default(PENDING)
+  isFeatured  Boolean    @default(false) @map("is_featured")
+  viewCount   Int        @default(0) @map("view_count")
+  isDeleted   Boolean    @default(false) @map("is_deleted")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  // Người tạo job (Có thể là Owner hoặc HR member)
+  createdById String?    @map("created_by") @db.Char(36)
+
+  category    JobCategory @relation(fields: [categoryId], references: [id])
+  company     Company     @relation(fields: [companyId], references: [id])
+  applications Application[]
+
+  @@map("jobs")
+}
+
+model Resume {
+  id          String   @id @default(uuid()) @db.Char(36)
+  candidateId String   @map("candidate_id") @db.Char(36)
+  resumeName  String   @map("resume_name")
+  fileUrl     String   @db.Text @map("file_url")
+  isDefault   Boolean  @default(false) @map("is_default")
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+
+  candidate   User     @relation(fields: [candidateId], references: [id])
+  applications Application[]
+
+  @@map("resumes")
+}
+
+model Application {
+  id                 String            @id @default(uuid()) @db.Char(36)
+  jobId              String            @map("job_id") @db.Char(36)
+  candidateId        String            @map("candidate_id") @db.Char(36)
+  resumeId           String            @map("resume_id") @db.Char(36)
+  applyDate          DateTime          @default(now()) @map("apply_date")
+  status             ApplicationStatus @default(PENDING)
+  employerNote       String?           @db.Text @map("employer_note")
+  employerActionDate DateTime?         @map("employer_action_date")
+  isDeleted          Boolean           @default(false) @map("is_deleted")
+
+  job         Job       @relation(fields: [jobId], references: [id])
+  candidate   User      @relation(fields: [candidateId], references: [id])
+  resume      Resume    @relation(fields: [resumeId], references: [id])
+  interviews  Interview[]
+
+  @@map("applications")
+}
+
+model Interview {
+  id            String          @id @default(uuid()) @db.Char(36)
+  applicationId String          @map("application_id") @db.Char(36)
+  interviewDate DateTime        @map("interview_date")
+  location      String          @db.Text
+  status        InterviewStatus @default(PENDING)
+  employerId    String          @map("created_by_employer_id") @db.Char(36)
+  responseDate  DateTime?       @map("response_date")
+  isDeleted     Boolean         @default(false) @map("is_deleted")
+
+  application   Application @relation(fields: [applicationId], references: [id])
+  employer      User        @relation("EmployerInterviews", fields: [employerId], references: [id])
+
+  @@map("interviews")
+}
+
+model SavedItem {
+  id         String     @id @default(uuid()) @db.Char(36)
+  userId     String     @map("user_id") @db.Char(36)
+  targetId   String     @map("target_id") @db.Char(36)
+  targetType TargetType @map("target_type")
+  note       String?    @db.Text
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  isDeleted  Boolean    @default(false) @map("is_deleted")
+
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@map("saved_items")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  title     String
+  content   String   @db.Text
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model SystemLog {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String?  @map("user_id") @db.Char(36)
+  actionType  String   @map("action_type")
+  targetType  String?  @map("target_type")
+  targetId    String?  @map("target_id")
+  description String?  @db.Text
+  actionDate  DateTime @default(now()) @map("action_date")
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@map("system_logs")
 }
