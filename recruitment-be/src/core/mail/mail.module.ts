@@ -1,7 +1,9 @@
 import { MailerModule } from '@nestjs-modules/mailer';
 import { Global, Module } from '@nestjs/common';
 import { MailService } from './mail.service';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService, ConfigModule } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
+import { EmailProcessor } from './email.processor';
 
 @Global()
 @Module({
@@ -17,13 +19,26 @@ import { ConfigService } from '@nestjs/config';
           },
         },
         defaults: {
-          from: `"SmartCV" <${config.get('MAIL_FROM')}>`,
+          from: config.get('MAIL_FROM', '"SmartCV" <no-reply@smartcv.com>'),
         },
       }),
       inject: [ConfigService],
     }),
+    // Đăng ký queue cho email với cấu hình kết nối tường minh
+    BullModule.registerQueueAsync({
+      name: 'email_queue',
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get('REDIS_HOST', 'localhost'),
+          port: parseInt(configService.get('REDIS_PORT', '6380')),
+          password: configService.get('REDIS_PASSWORD'),
+        },
+      }),
+    }),
   ],
-  providers: [MailService],
+  providers: [MailService, EmailProcessor],
   exports: [MailService],
 })
 export class MailModule {}

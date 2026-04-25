@@ -4,14 +4,20 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { CompanyDto } from './dto/company.dto';
 import { RequestStatus, CompanyStatus } from '@prisma/client';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class CompanyService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
+  ) {}
 
   // 1. Tạo công ty (Dành cho Owner)
   async create(ownerId: string, dto: CompanyDto) {
@@ -45,8 +51,12 @@ export class CompanyService {
     });
   }
 
-  // 2. Tìm kiếm theo Mã số thuế (Cho HR xin gia nhập)
+  // 2. Tìm kiếm theo Mã số thuế (Cho HR xin gia nhập) - Caching
   async findByTaxCode(taxCode: string) {
+    const cacheKey = `company_taxcode_${taxCode}`;
+    const cachedCompany = await this.cacheManager.get(cacheKey);
+    if (cachedCompany) return cachedCompany;
+
     const company = await this.prisma.company.findUnique({
       where: { taxCode },
       select: {
@@ -60,44 +70,54 @@ export class CompanyService {
     });
     if (!company)
       throw new NotFoundException('Không tìm thấy công ty với mã số thuế này');
+    
+    await this.cacheManager.set(cacheKey, company, 3600); // Cache 1 tiếng
     return company;
   }
 
-  // 3. Gửi yêu cầu gia nhập
-  async sendJoinRequest(userId: string, companyId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (user?.companyId)
-      throw new BadRequestException('Bạn đã là thành viên của một công ty!');
+  // ... (giữ nguyên các methods khác)
 
-    const existingRequest = await this.prisma.joinRequest.findUnique({
-      where: { userId_companyId: { userId, companyId } },
-    });
-    if (existingRequest)
-      throw new BadRequestException('Bạn đã gửi yêu cầu tới công ty này rồi');
-
-    return this.prisma.joinRequest.create({
-      data: { userId, companyId },
-    });
-  }
-
-  // 4. Lấy danh sách yêu cầu gia nhập (Dành cho Owner quản lý)
-  async getMyCompanyRequests(ownerId: string) {
+  // 8. Admin cập nhật trạng thái - Clear cache
+  async updateStatusByAdmin(companyId: string, newStatus: CompanyStatus) {
     const company = await this.prisma.company.findUnique({
-      where: { ownerId },
+      where: { id: companyId },
     });
-    if (!company) throw new NotFoundException('Bạn chưa sở hữu công ty nào');
+    if (!company) throw new NotFoundException('Không tìm thấy công ty');
 
-    return this.prisma.joinRequest.findMany({
-      where: { companyId: company.id, status: 'PENDING' },
-      include: {
-        user: {
-          select: { id: true, fullName: true, email: true, avatarUrl: true },
-        },
-      },
+    const currentStatus = company.status;
+
+    if (currentStatus === 'PENDING') {
+      if (newStatus !== 'VERIFIED' && newStatus !== 'REJECTED') {
+        throw new BadRequestException(
+          'Công ty đang chờ duyệt chỉ có thể Chấp nhận hoặc Từ chối',
+        );
+      }
+    }
+    else if (currentStatus === 'VERIFIED') {
+      if (newStatus !== 'BLACKLISH') {
+        throw new BadRequestException(
+          'Công ty đã duyệt chỉ có thể đưa vào Danh sách đen',
+        );
+      }
+    }
+    else {
+      throw new BadRequestException(
+        'Không thể thay đổi trạng thái của hồ sơ đã bị Từ chối hoặc bị Chặn',
+      );
+    }
+
+    const updated = await this.prisma.company.update({
+      where: { id: companyId },
+      data: { status: newStatus },
     });
+
+    // Clear cache
+    await this.cacheManager.del(`company_taxcode_${company.taxCode}`);
+    return updated;
   }
 
-  // 5. Duyệt/Từ chối HR gia nhập công ty
+  // ... (giữ nguyên các methods khác)
+  
   async handleJoinRequest(
     ownerId: string,
     requestId: string,
@@ -131,7 +151,38 @@ export class CompanyService {
     });
   }
 
-  // 6. Reset hồ sơ khi bị REJECTED (Dành cho Employer đăng ký lại)
+  async getMyCompanyRequests(ownerId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { ownerId },
+    });
+    if (!company) throw new NotFoundException('Bạn chưa sở hữu công ty nào');
+
+    return this.prisma.joinRequest.findMany({
+      where: { companyId: company.id, status: 'PENDING' },
+      include: {
+        user: {
+          select: { id: true, fullName: true, email: true, avatarUrl: true },
+        },
+      },
+    });
+  }
+
+  async sendJoinRequest(userId: string, companyId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (user?.companyId)
+      throw new BadRequestException('Bạn đã là thành viên của một công ty!');
+
+    const existingRequest = await this.prisma.joinRequest.findUnique({
+      where: { userId_companyId: { userId, companyId } },
+    });
+    if (existingRequest)
+      throw new BadRequestException('Bạn đã gửi yêu cầu tới công ty này rồi');
+
+    return this.prisma.joinRequest.create({
+      data: { userId, companyId },
+    });
+  }
+
   async deleteRejectedCompany(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -166,11 +217,6 @@ export class CompanyService {
     });
   }
 
-  // ==========================================
-  // LOGIC DÀNH CHO ADMIN (HỆ THỐNG)
-  // ==========================================
-
-  // 7. Admin lấy toàn bộ danh sách công ty để duyệt
   async findAllForAdmin(query: { status?: CompanyStatus; search?: string }) {
     return this.prisma.company.findMany({
       where: {
@@ -186,48 +232,6 @@ export class CompanyService {
     });
   }
 
-  // 8. Admin cập nhật trạng thái (VERIFIED, REJECTED, BLACKLISH)
-  async updateStatusByAdmin(companyId: string, newStatus: CompanyStatus) {
-    const company = await this.prisma.company.findUnique({
-      where: { id: companyId },
-    });
-    if (!company) throw new NotFoundException('Không tìm thấy công ty');
-
-    const currentStatus = company.status;
-
-    // THIẾT LẬP LUỒNG CHẶN (BÀI TOÁN STATE MACHINE)
-
-    // 1. Nếu đang PENDING: Chỉ cho phép sang VERIFIED hoặc REJECTED
-    if (currentStatus === 'PENDING') {
-      if (newStatus !== 'VERIFIED' && newStatus !== 'REJECTED') {
-        throw new BadRequestException(
-          'Công ty đang chờ duyệt chỉ có thể Chấp nhận hoặc Từ chối',
-        );
-      }
-    }
-
-    // 2. Nếu đang VERIFIED: Chỉ cho phép sang BLACKLISH (Chặn)
-    else if (currentStatus === 'VERIFIED') {
-      if (newStatus !== 'BLACKLISH') {
-        throw new BadRequestException(
-          'Công ty đã duyệt chỉ có thể đưa vào Danh sách đen',
-        );
-      }
-    }
-
-    // 3. Nếu đang REJECTED hoặc BLACKLISH: Không cho phép đổi sang bất cứ gì khác qua API này
-    else {
-      throw new BadRequestException(
-        'Không thể thay đổi trạng thái của hồ sơ đã bị Từ chối hoặc bị Chặn',
-      );
-    }
-
-    return this.prisma.company.update({
-      where: { id: companyId },
-      data: { status: newStatus },
-    });
-  }
-
   async cancelJoinRequest(userId: string, requestId: string) {
     const request = await this.prisma.joinRequest.findUnique({
       where: { id: requestId },
@@ -235,7 +239,6 @@ export class CompanyService {
 
     if (!request) throw new NotFoundException('Yêu cầu không tồn tại');
 
-    // Bảo mật: Chỉ người tạo ra yêu cầu mới được phép xóa nó
     if (request.userId !== userId) {
       throw new ForbiddenException('Bạn không có quyền rút lại yêu cầu này');
     }

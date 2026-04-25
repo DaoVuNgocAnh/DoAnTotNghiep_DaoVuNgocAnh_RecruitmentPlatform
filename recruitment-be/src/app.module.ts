@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-yet';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { BullModule } from '@nestjs/bullmq';
 
 // Core & Infrastructure Modules
 import { PrismaModule } from './core/database/prisma.module';
@@ -19,6 +23,42 @@ import { JobCategoryModule } from './modules/job-category/job-category.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env', // Đảm bảo nhận file .env ở root be
+    }),
+
+    // Tích hợp Redis Caching
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        store: await redisStore({
+          socket: {
+            host: configService.get('REDIS_HOST', 'localhost'),
+            port: parseInt(configService.get('REDIS_PORT', '6380')),
+          },
+          password: configService.get('REDIS_PASSWORD'),
+          ttl: 600, // 10 minutes default
+        }),
+      }),
+    }),
+
+    // Tích hợp Rate Limiting (Mặc định dùng Memory, có thể mở rộng Redis sau)
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 10,
+    }]),
+
+    // Tích hợp BullMQ cho Queues (Email, v.v.)
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get('REDIS_HOST', 'localhost'),
+          port: parseInt(configService.get('REDIS_PORT', '6380')),
+          password: configService.get('REDIS_PASSWORD'),
+        },
+      }),
     }),
 
     // Hạ tầng & Database (Shared Core)

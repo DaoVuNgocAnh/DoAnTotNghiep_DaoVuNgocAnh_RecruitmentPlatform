@@ -1,16 +1,17 @@
-import { MailerService } from '@nestjs-modules/mailer';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class MailService {
-  constructor(private mailerService: MailerService) {}
+  private readonly logger = new Logger(MailService.name);
+
+  constructor(
+    @InjectQueue('email_queue') private emailQueue: Queue
+  ) {}
 
   async sendUserWelcome(email: string, name: string) {
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Chào mừng bạn đến với SmartCV!',
-      template: './welcome', // Nếu dùng template engine, hoặc viết html trực tiếp bên dưới
-      html: `
+    const html = `
         <div style="background-color: #f4f4f4; padding: 20px; font-family: sans-serif;">
           <div style="max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; border-top: 5px solid #00b14f;">
             <h1 style="color: #00b14f;">Chào mừng ${name}!</h1>
@@ -20,7 +21,31 @@ export class MailService {
             <p style="margin-top: 20px; font-size: 12px; color: #888;">Đây là email tự động, vui lòng không trả lời email này.</p>
           </div>
         </div>
-      `,
+      `;
+
+    await this.emailQueue.add('send_welcome', {
+      to: email,
+      subject: 'Chào mừng bạn đến với SmartCV!',
+      html,
+    });
+    
+    this.logger.log(`Đã đẩy email chào mừng ${email} vào hàng chờ.`);
+  }
+
+  // Thêm method gửi email thông báo ứng tuyển (Job application)
+  async sendApplicationNotification(employerEmail: string, candidateName: string, jobTitle: string) {
+    const html = `
+      <div style="font-family: sans-serif; padding: 20px;">
+        <h2>Thông báo ứng tuyển mới</h2>
+        <p>Ứng viên <b>${candidateName}</b> vừa nộp đơn vào vị trí <b>${jobTitle}</b> của bạn.</p>
+        <p>Vui lòng đăng nhập vào hệ thống để xem chi tiết hồ sơ.</p>
+      </div>
+    `;
+
+    await this.emailQueue.add('send_application', {
+      to: employerEmail,
+      subject: `Ứng tuyển mới: ${jobTitle}`,
+      html,
     });
   }
 }
