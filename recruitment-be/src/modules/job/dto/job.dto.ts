@@ -6,13 +6,14 @@ import {
   IsUUID,
   IsBoolean,
   IsNumber,
+  IsDateString,
 } from 'class-validator';
 import { JobStatus } from '@prisma/client';
 
 export class JobDto {
   @IsOptional() @IsUUID() id?: string; // job_id
 
-  @IsNotEmpty() @IsUUID() companyId!: string; // company_id
+  @IsOptional() @IsUUID() companyId?: string; // company_id
 
   @IsNotEmpty() @IsUUID() categoryId!: string; // category_id
 
@@ -27,6 +28,11 @@ export class JobDto {
   @IsNotEmpty() @IsString() location!: string;
 
   @IsOptional() @IsEnum(JobStatus) status?: JobStatus;
+
+  // TRƯỜNG MỚI: Thời hạn tuyển dụng
+  @IsOptional()
+  @IsDateString({}, { message: 'Ngày hết hạn không đúng định dạng ISO 8601' })
+  expiredDate?: string;
 
   @IsOptional() @IsBoolean() isFeatured?: boolean; // is_featured
 

@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { AppBreadcrumb } from '@/components/shared/AppBreadcrumb';
 
 export default function EmployerLayout() {
   const { data: user } = useUser(); 
@@ -93,6 +94,7 @@ export default function EmployerLayout() {
 
         <section className="p-8 overflow-y-auto flex-1 bg-[#f4f7f6]">
           <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <AppBreadcrumb />
             <Outlet />
           </div>
         </section>

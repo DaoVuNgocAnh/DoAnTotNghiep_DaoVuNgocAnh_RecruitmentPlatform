@@ -1,6 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  ShieldCheck,
   Building,
   UserCog,
   History,
@@ -9,6 +8,7 @@ import {
   ChevronRight,
   LayoutDashboard,
   User as UserIcon,
+  Briefcase,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,35 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+
+const menuItems = [
+  {
+    title: 'Tổng quan',
+    icon: <LayoutDashboard size={20} />,
+    path: '/admin/dashboard',
+  },
+  {
+    title: 'Duyệt Công ty',
+    icon: <Building size={20} />,
+    path: '/admin/companies',
+  },
+  {
+    title: 'Duyệt tin tuyển dụng',
+    icon: <Briefcase size={20} />,
+    path: '/admin/jobs',
+  },
+  {
+    title: 'Quản lý User',
+    icon: <UserCog size={20} />,
+    path: '/admin/users',
+  },
+  {
+    title: 'Nhật ký hệ thống',
+    icon: <History size={20} />,
+    path: '/admin/logs',
+  },
+  { title: 'Hồ sơ cá nhân', icon: <UserIcon size={20} />, path: '/profile' },
+];
 
 export const AdminSidebar = () => {
   const { logout } = useAuthStore();
@@ -32,30 +61,6 @@ export const AdminSidebar = () => {
     navigate('/login', { replace: true });
     toast.success('Hệ thống đã được đăng xuất an toàn.');
   };
-
-  const menuItems = [
-    {
-      title: 'Tổng quan',
-      icon: <LayoutDashboard size={20} />,
-      path: '/admin/dashboard',
-    },
-    {
-      title: 'Duyệt Công ty',
-      icon: <Building size={20} />,
-      path: '/admin/companies',
-    },
-    {
-      title: 'Quản lý User',
-      icon: <UserCog size={20} />,
-      path: '/admin/users',
-    },
-    {
-      title: 'Nhật ký hệ thống',
-      icon: <History size={20} />,
-      path: '/admin/logs',
-    },
-    { title: 'Hồ sơ cá nhân', icon: <UserIcon size={20} />, path: '/profile' },
-  ];
 
   return (
     <aside className="w-64 bg-zinc-950 text-zinc-400 flex flex-col h-screen sticky top-0 shadow-2xl z-20 border-r border-zinc-800">
@@ -78,7 +83,7 @@ export const AdminSidebar = () => {
 
       <Separator className="bg-zinc-800/50" />
 
-      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto mt-2 text-slate-900">
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto mt-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 mb-3 px-3 italic">
           Quản trị viên
         </p>

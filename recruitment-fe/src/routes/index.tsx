@@ -25,6 +25,8 @@ import { RejectedPage } from '@/modules/employer/pages/RejectedPage';
 import { ManageMembers } from '@/modules/employer/pages/ManageMembers';
 import { JoinPendingPage } from '@/modules/employer/pages/JoinPendingPage';
 import { ProfilePage } from '@/modules/user/pages/ProfilePage';
+import { AdminVerifyJobs } from '@/modules/admin/pages/AdminVerifyJobs';
+import { EmployerManageJobs } from '@/modules/employer/pages/EmployerManageJobs';
 
 const GuardLoader = ({ message }: { message: string }) => (
   <div className="h-screen w-full flex flex-col items-center justify-center bg-[#f4f7f6] gap-4 text-center">
@@ -144,7 +146,8 @@ export const router = createBrowserRouter([
     children: [
       { path: 'dashboard', element: <EmployerDashboard /> },
       { path: 'company', element: <CompanyProfilePage /> },
-      { path: 'jobs', element: <ManageJobsPage /> },
+      { path: 'jobs', element: <EmployerManageJobs /> },
+      { path: 'jobs/create', element: <ManageJobsPage /> },
       {
         path: 'members',
         element: (
@@ -164,6 +167,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: 'companies', element: <AdminVerifyCompany /> },
+      { path: 'jobs', element: <AdminVerifyJobs /> },
       { path: 'users', element: <AdminUserList /> },
     ],
   },

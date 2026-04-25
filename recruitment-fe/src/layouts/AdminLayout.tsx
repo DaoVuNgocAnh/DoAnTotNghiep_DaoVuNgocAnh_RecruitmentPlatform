@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { AppBreadcrumb } from '@/components/shared/AppBreadcrumb';
 
 export default function AdminLayout() {
   const { data: user, isLoading } = useUser(); // Lấy dữ liệu realtime
@@ -79,6 +80,7 @@ export default function AdminLayout() {
 
         <section className="p-8 overflow-y-auto flex-1 bg-slate-50/50">
           <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <AppBreadcrumb />
             <Outlet />
           </div>
         </section>
