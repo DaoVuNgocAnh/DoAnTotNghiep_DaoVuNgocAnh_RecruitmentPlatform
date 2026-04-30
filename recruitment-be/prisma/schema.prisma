@@ -43,6 +43,7 @@ enum JobStatus {
 
 enum ApplicationStatus {
   PENDING
+  REVIEWING
   INTERVIEW
   REJECTED
   ACCEPTED
@@ -88,7 +89,11 @@ model User {
   applications   Application[]
   interviews     Interview[]    @relation("EmployerInterviews")
   joinRequests   JoinRequest[]
-  notifications  Notification[]
+  
+  // Quan hệ thông báo
+  receivedNotifications Notification[] @relation("ReceivedNotifications")
+  sentNotifications     Notification[] @relation("SentNotifications")
+  
   logs           SystemLog[]
   savedItems     SavedItem[]
 
@@ -247,15 +252,27 @@ model SavedItem {
 }
 
 model Notification {
-  id        String   @id @default(uuid()) @db.Char(36)
-  userId    String   @map("user_id") @db.Char(36)
-  title     String
-  content   String   @db.Text
-  isRead    Boolean  @default(false) @map("is_read")
-  createdAt DateTime @default(now()) @map("created_at")
+  id          String   @id @default(uuid()) @db.Char(36)
+  receiverId  String   @map("receiver_id") @db.Char(36)
+  senderId    String?  @map("sender_id") @db.Char(36)
+  
+  type        String?  // Loại thông báo (VD: APP_SUBMITTED, INTERVIEW_SCHEDULED)
+  title       String?
+  content     String?  @db.Text
+  
+  targetType  String?  @map("target_type") // VD: APPLICATION, INTERVIEW, JOB
+  targetId    String?  @map("target_id") @db.Char(36)
+  
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  user      User     @relation(fields: [userId], references: [id])
+  // Quan hệ
+  receiver    User     @relation("ReceivedNotifications", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender      User?    @relation("SentNotifications", fields: [senderId], references: [id])
 
+  @@index([receiverId, isRead])
+  @@index([receiverId, createdAt])
   @@map("notifications")
 }
 

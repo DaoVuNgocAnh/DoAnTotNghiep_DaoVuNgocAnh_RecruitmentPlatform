@@ -2,10 +2,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { UserDto } from './dto/user.dto';
+import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cloudinary: CloudinaryService,
+  ) {}
 
   async getMe(userId: string) {
     // Tận dụng sức mạnh của Prisma để lấy 1 lần duy nhất tất cả thông tin liên quan
@@ -67,6 +71,16 @@ export class UserService {
         role: true,
         companyId: true,
       },
+    });
+  }
+
+  async updateAvatar(userId: string, file: Express.Multer.File) {
+    const uploadResult = await this.cloudinary.uploadFile(file);
+    
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: uploadResult.secure_url },
+      select: { avatarUrl: true }
     });
   }
 }

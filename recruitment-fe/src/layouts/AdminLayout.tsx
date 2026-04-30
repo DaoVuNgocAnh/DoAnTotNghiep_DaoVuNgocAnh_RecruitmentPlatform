@@ -1,7 +1,8 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { AdminSidebar } from './common/AdminSidebar';
 import { useUser } from '@/modules/user/hooks/useUser'; // SỬ DỤNG HOOK MỚI
-import { Bell, Search, ShieldCheck, Loader2 } from 'lucide-react';
+import { Search, ShieldCheck, Loader2 } from 'lucide-react';
+import NotificationDropdown from '@/modules/notification/components/NotificationDropdown';
 
 // UI COMPONENTS
 import { Input } from '@/components/ui/input';
@@ -45,10 +46,7 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative text-zinc-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
-              <Bell size={20} />
-              <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white shadow-sm"></span>
-            </Button>
+            <NotificationDropdown />
             
             <Separator orientation="vertical" className="h-8 bg-zinc-200" />
 

@@ -12,14 +12,18 @@ import { MailModule } from './core/mail/mail.module';
 
 // Business Logic Modules
 import { AuthModule } from './modules/auth/auth.module';
-import { UserModule } from './modules/user/user.module'; 
+import { UserModule } from './modules/user/user.module';
 import { CompanyModule } from './modules/company/company.module';
 import { JobModule } from './modules/job/job.module';
 import { JobCategoryModule } from './modules/job-category/job-category.module';
+import { ResumeModule } from './modules/resume/resume.module';
+import { ApplicationModule } from './modules/application/application.module';
+import { InterviewModule } from './modules/interview/interview.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
-    // Cấu hình hệ thống 
+    // Cấu hình hệ thống
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env', // Đảm bảo nhận file .env ở root be
@@ -43,10 +47,12 @@ import { JobCategoryModule } from './modules/job-category/job-category.module';
     }),
 
     // Tích hợp Rate Limiting (Mặc định dùng Memory, có thể mở rộng Redis sau)
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 10,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
 
     // Tích hợp BullMQ cho Queues (Email, v.v.)
     BullModule.forRootAsync({
@@ -72,8 +78,12 @@ import { JobCategoryModule } from './modules/job-category/job-category.module';
     CompanyModule,
     JobCategoryModule,
     JobModule,
+    ResumeModule,
+    ApplicationModule,
+    InterviewModule,
+    NotificationModule,
   ],
-  controllers: [], 
-  providers: [],   
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

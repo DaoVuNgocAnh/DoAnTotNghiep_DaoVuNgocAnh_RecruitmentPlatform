@@ -14,6 +14,7 @@ export interface User {
   companyId?: string | null;
   companyStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'BLACKLISH' | null;
   isOwner: boolean;
+  createdAt: string;
   pendingJoinRequest?: {
     id: string;
     companyId: string;

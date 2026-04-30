@@ -4,11 +4,13 @@ import { JobDto } from './dto/job.dto';
 import { Role, JobStatus } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class JobService {
   constructor(
     private prisma: PrismaService,
+    private notificationService: NotificationService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
 
@@ -27,8 +29,20 @@ export class JobService {
         isFeatured: dto.isFeatured || false,
         expiredDate: dto.expiredDate ? new Date(dto.expiredDate) : null,
       },
+      include: { company: true }
     });
-    // Xóa cache danh sách khi có job mới (có thể lọc theo category nếu cần)
+
+    // Thông báo cho Admin có tin tuyển dụng mới chờ duyệt
+    await this.notificationService.sendToAdmins({
+      senderId: userId,
+      type: 'NEW_JOB_CREATED',
+      title: 'Yêu cầu duyệt tin tuyển dụng',
+      content: `Doanh nghiệp ${job.company.name} vừa đăng tin "${job.title}" và đang chờ duyệt.`,
+      targetType: 'JOB',
+      targetId: job.id,
+    });
+
+    // Xóa cache danh sách khi có job mới
     await this.cacheManager.del('jobs_all');
     return job;
   }
@@ -65,7 +79,7 @@ export class JobService {
   async findOne(id: string) {
     const cacheKey = `job_detail_${id}`;
     const cachedJob = await this.cacheManager.get(cacheKey);
-    
+
     let job: any = cachedJob;
     if (!job) {
       job = await this.prisma.job.findUnique({
@@ -91,7 +105,34 @@ export class JobService {
   }
 
   async updateStatusByAdmin(id: string, status: JobStatus) {
-    const job = await this.prisma.job.update({ where: { id }, data: { status } });
+    const job = await this.prisma.job.update({ 
+      where: { id }, 
+      data: { status },
+      include: { company: true } 
+    });
+
+    // Thông báo cho người tạo tin (Employer)
+    let title = '';
+    let content = '';
+    if (status === JobStatus.ACTIVE) {
+      title = 'Tin tuyển dụng đã được duyệt';
+      content = `Tin tuyển dụng "${job.title}" của bạn đã được Admin phê duyệt và hiển thị công khai.`;
+    } else if (status === JobStatus.REJECTED) {
+      title = 'Tin tuyển dụng bị từ chối';
+      content = `Tin tuyển dụng "${job.title}" của bạn đã bị từ chối phê duyệt.`;
+    }
+
+    if (title && job.createdById) {
+      await this.notificationService.create({
+        receiverId: job.createdById,
+        type: 'JOB_STATUS_UPDATED',
+        title,
+        content,
+        targetType: 'JOB',
+        targetId: job.id,
+      });
+    }
+
     await this.cacheManager.del(`job_detail_${id}`);
     await this.cacheManager.del('jobs_all'); // Clear danh sách công khai
     return job;
@@ -130,7 +171,7 @@ export class JobService {
         expiredDate: dto.expiredDate ? new Date(dto.expiredDate) : undefined,
       },
     });
-    
+
     await this.cacheManager.del(`job_detail_${id}`);
     return updated;
   }

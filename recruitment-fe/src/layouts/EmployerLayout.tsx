@@ -1,8 +1,9 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { EmployerSidebar } from './common/EmployerSidebar';
 import { useUser } from '@/modules/user/hooks/useUser'; // SỬ DỤNG HOOK MỚI
-import { Bell, Search, ShieldCheck, Zap } from 'lucide-react';
+import { Search, ShieldCheck, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils'; 
+import NotificationDropdown from '@/modules/notification/components/NotificationDropdown';
 
 // UI COMPONENTS
 import { Input } from '@/components/ui/input';
@@ -60,10 +61,7 @@ export default function EmployerLayout() {
                </Badge>
             </div>
 
-            <Button variant="ghost" size="icon" className="relative text-slate-400 hover:text-[#00b14f] hover:bg-green-50 rounded-xl transition-all">
-              <Bell size={20} />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white shadow-sm"></span>
-            </Button>
+            <NotificationDropdown />
             
             <Separator orientation="vertical" className="h-8 bg-slate-200" />
 

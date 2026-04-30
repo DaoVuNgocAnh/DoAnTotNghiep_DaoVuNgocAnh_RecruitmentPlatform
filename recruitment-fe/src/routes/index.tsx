@@ -27,6 +27,11 @@ import { JoinPendingPage } from '@/modules/employer/pages/JoinPendingPage';
 import { ProfilePage } from '@/modules/user/pages/ProfilePage';
 import { AdminVerifyJobs } from '@/modules/admin/pages/AdminVerifyJobs';
 import { EmployerManageJobs } from '@/modules/employer/pages/EmployerManageJobs';
+import { MyResumesPage } from '@/modules/resume/pages/MyResumesPage';
+import { MyApplicationsPage } from '@/modules/application/pages/MyApplicationsPage';
+import { EmployerCandidatesPage } from '@/modules/employer/pages/EmployerCandidatesPage';
+import { MyInterviewsPage } from '@/modules/interview/pages/MyInterviewsPage';
+import { EmployerInterviewsPage } from '@/modules/employer/pages/EmployerInterviewsPage';
 
 const GuardLoader = ({ message }: { message: string }) => (
   <div className="h-screen w-full flex flex-col items-center justify-center bg-[#f4f7f6] gap-4 text-center">
@@ -132,6 +137,30 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: 'resumes',
+        element: (
+          <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
+            <MyResumesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'my-applications',
+        element: (
+          <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
+            <MyApplicationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'interviews',
+        element: (
+          <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
+            <MyInterviewsPage />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {
@@ -155,6 +184,14 @@ export const router = createBrowserRouter([
             <ManageMembers />
           </OwnerRoute>
         ),
+      },
+      {
+        path: 'candidates',
+        element: <EmployerCandidatesPage />,
+      },
+      {
+        path: 'interviews',
+        element: <EmployerInterviewsPage />,
       },
     ],
   },

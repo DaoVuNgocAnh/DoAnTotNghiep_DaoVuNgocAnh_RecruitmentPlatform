@@ -15,13 +15,14 @@ import {
   LogOut,
   LayoutDashboard,
   ChevronDown,
-  Briefcase,
-  Building2,
   Loader2,
+  FileText,
+  CalendarCheck2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import NotificationDropdown from '@/modules/notification/components/NotificationDropdown';
 
 export const Header = () => {
   const { logout, isAuthenticated } = useAuthStore();
@@ -51,6 +52,17 @@ export const Header = () => {
           </Link>
           <nav className="hidden md:flex items-center gap-1 text-sm font-bold uppercase tracking-wider">
             <Link
+              to="/"
+              className={cn(
+                'px-4 py-2 transition-colors',
+                location.pathname === '/'
+                  ? 'text-[#00b14f]'
+                  : 'text-slate-300 hover:text-white'
+              )}
+            >
+              Trang chủ
+            </Link>
+            <Link
               to="/jobs"
               className={cn(
                 'px-4 py-2 transition-colors',
@@ -61,21 +73,37 @@ export const Header = () => {
             >
               Việc làm
             </Link>
-            <Link
-              to="/companies"
-              className={cn(
-                'px-4 py-2 transition-colors',
-                location.pathname === '/companies'
-                  ? 'text-[#00b14f]'
-                  : 'text-slate-300 hover:text-white'
-              )}
-            >
-              Công ty
-            </Link>
+            {user?.role === 'CANDIDATE' && (
+              <>
+                <Link
+                  to="/resumes"
+                  className={cn(
+                    'px-4 py-2 transition-colors',
+                    location.pathname === '/resumes'
+                      ? 'text-[#00b14f]'
+                      : 'text-slate-300 hover:text-white'
+                  )}
+                >
+                  CV của tôi
+                </Link>
+                <Link
+                  to="/interviews"
+                  className={cn(
+                    'px-4 py-2 transition-colors',
+                    location.pathname === '/interviews'
+                      ? 'text-[#00b14f]'
+                      : 'text-slate-300 hover:text-white'
+                  )}
+                >
+                  Lịch phỏng vấn
+                </Link>
+              </>
+            )}
           </nav>
         </div>
 
         <div className="flex items-center gap-4">
+          {isAuthenticated && <NotificationDropdown />}
           {isAuthenticated && user?.role !== 'CANDIDATE' && (
             <Button
               variant="outline"
@@ -132,6 +160,19 @@ export const Header = () => {
                     <UserIcon size={18} className="text-slate-400" /> Hồ sơ cá
                     nhân
                   </DropdownMenuItem>
+                  {user.role === 'CANDIDATE' && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/resumes')} className="gap-3 p-3 cursor-pointer rounded-lg text-[#00b14f] font-bold">
+                        <FileText size={18} /> CV của tôi
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/my-applications')} className="gap-3 p-3 cursor-pointer rounded-lg text-[#00b14f] font-bold">
+                        <FileText size={18} /> Đơn ứng tuyển
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/interviews')} className="gap-3 p-3 cursor-pointer rounded-lg text-[#00b14f] font-bold">
+                        <CalendarCheck2 size={18} /> Lịch phỏng vấn
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   {user.role === 'EMPLOYER' && (
                     <DropdownMenuItem
                       onClick={() => navigate('/employer/dashboard')}
