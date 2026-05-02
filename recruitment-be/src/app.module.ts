@@ -4,6 +4,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
 
 // Core & Infrastructure Modules
 import { PrismaModule } from './core/database/prisma.module';
@@ -20,6 +21,7 @@ import { ResumeModule } from './modules/resume/resume.module';
 import { ApplicationModule } from './modules/application/application.module';
 import { InterviewModule } from './modules/interview/interview.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { SavedItemsModule } from './modules/savedItems/saved-items.module';
 
 @Module({
   imports: [
@@ -67,6 +69,8 @@ import { NotificationModule } from './modules/notification/notification.module';
       }),
     }),
 
+    ScheduleModule.forRoot(),
+
     // Hạ tầng & Database (Shared Core)
     PrismaModule,
     CloudinaryModule,
@@ -82,6 +86,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     ApplicationModule,
     InterviewModule,
     NotificationModule,
+    SavedItemsModule,
   ],
   controllers: [],
   providers: [],

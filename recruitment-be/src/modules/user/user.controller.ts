@@ -1,5 +1,5 @@
 import { 
-  Controller, Get, Patch, Body, UseGuards, Request, 
+  Controller, Get, Patch, Body, UseGuards, Request, Param,
   UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator 
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -8,21 +8,29 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UserDto } from './dto/user.dto';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('me')
+  @UseGuards(JwtAuthGuard)
   getMe(@Request() req) {
     return this.userService.getMe(req.user.userId);
   }
 
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  getCandidateById(@Request() req, @Param('id') id: string) {
+    return this.userService.getCandidateById(id, req.user.userId);
+  }
+
   @Patch('profile')
+  @UseGuards(JwtAuthGuard)
   updateProfile(@Request() req, @Body() data: UserDto) {
     return this.userService.updateProfile(req.user.userId, data);
   }
 
   @Patch('avatar')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar'))
   uploadAvatar(
     @Request() req,

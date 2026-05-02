@@ -71,7 +71,7 @@ export class ApplicationService {
     const applications = await this.prisma.application.findMany({
       where: { job: { companyId }, isDeleted: false },
       include: {
-        candidate: { select: { fullName: true, email: true, phone: true, avatarUrl: true } },
+        candidate: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
         job: { select: { title: true } },
         resume: true
       },

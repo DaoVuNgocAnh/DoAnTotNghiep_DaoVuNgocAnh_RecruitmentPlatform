@@ -29,9 +29,14 @@ import { AdminVerifyJobs } from '@/modules/admin/pages/AdminVerifyJobs';
 import { EmployerManageJobs } from '@/modules/employer/pages/EmployerManageJobs';
 import { MyResumesPage } from '@/modules/resume/pages/MyResumesPage';
 import { MyApplicationsPage } from '@/modules/application/pages/MyApplicationsPage';
+import { CandidateDetailPage } from '@/modules/employer/pages/candidate/CandidateDetailPage';
 import { EmployerCandidatesPage } from '@/modules/employer/pages/EmployerCandidatesPage';
 import { MyInterviewsPage } from '@/modules/interview/pages/MyInterviewsPage';
 import { EmployerInterviewsPage } from '@/modules/employer/pages/EmployerInterviewsPage';
+import SavedJobsPage from '@/modules/saved-items/pages/SavedJobsPage';
+import SavedCandidatesPage from '@/modules/saved-items/pages/SavedCandidatesPage';
+import { CompaniesPage } from '@/modules/company/pages/CompaniesPage';
+import { CompanyDetailPage } from '@/modules/company/pages/CompanyDetailPage';
 
 const GuardLoader = ({ message }: { message: string }) => (
   <div className="h-screen w-full flex flex-col items-center justify-center bg-[#f4f7f6] gap-4 text-center">
@@ -127,6 +132,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '', element: <RootRedirect /> },
       { path: 'jobs/:id', element: <JobDetailPage /> },
+      { path: 'companies', element: <CompaniesPage /> },
+      { path: 'companies/:id', element: <CompanyDetailPage /> },
       {
         path: 'profile',
         element: (
@@ -161,6 +168,14 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: 'saved-jobs',
+        element: (
+          <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
+            <SavedJobsPage />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {
@@ -190,8 +205,16 @@ export const router = createBrowserRouter([
         element: <EmployerCandidatesPage />,
       },
       {
+        path: 'candidates/:id',
+        element: <CandidateDetailPage />,
+      },
+      {
         path: 'interviews',
         element: <EmployerInterviewsPage />,
+      },
+      {
+        path: 'saved-candidates',
+        element: <SavedCandidatesPage />,
       },
     ],
   },

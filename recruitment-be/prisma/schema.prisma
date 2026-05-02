@@ -71,6 +71,9 @@ model User {
   fullName   String     @map("full_name")
   phone      String?
   address    String?    @db.Text
+  dateOfBirth DateTime   @default("2000-01-01T00:00:00Z") @map("date_of_birth")
+  bio        String?    @db.Text
+  skills     String?    @db.Text
   avatarUrl  String?    @db.Text @map("avatar_url")
   status     UserStatus @default(ACTIVE)
   isDeleted  Boolean    @default(false) @map("is_deleted")

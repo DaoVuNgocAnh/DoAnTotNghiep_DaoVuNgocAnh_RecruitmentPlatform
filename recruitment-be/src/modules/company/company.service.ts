@@ -297,6 +297,7 @@ export class CompanyService {
   }
 
   async findAllForAdmin(query: { status?: CompanyStatus; search?: string }) {
+    const now = new Date();
     return this.prisma.company.findMany({
       where: {
         status: query.status || undefined,
@@ -307,8 +308,74 @@ export class CompanyService {
             ]
           : undefined,
       },
+      include: {
+        _count: {
+          select: { 
+            jobs: { 
+              where: { 
+                status: 'ACTIVE', 
+                isDeleted: false,
+                OR: [{ expiredDate: null }, { expiredDate: { gt: now } }]
+              } 
+            } 
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async findAllPublic(query: { search?: string }) {
+    const now = new Date();
+    return this.prisma.company.findMany({
+      where: {
+        status: 'VERIFIED',
+        isDeleted: false,
+        name: query.search ? { contains: query.search, mode: 'insensitive' } : undefined,
+      },
+      select: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        description: true,
+        websiteUrl: true,
+        _count: {
+          select: { 
+            jobs: { 
+              where: { 
+                status: 'ACTIVE', 
+                isDeleted: false,
+                OR: [{ expiredDate: null }, { expiredDate: { gt: now } }]
+              } 
+            } 
+          }
+        }
+      },
+      orderBy: { isPremium: 'desc' },
+    });
+  }
+
+  async findOnePublic(id: string) {
+    const now = new Date();
+    const company = await this.prisma.company.findUnique({
+      where: { id, status: 'VERIFIED', isDeleted: false },
+      include: {
+        jobs: {
+          where: { 
+            status: 'ACTIVE', 
+            isDeleted: false,
+            OR: [
+              { expiredDate: null },
+              { expiredDate: { gt: now } }
+            ]
+          },
+          include: { category: true }
+        }
+      }
+    });
+
+    if (!company) throw new NotFoundException('Không tìm thấy công ty');
+    return company;
   }
 
   async cancelJoinRequest(userId: string, requestId: string) {

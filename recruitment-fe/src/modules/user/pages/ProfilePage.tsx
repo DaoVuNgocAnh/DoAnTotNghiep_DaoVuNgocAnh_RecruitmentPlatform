@@ -17,6 +17,8 @@ import {
   Camera,
   Calendar,
   Building2,
+  FileText,
+  Award,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -31,6 +33,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -50,6 +53,9 @@ const profileSchema = z.object({
     .optional()
     .or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
+  dateOfBirth: z.string().optional().or(z.literal('')),
+  bio: z.string().max(1000, 'Giới thiệu tối đa 1000 ký tự').optional().or(z.literal('')),
+  skills: z.string().optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -67,6 +73,9 @@ export const ProfilePage = () => {
       fullName: user?.fullName ?? '',
       phone: user?.phone ?? '',
       address: user?.address ?? '',
+      dateOfBirth: user?.dateOfBirth ? format(new Date(user.dateOfBirth), 'yyyy-MM-dd') : '',
+      bio: user?.bio ?? '',
+      skills: user?.skills ?? '',
     },
   });
 
@@ -282,6 +291,27 @@ export const ProfilePage = () => {
 
                     <FormField
                       control={form.control}
+                      name="dateOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
+                            <Calendar size={12} className="text-[#00b14f]" /> Ngày sinh
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              disabled={!isEditing}
+                              className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-black text-slate-700 disabled:opacity-70 disabled:bg-slate-50"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-[10px] font-bold uppercase tracking-tight" />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
@@ -308,11 +338,53 @@ export const ProfilePage = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
-                          <MapPin size={12} className="text-[#00b14f]" /> Địa chỉ thường trú
+                          <MapPin size={12} className="text-[#00b14f]" /> Địa chỉ thường trú (Quê quán)
                         </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Nhập địa chỉ của bạn (VD: Quận 1, TP. Hồ Chí Minh)"
+                            disabled={!isEditing}
+                            className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-black text-slate-700 disabled:opacity-70 disabled:bg-slate-50"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-[10px] font-bold uppercase tracking-tight" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
+                          <FileText size={12} className="text-[#00b14f]" /> Giới thiệu bản thân
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Chia sẻ ngắn gọn về kinh nghiệm, mục tiêu nghề nghiệp của bạn..."
+                            disabled={!isEditing}
+                            className="min-h-[120px] rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-medium text-slate-700 disabled:opacity-70 disabled:bg-slate-50 resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-[10px] font-bold uppercase tracking-tight" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="skills"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
+                          <Award size={12} className="text-[#00b14f]" /> Kỹ năng (Cách nhau bởi dấu phẩy)
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ví dụ: ReactJS, TypeScript, NodeJS, UI/UX Design..."
                             disabled={!isEditing}
                             className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-black text-slate-700 disabled:opacity-70 disabled:bg-slate-50"
                             {...field}

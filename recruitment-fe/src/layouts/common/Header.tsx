@@ -18,6 +18,7 @@ import {
   Loader2,
   FileText,
   CalendarCheck2,
+  Heart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
@@ -72,6 +73,17 @@ export const Header = () => {
               )}
             >
               Việc làm
+            </Link>
+            <Link
+              to="/companies"
+              className={cn(
+                'px-4 py-2 transition-colors',
+                location.pathname === '/companies'
+                  ? 'text-[#00b14f]'
+                  : 'text-slate-300 hover:text-white'
+              )}
+            >
+              Công ty
             </Link>
             {user?.role === 'CANDIDATE' && (
               <>
@@ -138,7 +150,7 @@ export const Header = () => {
                   <div className="relative">
                     <Avatar className="h-9 w-9 border-2 border-white/10 group-hover:border-[#00b14f] transition-all">
                       <AvatarImage src={user.avatarUrl ?? undefined} />
-                      <AvatarFallback className="bg-slate-800 text-[#00b14f] font-bold text-slate-900">
+                      <AvatarFallback className="bg-slate-800 text-[#00b14f] font-bold">
                         {user.fullName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -162,14 +174,30 @@ export const Header = () => {
                   </DropdownMenuItem>
                   {user.role === 'CANDIDATE' && (
                     <>
-                      <DropdownMenuItem onClick={() => navigate('/resumes')} className="gap-3 p-3 cursor-pointer rounded-lg text-[#00b14f] font-bold">
+                      <DropdownMenuItem
+                        onClick={() => navigate('/resumes')}
+                        className="gap-3 p-3 cursor-pointer rounded-lg text-[#00b14f] font-bold"
+                      >
                         <FileText size={18} /> CV của tôi
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/my-applications')} className="gap-3 p-3 cursor-pointer rounded-lg text-[#00b14f] font-bold">
+                      <DropdownMenuItem
+                        onClick={() => navigate('/my-applications')}
+                        className="gap-3 p-3 cursor-pointer rounded-lg text-[#00b14f] font-bold"
+                      >
                         <FileText size={18} /> Đơn ứng tuyển
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/interviews')} className="gap-3 p-3 cursor-pointer rounded-lg text-[#00b14f] font-bold">
+                      <DropdownMenuItem
+                        onClick={() => navigate('/interviews')}
+                        className="gap-3 p-3 cursor-pointer rounded-lg text-[#00b14f] font-bold"
+                      >
                         <CalendarCheck2 size={18} /> Lịch phỏng vấn
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => navigate('/saved-jobs')}
+                        className="gap-3 p-3 cursor-pointer rounded-lg text-red-500 font-bold"
+                      >
+                        <Heart size={18} className="fill-current" /> Việc làm đã
+                        lưu
                       </DropdownMenuItem>
                     </>
                   )}

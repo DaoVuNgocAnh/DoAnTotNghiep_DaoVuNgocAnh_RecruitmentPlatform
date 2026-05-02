@@ -18,14 +18,28 @@ import { Role, RequestStatus, CompanyStatus } from '@prisma/client'; // Import t
 import { CompanyDto } from './dto/company.dto';
 
 @Controller('companies')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
   // ==========================================
-  // ROUTE DÀNH CHO EMPLOYER & PUBLIC
+  // ROUTE CÔNG KHAI (PUBLIC)
   // ==========================================
 
+  @Get()
+  findAllPublic(@Query('search') search?: string) {
+    return this.companyService.findAllPublic({ search });
+  }
+
+  @Get(':id/public')
+  findOnePublic(@Param('id') id: string) {
+    return this.companyService.findOnePublic(id);
+  }
+
+  // ==========================================
+  // ROUTE DÀNH CHO EMPLOYER & CÓ ĐĂNG NHẬP
+  // ==========================================
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
   @Post()
   create(@Request() req, @Body() dto: CompanyDto) {
@@ -38,18 +52,21 @@ export class CompanyController {
     return this.companyService.findByTaxCode(taxCode);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
   @Post('join/:companyId')
   sendJoin(@Request() req, @Param('companyId') companyId: string) {
     return this.companyService.sendJoinRequest(req.user.userId, companyId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
   @Get('my-company/requests')
   getRequests(@Request() req) {
     return this.companyService.getMyCompanyRequests(req.user.userId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
   @Patch('requests/:id/:status')
   handleRequest(
@@ -60,6 +77,7 @@ export class CompanyController {
     return this.companyService.handleJoinRequest(req.user.userId, id, status);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('my-company')
   @Roles(Role.EMPLOYER)
   removeRejected(@Request() req) {
@@ -70,7 +88,7 @@ export class CompanyController {
   // ROUTE DÀNH RIÊNG CHO ADMIN HỆ THỐNG
   // ==========================================
 
-  // 1. Admin lấy toàn bộ danh sách công ty để phê duyệt
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/all')
   @Roles(Role.ADMIN)
   findAllForAdmin(
@@ -80,13 +98,14 @@ export class CompanyController {
     return this.companyService.findAllForAdmin({ status, search });
   }
 
-  // 2. Admin cập nhật trạng thái (VERIFIED, REJECTED, BLACKLISH)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id/status')
   @Roles(Role.ADMIN)
   updateStatus(@Param('id') id: string, @Body('status') status: CompanyStatus) {
     return this.companyService.updateStatusByAdmin(id, status);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('requests/:id/cancel')
   @Roles(Role.EMPLOYER)
   cancelRequest(@Request() req, @Param('id') id: string) {

@@ -10,6 +10,9 @@ export interface User {
   avatarUrl?: string | null;
   phone?: string | null; 
   address?: string | null;
+  dateOfBirth?: string;
+  bio?: string | null;
+  skills?: string | null;
   companyName?: string | null;
   companyId?: string | null;
   companyStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'BLACKLISH' | null;

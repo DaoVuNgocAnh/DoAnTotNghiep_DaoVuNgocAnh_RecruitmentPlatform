@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { MapPin, DollarSign, Clock, Building2, ChevronLeft, ShieldCheck, Loader2 } from "lucide-react";
 import { ApplyModal } from "../components/ApplyModal"; // Đảm bảo bạn đã tạo file này
 import { useUser } from "@/modules/user/hooks/useUser";
+import { SaveButton } from "@/modules/saved-items/components/SaveButton";
 
 export const JobDetailPage = () => {
   const { id } = useParams();
@@ -19,19 +20,28 @@ export const JobDetailPage = () => {
   return (
     <div className="bg-[#f4f7f6] min-h-screen py-8 px-4 font-sans animate-in fade-in duration-500">
       <div className="max-w-6xl mx-auto">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(-1)} 
-          className="mb-6 hover:bg-slate-200 rounded-xl gap-2 font-bold text-slate-500 group transition-all"
-        >
-           <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> QUAY LẠI
-        </Button>
+        <div className="flex justify-between items-center mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)} 
+            className="hover:bg-slate-200 rounded-xl gap-2 font-bold text-slate-500 group transition-all"
+          >
+             <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> QUAY LẠI
+          </Button>
+          
+          {/* NÚT LƯU Ở MOBILE/TABLET HEADER NẾU CẦN - HIỆN TẠI ĐỂ TRỐNG HOẶC PHỤ TRỢ */}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* CỘT TRÁI: CHI TIẾT CÔNG VIỆC */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white p-8 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100">
-               <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight mb-4 leading-tight">{job.title}</h1>
+               <div className="flex justify-between items-start gap-4 mb-4">
+                  <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight leading-tight flex-1">
+                    {job.title}
+                  </h1>
+                  <SaveButton targetId={job.id} targetType="JOB" className="h-12 w-12 bg-slate-50 border border-slate-100" />
+               </div>
                
                <div className="flex flex-wrap gap-4 mb-8">
                   <div className="flex items-center gap-2 text-slate-500 font-bold bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">

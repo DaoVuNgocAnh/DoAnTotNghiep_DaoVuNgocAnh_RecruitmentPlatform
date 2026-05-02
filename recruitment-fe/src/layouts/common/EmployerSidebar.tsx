@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   User as UserIcon,
   CalendarCheck2,
+  Heart,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUser } from '@/modules/user/hooks/useUser';
@@ -52,6 +53,11 @@ export const EmployerSidebar = () => {
       title: 'Quản lý ứng viên',
       icon: <Users size={20} />,
       path: '/employer/candidates',
+    },
+    {
+      title: 'Ứng viên đã lưu',
+      icon: <Heart size={20} />,
+      path: '/employer/saved-candidates',
     },
     {
       title: 'Lịch phỏng vấn',

@@ -1,10 +1,11 @@
-import { IsEmail, IsEnum, IsOptional, IsString, IsPhoneNumber, IsUUID } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, IsPhoneNumber, IsUUID, IsDateString } from 'class-validator';
 import { Role, UserStatus } from '@prisma/client';
 
 export class UserDto {
   @IsOptional() @IsUUID()
   id?: string;
 
+  @IsOptional()
   @IsEmail({}, { message: 'Email không hợp lệ' })
   email!: string;
 
@@ -23,6 +24,15 @@ export class UserDto {
 
   @IsOptional() @IsString()
   address?: string;
+
+  @IsOptional() @IsDateString()
+  dateOfBirth?: string;
+
+  @IsOptional() @IsString()
+  bio?: string;
+
+  @IsOptional() @IsString()
+  skills?: string;
 
   @IsOptional() @IsString()
   avatarUrl?: string;

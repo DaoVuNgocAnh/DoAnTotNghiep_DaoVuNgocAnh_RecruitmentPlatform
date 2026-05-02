@@ -70,7 +70,7 @@ export class InterviewService {
       include: {
         application: {
           include: {
-            candidate: { select: { fullName: true, email: true, phone: true } },
+            candidate: { select: { id: true, fullName: true, email: true, phone: true } },
             job: { select: { title: true } }
           }
         }
