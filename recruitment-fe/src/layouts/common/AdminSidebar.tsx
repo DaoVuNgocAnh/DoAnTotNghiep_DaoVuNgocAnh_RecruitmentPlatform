@@ -44,7 +44,7 @@ const menuItems = [
   {
     title: 'Nhật ký hệ thống',
     icon: <History size={20} />,
-    path: '/admin/logs',
+    path: '/admin/system-history',
   },
   { title: 'Hồ sơ cá nhân', icon: <UserIcon size={20} />, path: '/profile' },
 ];

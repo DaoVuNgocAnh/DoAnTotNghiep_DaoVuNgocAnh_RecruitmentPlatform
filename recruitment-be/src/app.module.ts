@@ -22,6 +22,7 @@ import { ApplicationModule } from './modules/application/application.module';
 import { InterviewModule } from './modules/interview/interview.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { SavedItemsModule } from './modules/savedItems/saved-items.module';
+import { SystemLogModule } from './modules/system-log/system-log.module';
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { SavedItemsModule } from './modules/savedItems/saved-items.module';
     InterviewModule,
     NotificationModule,
     SavedItemsModule,
+    SystemLogModule,
   ],
   controllers: [],
   providers: [],

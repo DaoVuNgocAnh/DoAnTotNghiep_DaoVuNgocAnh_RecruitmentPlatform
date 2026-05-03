@@ -8,7 +8,6 @@ import NotificationDropdown from '@/modules/notification/components/Notification
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
 import { AppBreadcrumb } from '@/components/shared/AppBreadcrumb';
 
 export default function AdminLayout() {
@@ -19,7 +18,7 @@ export default function AdminLayout() {
     if (path.includes('dashboard')) return 'Bảng điều khiển hệ thống';
     if (path.includes('companies')) return 'Phê duyệt doanh nghiệp';
     if (path.includes('users')) return 'Quản lý người dùng';
-    if (path.includes('logs')) return 'Nhật ký hệ thống';
+    if (path.includes('system-history')) return 'Nhật ký hệ thống';
     return 'Hệ thống quản trị';
   };
 

@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { SystemLogService } from './modules/system-log/system-log.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,6 +13,10 @@ async function bootstrap() {
     forbidNonWhitelisted: true, 
     transform: true, // Tự động chuyển đổi kiểu dữ liệu
   }));
+
+  // Đăng ký Interceptor toàn cục
+  const systemLogService = app.get(SystemLogService);
+  app.useGlobalInterceptors(new LoggingInterceptor(systemLogService));
 
   app.enableCors();
 

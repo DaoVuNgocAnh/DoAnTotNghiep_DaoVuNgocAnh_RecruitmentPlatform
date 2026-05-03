@@ -9,7 +9,6 @@ import NotificationDropdown from '@/modules/notification/components/Notification
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AppBreadcrumb } from '@/components/shared/AppBreadcrumb';
 
