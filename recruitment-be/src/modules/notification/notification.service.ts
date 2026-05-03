@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationGateway } from './notification.gateway';
@@ -74,9 +74,15 @@ export class NotificationService {
     });
   }
 
-  async markAsRead(id: string) {
+  async markAsRead(receiverId: string, id: string) {
+    const notification = await this.prisma.notification.findFirst({
+      where: { id, receiverId },
+    });
+
+    if (!notification) throw new NotFoundException('Không tìm thấy thông báo');
+
     return this.prisma.notification.update({
-      where: { id },
+      where: { id: notification.id },
       data: { isRead: true },
     });
   }
@@ -88,9 +94,15 @@ export class NotificationService {
     });
   }
 
-  async remove(id: string) {
+  async remove(receiverId: string, id: string) {
+    const notification = await this.prisma.notification.findFirst({
+      where: { id, receiverId },
+    });
+
+    if (!notification) throw new NotFoundException('Không tìm thấy thông báo');
+
     return this.prisma.notification.delete({
-      where: { id },
+      where: { id: notification.id },
     });
   }
 }

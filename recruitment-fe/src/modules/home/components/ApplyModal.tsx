@@ -9,18 +9,28 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, FileText, Loader2, Send, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export const ApplyModal = ({ jobId, jobTitle }: { jobId: string, jobTitle: string }) => {
-  const { data: resumes, isLoading } = useResumes();
-  const applyMutation = useApplyJob();
+  const { isAuthenticated } = useAuthStore();
   const [selectedResume, setSelectedResume] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const { data: resumes, isLoading } = useResumes(isAuthenticated && open);
+  const applyMutation = useApplyJob();
 
   const defaultResume = resumes?.find(r => r.isDefault);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen && !isAuthenticated) {
+      toast.error('Vui lòng đăng nhập để ứng tuyển');
+      return;
+    }
+
+    setOpen(nextOpen);
+  };
 
   const handleApply = () => {
     const resumeId = selectedResume || defaultResume?.id;
@@ -38,7 +48,7 @@ export const ApplyModal = ({ jobId, jobTitle }: { jobId: string, jobTitle: strin
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="w-full h-12 bg-[#00b14f] hover:bg-[#009643] text-white font-black rounded-xl gap-2 shadow-xl shadow-green-900/20 active:scale-95 transition-all uppercase">
            <Send size={18} /> Ứng tuyển ngay

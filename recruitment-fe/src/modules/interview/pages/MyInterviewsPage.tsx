@@ -10,7 +10,6 @@ import {
   XCircle, 
   Loader2,
   CalendarCheck2,
-  Briefcase,
   Building2,
   Check,
   X

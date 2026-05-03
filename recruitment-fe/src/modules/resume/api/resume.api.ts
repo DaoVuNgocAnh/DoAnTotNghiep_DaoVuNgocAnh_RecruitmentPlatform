@@ -23,9 +23,10 @@ export const resumeApi = {
 
 // --- HOOKS ---
 
-export const useResumes = () => useQuery({
+export const useResumes = (enabled: boolean = true) => useQuery({
   queryKey: ['resumes'],
   queryFn: () => resumeApi.getMyResumes().then(res => res.data),
+  enabled,
 });
 
 export const useUploadResume = () => {

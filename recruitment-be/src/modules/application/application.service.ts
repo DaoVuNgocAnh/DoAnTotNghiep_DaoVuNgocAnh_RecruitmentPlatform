@@ -133,7 +133,7 @@ export class ApplicationService {
         type: 'APPLICATION_STATUS_UPDATED',
         title: 'Cập nhật trạng thái ứng tuyển',
         content: `Đơn ứng tuyển của bạn cho vị trí ${app.job.title} đã ${statusText}`,
-        targetType: 'APPLICATION',
+        targetType: 'MY-APPLICATION',
         targetId: applicationId,
       });
     }

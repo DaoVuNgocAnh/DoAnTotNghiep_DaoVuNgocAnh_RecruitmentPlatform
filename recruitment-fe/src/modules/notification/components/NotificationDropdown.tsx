@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { useNotifications } from "../hooks/useNotifications";
+import { useEffect } from 'react';
+import { useNotifications } from '../hooks/useNotifications';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,33 +7,35 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
-import { io } from "socket.io-client";
-import { useQueryClient } from "@tanstack/react-query";
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Bell } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { formatDistanceToNow } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const NotificationDropdown = () => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    useNotifications();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const token = useAuthStore((state) => state.token);
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
     if (!token) return;
 
-    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:3000", {
+    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
       auth: { token },
     });
 
-    socket.on("newNotification", (notification) => {
+    socket.on('newNotification', () => {
       // Invalidate queries to refresh list and count
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       // Hiển thị thông báo nhanh (ví dụ dùng sonner)
       // toast.info(notification.title);
     });
@@ -41,7 +43,7 @@ const NotificationDropdown = () => {
     return () => {
       socket.disconnect();
     };
-  }, [queryClient]);
+  }, [queryClient, token]);
 
   const handleNotificationClick = (notification: any) => {
     if (!notification.isRead) {
@@ -50,14 +52,17 @@ const NotificationDropdown = () => {
 
     // Điều hướng dựa trên targetType
     switch (notification.targetType) {
-      case "APPLICATION":
-        navigate(`/employer/applications`); // Hoặc trang chi tiết tùy role
+      case 'APPLICATION':
+        navigate(`/employer/candidates`); // Hoặc trang chi tiết tùy role
         break;
-      case "INTERVIEW":
+      case 'INTERVIEW':
         navigate(`/employer/interviews`);
         break;
-      case "JOB":
+      case 'JOB':
         navigate(`/jobs/${notification.targetId}`);
+        break;
+      case 'MY-APPLICATION':
+        navigate(`/my-applications`); // Hoặc trang chi tiết tùy role
         break;
     }
   };
@@ -72,7 +77,7 @@ const NotificationDropdown = () => {
               variant="destructive"
               className="absolute -top-1 -right-1 px-1 min-w-[1.2rem] h-5 flex items-center justify-center text-[10px]"
             >
-              {unreadCount > 9 ? "9+" : unreadCount}
+              {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
           )}
         </Button>
@@ -105,12 +110,14 @@ const NotificationDropdown = () => {
               <DropdownMenuItem
                 key={notification.id}
                 className={`flex flex-col items-start p-3 cursor-pointer ${
-                  !notification.isRead ? "bg-muted/50" : ""
+                  !notification.isRead ? 'bg-muted/50' : ''
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex w-full justify-between gap-2">
-                  <span className={`text-sm font-semibold ${!notification.isRead ? "text-primary" : ""}`}>
+                  <span
+                    className={`text-sm font-semibold ${!notification.isRead ? 'text-primary' : ''}`}
+                  >
                     {notification.title}
                   </span>
                   <span className="text-[10px] text-muted-foreground whitespace-nowrap">

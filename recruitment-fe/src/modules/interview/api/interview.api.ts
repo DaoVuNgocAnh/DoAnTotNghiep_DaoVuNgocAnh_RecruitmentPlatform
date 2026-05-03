@@ -1,11 +1,14 @@
 import apiClient from "@/api/axiosClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-export enum InterviewStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  DECLINED = 'DECLINED'
-}
+export const InterviewStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  DECLINED: 'DECLINED',
+} as const;
+
+export type InterviewStatus =
+  (typeof InterviewStatus)[keyof typeof InterviewStatus];
 
 export interface Interview {
   id: string;
@@ -65,7 +68,7 @@ export const useCreateInterview = () => {
     mutationFn: interviewApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['interviews'] });
-      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['employer-applications'] });
     },
   });
 };
