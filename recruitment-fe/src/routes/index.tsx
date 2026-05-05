@@ -26,6 +26,7 @@ import { ManageMembers } from '@/modules/employer/pages/ManageMembers';
 import { JoinPendingPage } from '@/modules/employer/pages/JoinPendingPage';
 import { ProfilePage } from '@/modules/user/pages/ProfilePage';
 import { AdminVerifyJobs } from '@/modules/admin/pages/AdminVerifyJobs';
+import { AdminDashboard } from '@/modules/admin/pages/AdminDashboard';
 import { EmployerManageJobs } from '@/modules/employer/pages/EmployerManageJobs';
 import { MyResumesPage } from '@/modules/resume/pages/MyResumesPage';
 import { MyApplicationsPage } from '@/modules/application/pages/MyApplicationsPage';
@@ -62,7 +63,7 @@ const AuthedRedirect = ({ children }: { children: React.ReactNode }) => {
 
   if (user) {
     if (user.role === Role.ADMIN)
-      return <Navigate to="/admin/companies" replace />;
+      return <Navigate to="/admin/dashboard" replace />;
     if (user.role === Role.EMPLOYER)
       return <Navigate to="/employer/dashboard" replace />;
     // Candidate đã login thì đẩy về trang chủ, không cho ở lại trang Login
@@ -84,7 +85,7 @@ const RootRedirect = () => {
   if (isLoading) return <GuardLoader message="Đang tải dữ liệu hệ thống..." />;
 
   if (user?.role === Role.ADMIN)
-    return <Navigate to="/admin/companies" replace />;
+    return <Navigate to="/admin/dashboard" replace />;
   if (user?.role === Role.EMPLOYER)
     return <Navigate to="/employer/dashboard" replace />;
 
@@ -227,6 +228,7 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
+      { path: 'dashboard', element: <AdminDashboard /> },
       { path: 'companies', element: <AdminVerifyCompany /> },
       { path: 'jobs', element: <AdminVerifyJobs /> },
       { path: 'users', element: <AdminUserList /> },

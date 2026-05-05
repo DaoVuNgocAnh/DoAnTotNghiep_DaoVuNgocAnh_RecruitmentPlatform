@@ -1,11 +1,31 @@
 import axiosClient from "@/api/axiosClient";
 
+export interface AdminUser {
+  id: string;
+  fullName: string;
+  email: string;
+  role: 'ADMIN' | 'EMPLOYER' | 'CANDIDATE';
+  status: 'ACTIVE' | 'LOCKED';
+  avatarUrl?: string | null;
+  phone?: string | null;
+  companyId?: string | null;
+  createdAt: string;
+  company?: {
+    id: string;
+    name: string;
+    status: string;
+  } | null;
+}
+
 export const adminApi = {
-  // Lấy danh sách công ty (có filter)
-  getCompanies: (params?: { status?: string; search?: string }) => 
+  getCompanies: (params?: { status?: string; search?: string }) =>
     axiosClient.get("/companies/admin/all", { params }),
 
-  // Cập nhật trạng thái công ty
-  updateCompanyStatus: (companyId: string, status: string) => 
+  updateCompanyStatus: (companyId: string, status: string) =>
     axiosClient.patch(`/companies/${companyId}/status`, { status }),
+
+  getUsers: () => axiosClient.get<AdminUser[]>('/users/admin/all'),
+
+  updateUserStatus: (userId: string, status: 'ACTIVE' | 'LOCKED') =>
+    axiosClient.patch(`/users/${userId}/status`, { status }),
 };

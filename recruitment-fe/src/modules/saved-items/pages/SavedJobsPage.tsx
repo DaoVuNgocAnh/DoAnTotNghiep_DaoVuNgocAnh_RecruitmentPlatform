@@ -17,7 +17,7 @@ const SavedJobsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mx-10 my-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight border-l-4 border-red-500 pl-4">
           Việc làm đã lưu

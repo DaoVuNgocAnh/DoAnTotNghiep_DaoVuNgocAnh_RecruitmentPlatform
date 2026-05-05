@@ -5,7 +5,10 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserDto } from './dto/user.dto';
+import { Role, UserStatus } from '@prisma/client';
 
 @Controller('users')
 export class UserController {
@@ -15,6 +18,20 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   getMe(@Request() req) {
     return this.userService.getMe(req.user.userId);
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  findAllForAdmin() {
+    return this.userService.findAllForAdmin();
+  }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  updateStatusByAdmin(@Param('id') id: string, @Body('status') status: UserStatus) {
+    return this.userService.updateStatusByAdmin(id, status);
   }
 
   @Get(':id')

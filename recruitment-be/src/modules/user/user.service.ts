@@ -1,9 +1,9 @@
 // backend/src/modules/user/user.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { UserDto } from './dto/user.dto';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
-import { Role } from '@prisma/client';
+import { Role, UserStatus } from '@prisma/client';
 
 @Injectable()
 export class UserService {
@@ -99,6 +99,63 @@ export class UserService {
         taxCode: joinRequests[0].company.taxCode,
       } : null,
     };
+  }
+
+  async findAllForAdmin() {
+    return this.prisma.user.findMany({
+      where: { isDeleted: false },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        status: true,
+        avatarUrl: true,
+        phone: true,
+        companyId: true,
+        createdAt: true,
+        company: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateStatusByAdmin(userId: string, status: UserStatus) {
+    if (!Object.values(UserStatus).includes(status)) {
+      throw new BadRequestException('Trạng thái không hợp lệ');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, isDeleted: true },
+    });
+
+    if (!user || user.isDeleted) throw new NotFoundException('Người dùng không tồn tại');
+    if (user.role === Role.ADMIN && status === UserStatus.LOCKED) {
+      throw new BadRequestException('Không thể khóa tài khoản Admin khác');
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { status },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        status: true,
+        avatarUrl: true,
+        phone: true,
+        companyId: true,
+        createdAt: true,
+      },
+    });
   }
 
   async updateProfile(userId: string, data: UserDto) {
