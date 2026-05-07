@@ -105,15 +105,15 @@ export const EmployerSidebar = () => {
       <div className="px-4 py-4 text-slate-900">
         <div className="bg-slate-800/30 rounded-2xl p-3 border border-white/5 flex items-center gap-3">
           <Avatar className="h-10 w-10 rounded-xl border border-slate-700 shadow-inner">
-            <AvatarImage src={user?.avatarUrl ?? undefined} />
+            <AvatarImage src={user?.logo_url ?? undefined} />
             <AvatarFallback className="bg-[#00b14f]/10 text-[#00b14f] text-xs font-black">
-              {user?.fullName?.charAt(0) || 'C'}
+              {user?.name?.charAt(0) || 'C'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-white text-[11px] font-black truncate uppercase tracking-tight leading-none mb-1.5">
               {user?.companyStatus === 'VERIFIED'
-                ? user?.companyName || 'Doanh nghiệp'
+                ? user?.name || 'Doanh nghiệp'
                 : 'Đang xác thực...'}
             </p>
             <div className="flex items-center gap-1">

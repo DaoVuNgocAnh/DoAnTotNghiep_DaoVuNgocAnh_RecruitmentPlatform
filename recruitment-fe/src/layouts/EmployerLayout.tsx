@@ -50,7 +50,7 @@ export default function EmployerLayout() {
                <Zap size={14} className="text-[#00b14f] fill-[#00b14f]" />
                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">Doanh nghiệp:</span>
                <span className="text-xs font-black text-slate-800 truncate max-w-[180px]">
-                 {user?.companyStatus === 'VERIFIED' ? 'SmartCV Tech Group' : 'Chưa cập nhật'}
+                 {user?.companyStatus === 'VERIFIED' ? user?.name : 'Chưa cập nhật'}
                </span>
                <Badge className={cn(
                  "border-none text-[9px] h-4 px-2 font-black shadow-sm",

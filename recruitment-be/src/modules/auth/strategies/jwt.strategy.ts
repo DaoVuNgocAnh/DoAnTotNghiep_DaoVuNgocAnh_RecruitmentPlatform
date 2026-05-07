@@ -1,10 +1,12 @@
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { UserStatus } from '@prisma/client';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PrismaService } from 'src/core/database/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -13,12 +15,27 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // Trả về thông tin user gắn vào request.user
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        companyId: true,
+        status: true,
+        isDeleted: true,
+      },
+    });
+
+    if (!user || user.isDeleted || user.status === UserStatus.LOCKED) {
+      throw new UnauthorizedException();
+    }
+
     return {
-      userId: payload.userId,
-      email: payload.email,
-      role: payload.role,
-      companyId: payload.companyId,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      companyId: user.companyId,
     };
   }
 }

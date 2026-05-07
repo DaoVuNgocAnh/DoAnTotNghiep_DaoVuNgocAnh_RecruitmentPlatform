@@ -13,9 +13,10 @@ export interface User {
   dateOfBirth?: string;
   bio?: string | null;
   skills?: string | null;
-  companyName?: string | null;
+  name?: string | null;
   companyId?: string | null;
   companyStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'BLACKLISH' | null;
+  logo_url?: string | null;
   isOwner: boolean;
   createdAt: string;
   pendingJoinRequest?: {

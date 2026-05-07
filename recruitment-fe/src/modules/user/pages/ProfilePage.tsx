@@ -188,9 +188,9 @@ export const ProfilePage = () => {
                   <Badge className="bg-[#00b14f]/10 text-[#00b14f] border-none px-4 py-1 font-black text-[10px] uppercase tracking-widest rounded-full">
                     {user?.role}
                   </Badge>
-                  {user?.companyName && (
+                  {user?.name && (
                     <Badge className="bg-blue-50 text-blue-600 border-none px-4 py-1 font-black text-[10px] uppercase tracking-widest rounded-full flex items-center gap-1.5">
-                      <Building2 size={10} /> {user.companyName}
+                      <Building2 size={10} /> {user.name}
                     </Badge>
                   )}
                 </div>
