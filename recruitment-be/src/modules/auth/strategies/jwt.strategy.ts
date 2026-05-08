@@ -24,6 +24,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         companyId: true,
         status: true,
         isDeleted: true,
+        ownedCompany: {
+          select: { id: true },
+        },
       },
     });
 
@@ -36,6 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: user.email,
       role: user.role,
       companyId: user.companyId,
+      isOwner: !!user.ownedCompany && user.ownedCompany.id === user.companyId,
     };
   }
 }

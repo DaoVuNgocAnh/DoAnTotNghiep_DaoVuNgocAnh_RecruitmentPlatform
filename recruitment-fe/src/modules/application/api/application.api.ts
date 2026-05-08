@@ -1,6 +1,21 @@
 import apiClient from "@/api/axiosClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+export interface ApplicationActor {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+export interface ApplicationHistory {
+  id: string;
+  oldStatus?: string | null;
+  newStatus: string;
+  note?: string | null;
+  createdAt: string;
+  actor: ApplicationActor;
+}
+
 export const applicationApi = {
   applyJob: (data: { jobId: string; resumeId: string }) => apiClient.post("/applications", data),
   getMyApplications: () => apiClient.get("/applications/my-applications"),

@@ -7,6 +7,17 @@ export interface JobCategory {
   description?: string;
 }
 
+export interface JobAssignee {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarUrl?: string | null;
+  };
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -21,6 +32,7 @@ export interface Job {
   categoryId: string;
   category: JobCategory;
   company: { name: string; logoUrl?: string; };
+  assignees?: JobAssignee[];
   createdAt: string;
 }
 
@@ -71,6 +83,9 @@ export const useCreateJob = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: jobApi.createJob,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['jobs'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['my-jobs'] });
+    },
   });
 };

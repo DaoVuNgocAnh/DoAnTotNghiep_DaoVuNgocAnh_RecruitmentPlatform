@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ApplicationService } from './application.service';
 import { CreateApplicationDto, UpdateApplicationStatusDto } from './dto/application.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -26,12 +26,14 @@ export class ApplicationController {
   @Get('employer')
   @Roles(Role.EMPLOYER)
   getEmployerApps(@Request() req) {
-    return this.service.findByEmployer(req.user.companyId);
+    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.service.findByEmployer(req.user.companyId, req.user.userId, req.user.isOwner);
   }
 
   @Patch(':id/status')
   @Roles(Role.EMPLOYER)
   updateStatus(@Param('id') id: string, @Request() req, @Body() dto: UpdateApplicationStatusDto) {
-    return this.service.updateStatus(id, req.user.companyId, dto);
+    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.service.updateStatus(id, req.user.companyId, req.user.userId, req.user.isOwner, dto);
   }
 }

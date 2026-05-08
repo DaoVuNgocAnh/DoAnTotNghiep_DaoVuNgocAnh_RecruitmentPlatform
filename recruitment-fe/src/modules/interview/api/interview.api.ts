@@ -17,6 +17,11 @@ export interface Interview {
   location: string;
   status: InterviewStatus;
   responseDate?: string;
+  employer?: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
   application: {
     candidate?: {
       fullName: string;

@@ -16,6 +16,7 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role, RequestStatus, CompanyStatus } from '@prisma/client'; // Import thêm CompanyStatus
 import { CompanyDto } from './dto/company.dto';
+import { JobAssigneeDto } from './dto/job-assignee.dto';
 
 @Controller('companies')
 export class CompanyController {
@@ -64,6 +65,35 @@ export class CompanyController {
   @Get('my-company/requests')
   getRequests(@Request() req) {
     return this.companyService.getMyCompanyRequests(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYER)
+  @Get('my-company/members')
+  getMembers(@Request() req) {
+    return this.companyService.getMembers(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYER)
+  @Post('jobs/:jobId/assignees')
+  assignMemberToJob(
+    @Request() req,
+    @Param('jobId') jobId: string,
+    @Body() dto: JobAssigneeDto,
+  ) {
+    return this.companyService.assignMemberToJob(req.user.userId, jobId, dto.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYER)
+  @Delete('jobs/:jobId/assignees/:userId')
+  unassignMemberFromJob(
+    @Request() req,
+    @Param('jobId') jobId: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.companyService.unassignMemberFromJob(req.user.userId, jobId, userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

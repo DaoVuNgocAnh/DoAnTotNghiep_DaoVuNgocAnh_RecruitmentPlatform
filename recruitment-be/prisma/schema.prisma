@@ -61,6 +61,11 @@ enum TargetType {
   CANDIDATE
 }
 
+enum SavedItemScope {
+  PERSONAL
+  COMPANY
+}
+
 // --- MODELS ---
 
 model User {
@@ -99,6 +104,10 @@ model User {
   
   logs           SystemLog[]
   savedItems     SavedItem[]
+  jobAssignments JobAssignee[]       @relation("JobAssigneeUser")
+  assignedJobs   JobAssignee[]       @relation("JobAssigneeCreator")
+  applicationActions Application[]   @relation("ApplicationActionBy")
+  applicationHistories ApplicationHistory[] @relation("ApplicationHistoryActor")
 
   @@map("users")
 }
@@ -127,6 +136,7 @@ model Company {
   joinRequests JoinRequest[]
   
   jobs        Job[]
+  savedItems  SavedItem[]
   
   // Admin hệ thống tạo/duyệt
   createdById String?       @map("created_by") @db.Char(36)
@@ -185,8 +195,25 @@ model Job {
   category    JobCategory @relation(fields: [categoryId], references: [id])
   company     Company     @relation(fields: [companyId], references: [id])
   applications Application[]
+  assignees    JobAssignee[]
 
   @@map("jobs")
+}
+
+model JobAssignee {
+  id           String   @id @default(uuid()) @db.Char(36)
+  jobId        String   @map("job_id") @db.Char(36)
+  userId       String   @map("user_id") @db.Char(36)
+  assignedById String?  @map("assigned_by_id") @db.Char(36)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  job          Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user         User     @relation("JobAssigneeUser", fields: [userId], references: [id])
+  assignedBy   User?    @relation("JobAssigneeCreator", fields: [assignedById], references: [id])
+
+  @@unique([jobId, userId])
+  @@index([userId])
+  @@map("job_assignees")
 }
 
 model Resume {
@@ -213,14 +240,34 @@ model Application {
   status             ApplicationStatus @default(PENDING)
   employerNote       String?           @db.Text @map("employer_note")
   employerActionDate DateTime?         @map("employer_action_date")
+  employerActionById String?           @map("employer_action_by_id") @db.Char(36)
   isDeleted          Boolean           @default(false) @map("is_deleted")
 
   job         Job       @relation(fields: [jobId], references: [id])
   candidate   User      @relation(fields: [candidateId], references: [id])
   resume      Resume    @relation(fields: [resumeId], references: [id])
   interviews  Interview[]
+  employerActionBy User? @relation("ApplicationActionBy", fields: [employerActionById], references: [id])
+  histories  ApplicationHistory[]
 
   @@map("applications")
+}
+
+model ApplicationHistory {
+  id            String             @id @default(uuid()) @db.Char(36)
+  applicationId String             @map("application_id") @db.Char(36)
+  actorId       String             @map("actor_id") @db.Char(36)
+  oldStatus     ApplicationStatus? @map("old_status")
+  newStatus     ApplicationStatus  @map("new_status")
+  note          String?            @db.Text
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  actor         User               @relation("ApplicationHistoryActor", fields: [actorId], references: [id])
+
+  @@index([applicationId])
+  @@index([actorId])
+  @@map("application_histories")
 }
 
 model Interview {
@@ -242,15 +289,20 @@ model Interview {
 model SavedItem {
   id         String     @id @default(uuid()) @db.Char(36)
   userId     String     @map("user_id") @db.Char(36)
+  companyId  String?    @map("company_id") @db.Char(36)
   targetId   String     @map("target_id") @db.Char(36)
   targetType TargetType @map("target_type")
+  scope      SavedItemScope @default(PERSONAL)
   note       String?    @db.Text
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @updatedAt @map("updated_at")
   isDeleted  Boolean    @default(false) @map("is_deleted")
 
   user       User       @relation(fields: [userId], references: [id])
+  company    Company?   @relation(fields: [companyId], references: [id])
 
+  @@index([companyId, targetType, scope])
+  @@index([userId, targetType, scope])
   @@map("saved_items")
 }
 

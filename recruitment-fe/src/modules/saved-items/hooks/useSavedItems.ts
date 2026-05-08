@@ -10,6 +10,13 @@ export const useSavedItems = (type?: TargetType) => {
   });
 };
 
+export const useCompanyTalentPool = () => {
+  return useQuery({
+    queryKey: ["saved-items", "company-candidates"],
+    queryFn: () => savedItemsApi.getCompanyCandidates(),
+  });
+};
+
 export const useCheckSavedStatus = (targetId: string, enabled: boolean = true) => {
   return useQuery({
     queryKey: ["saved-items", "check", targetId],
@@ -40,6 +47,25 @@ export const useToggleSave = () => {
   });
 };
 
+export const useToggleCompanyCandidate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: savedItemsApi.toggleCompanyCandidate,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["saved-items", "company-candidates"] });
+      if (data.saved) {
+        toast.success("Đã đưa vào kho ứng viên công ty");
+      } else {
+        toast.info("Đã gỡ khỏi kho ứng viên công ty");
+      }
+    },
+    onError: () => {
+      toast.error("Không thể cập nhật kho ứng viên công ty");
+    },
+  });
+};
+
 export const useUpdateNote = () => {
   const queryClient = useQueryClient();
 
@@ -52,6 +78,22 @@ export const useUpdateNote = () => {
     },
     onError: () => {
       toast.error("Có lỗi xảy ra khi cập nhật ghi chú");
+    },
+  });
+};
+
+export const useUpdateCompanyNote = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ itemId, note }: { itemId: string; note: string }) =>
+      savedItemsApi.updateCompanyNote(itemId, note),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["saved-items", "company-candidates"] });
+      toast.success("Đã cập nhật ghi chú kho công ty");
+    },
+    onError: () => {
+      toast.error("Không thể cập nhật ghi chú kho công ty");
     },
   });
 };

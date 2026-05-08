@@ -38,14 +38,16 @@ export class JobController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
   async findMyJobs(@Request() req) {
-    return this.jobService.findAllForEmployer(req.user.companyId);
+    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.jobService.findAllForEmployer(req.user.companyId, req.user.userId, req.user.isOwner);
   }
 
   @Patch(':id/close')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
   async closeJob(@Param('id') id: string, @Request() req) {
-    return this.jobService.closeJob(id, req.user.companyId);
+    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.jobService.closeJob(id, req.user.companyId, req.user.userId, req.user.isOwner);
   }
 
   @Get(':id')
@@ -65,6 +67,6 @@ export class JobController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER, Role.ADMIN)
   async update(@Param('id') id: string, @Request() req, @Body() dto: JobDto) {
-    return this.jobService.update(id, req.user.userId, req.user.role, dto);
+    return this.jobService.update(id, req.user.userId, req.user.role, req.user.companyId, req.user.isOwner, dto);
   }
 }

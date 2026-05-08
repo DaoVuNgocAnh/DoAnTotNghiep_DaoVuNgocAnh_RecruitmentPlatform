@@ -1,53 +1,62 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { JobDto } from './dto/job.dto';
-import { Role, JobStatus } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { JobStatus, Role } from '@prisma/client';
 import { Cache } from 'cache-manager';
+import { PrismaService } from 'src/core/database/prisma.service';
 import { NotificationService } from '../notification/notification.service';
+import { JobDto } from './dto/job.dto';
 
 @Injectable()
 export class JobService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async create(userId: string, companyId: string, dto: JobDto) {
-    const job = await this.prisma.job.create({
-      data: {
-        title: dto.title,
-        description: dto.description,
-        requirement: dto.requirement,
-        salary: dto.salary,
-        location: dto.location,
-        categoryId: dto.categoryId,
-        companyId: companyId,
-        createdById: userId,
-        status: JobStatus.PENDING, 
-        isFeatured: dto.isFeatured || false,
-        expiredDate: dto.expiredDate ? new Date(dto.expiredDate) : null,
-      },
-      include: { company: true }
+    const job = await this.prisma.$transaction(async (tx) => {
+      const createdJob = await tx.job.create({
+        data: {
+          title: dto.title,
+          description: dto.description,
+          requirement: dto.requirement,
+          salary: dto.salary,
+          location: dto.location,
+          categoryId: dto.categoryId,
+          companyId,
+          createdById: userId,
+          status: JobStatus.PENDING,
+          isFeatured: dto.isFeatured || false,
+          expiredDate: dto.expiredDate ? new Date(dto.expiredDate) : null,
+        },
+        include: { company: true },
+      });
+
+      await tx.jobAssignee.create({
+        data: {
+          jobId: createdJob.id,
+          userId,
+          assignedById: userId,
+        },
+      });
+
+      return createdJob;
     });
 
-    // Thông báo cho Admin có tin tuyển dụng mới chờ duyệt
     await this.notificationService.sendToAdmins({
       senderId: userId,
       type: 'NEW_JOB_CREATED',
-      title: 'Yêu cầu duyệt tin tuyển dụng',
-      content: `Doanh nghiệp ${job.company.name} vừa đăng tin "${job.title}" và đang chờ duyệt.`,
+      title: 'Yeu cau duyet tin tuyen dung',
+      content: `Doanh nghiep ${job.company.name} vua dang tin "${job.title}" va dang cho duyet.`,
       targetType: 'JOB',
       targetId: job.id,
     });
 
-    // Xóa cache danh sách khi có job mới
     await this.cacheManager.del('jobs_all');
     return job;
   }
 
-  // Candidate/Public: Caching danh sách job
   async findAll(query: any) {
     const cacheKey = `jobs_query_${JSON.stringify(query)}`;
     const cachedData = await this.cacheManager.get(cacheKey);
@@ -58,10 +67,7 @@ export class JobService {
       where: {
         isDeleted: false,
         status: JobStatus.ACTIVE,
-        OR: [
-          { expiredDate: null },
-          { expiredDate: { gt: now } }
-        ],
+        OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
         categoryId: query.categoryId || undefined,
         title: query.search ? { contains: query.search, mode: 'insensitive' } : undefined,
       },
@@ -69,10 +75,10 @@ export class JobService {
         company: { select: { name: true, logoUrl: true } },
         category: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
-    await this.cacheManager.set(cacheKey, jobs, 300); // Cache trong 5 phút
+    await this.cacheManager.set(cacheKey, jobs, 300);
     return jobs;
   }
 
@@ -86,40 +92,40 @@ export class JobService {
         where: { id, isDeleted: false },
         include: { company: true, category: true },
       });
-      if (!job) throw new NotFoundException('Không tìm thấy tin tuyển dụng');
+      if (!job) throw new NotFoundException('Khong tim thay tin tuyen dung');
       await this.cacheManager.set(cacheKey, job, 600);
     }
 
-    // Luôn cập nhật viewCount trực tiếp vào DB, không cần đợi cache
-    await this.prisma.job.update({ where: { id }, data: { viewCount: { increment: 1 } } });
+    await this.prisma.job.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+    });
     return job;
   }
 
-  // DÀNH CHO ADMIN: Lấy tất cả tin để duyệt
   async findAllForAdmin(status?: JobStatus) {
     return this.prisma.job.findMany({
       where: { status: status || undefined, isDeleted: false },
       include: { company: true, category: true },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async updateStatusByAdmin(id: string, status: JobStatus) {
-    const job = await this.prisma.job.update({ 
-      where: { id }, 
+    const job = await this.prisma.job.update({
+      where: { id },
       data: { status },
-      include: { company: true } 
+      include: { company: true },
     });
 
-    // Thông báo cho người tạo tin (Employer)
     let title = '';
     let content = '';
     if (status === JobStatus.ACTIVE) {
-      title = 'Tin tuyển dụng đã được duyệt';
-      content = `Tin tuyển dụng "${job.title}" của bạn đã được Admin phê duyệt và hiển thị công khai.`;
+      title = 'Tin tuyen dung da duoc duyet';
+      content = `Tin tuyen dung "${job.title}" cua ban da duoc Admin phe duyet va hien thi cong khai.`;
     } else if (status === JobStatus.REJECTED) {
-      title = 'Tin tuyển dụng bị từ chối';
-      content = `Tin tuyển dụng "${job.title}" của bạn đã bị từ chối phê duyệt.`;
+      title = 'Tin tuyen dung bi tu choi';
+      content = `Tin tuyen dung "${job.title}" cua ban da bi tu choi phe duyet.`;
     }
 
     if (title && job.createdById) {
@@ -134,34 +140,67 @@ export class JobService {
     }
 
     await this.cacheManager.del(`job_detail_${id}`);
-    await this.cacheManager.del('jobs_all'); // Clear danh sách công khai
+    await this.cacheManager.del('jobs_all');
     return job;
   }
 
-  async findAllForEmployer(companyId: string) {
+  async findAllForEmployer(companyId: string, userId: string, isOwner: boolean) {
     return this.prisma.job.findMany({
-      where: { companyId, isDeleted: false },
-      include: { category: true },
-      orderBy: { createdAt: 'desc' }
+      where: {
+        companyId,
+        isDeleted: false,
+        OR: isOwner
+          ? undefined
+          : [{ createdById: userId }, { assignees: { some: { userId } } }],
+      },
+      include: {
+        category: true,
+        assignees: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, email: true, avatarUrl: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-  async closeJob(id: string, companyId: string) {
-    const job = await this.prisma.job.findUnique({ where: { id } });
-    if (!job || job.companyId !== companyId) {
-      throw new ForbiddenException('Bạn không có quyền đóng tin này');
+  async closeJob(id: string, companyId: string, userId: string, isOwner: boolean) {
+    const job = await this.prisma.job.findUnique({
+      where: { id },
+      include: { assignees: true },
+    });
+
+    if (!this.canManageJob(job, companyId, userId, isOwner)) {
+      throw new ForbiddenException('Ban khong co quyen dong tin nay');
     }
-    const updatedJob = await this.prisma.job.update({ where: { id }, data: { status: JobStatus.CLOSED } });
+
+    const updatedJob = await this.prisma.job.update({
+      where: { id },
+      data: { status: JobStatus.CLOSED },
+    });
     await this.cacheManager.del(`job_detail_${id}`);
     return updatedJob;
   }
 
-  async update(id: string, userId: string, role: string, dto: JobDto) {
-    const job = await this.prisma.job.findUnique({ where: { id } });
-    if (!job) throw new NotFoundException('Không tìm thấy tin tuyển dụng');
+  async update(
+    id: string,
+    userId: string,
+    role: string,
+    companyId: string,
+    isOwner: boolean,
+    dto: JobDto,
+  ) {
+    const job = await this.prisma.job.findUnique({
+      where: { id },
+      include: { assignees: true },
+    });
+    if (!job) throw new NotFoundException('Khong tim thay tin tuyen dung');
 
-    if (role !== Role.ADMIN) {
-      if (job.createdById !== userId) throw new ForbiddenException('Không có quyền');
+    if (role !== Role.ADMIN && !this.canManageJob(job, companyId, userId, isOwner)) {
+      throw new ForbiddenException('Khong co quyen');
     }
 
     const updated = await this.prisma.job.update({
@@ -174,5 +213,13 @@ export class JobService {
 
     await this.cacheManager.del(`job_detail_${id}`);
     return updated;
+  }
+
+  private canManageJob(job: any, companyId: string, userId: string, isOwner: boolean) {
+    return !!job && job.companyId === companyId && (
+      isOwner ||
+      job.createdById === userId ||
+      job.assignees?.some((assignee) => assignee.userId === userId)
+    );
   }
 }

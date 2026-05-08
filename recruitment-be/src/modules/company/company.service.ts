@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { CompanyDto } from './dto/company.dto';
-import { RequestStatus, CompanyStatus } from '@prisma/client';
+import { RequestStatus, CompanyStatus, Role } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { NotificationService } from '../notification/notification.service';
@@ -376,6 +376,85 @@ export class CompanyService {
 
     if (!company) throw new NotFoundException('Không tìm thấy công ty');
     return company;
+  }
+
+  async getMembers(ownerId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { ownerId },
+      include: {
+        members: {
+          where: { id: { not: ownerId }, isDeleted: false, role: Role.EMPLOYER },
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            avatarUrl: true,
+            phone: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!company) throw new NotFoundException('Ban chua so huu cong ty nao');
+    return company.members;
+  }
+
+  async assignMemberToJob(ownerId: string, jobId: string, userId: string) {
+    const job = await this.prisma.job.findUnique({
+      where: { id: jobId },
+      include: { company: true },
+    });
+
+    if (!job || job.company.ownerId !== ownerId) {
+      throw new ForbiddenException('Ban khong co quyen phan cong tin nay');
+    }
+
+    const member = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        companyId: job.companyId,
+        role: Role.EMPLOYER,
+        isDeleted: false,
+      },
+    });
+
+    if (!member) throw new NotFoundException('Khong tim thay thanh vien trong cong ty');
+
+    const existing = await this.prisma.jobAssignee.findFirst({
+      where: { jobId, userId },
+    });
+
+    if (existing) return existing;
+
+    return this.prisma.jobAssignee.create({
+      data: {
+        jobId,
+        userId,
+        assignedById: ownerId,
+      },
+      include: {
+        user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+      },
+    });
+  }
+
+  async unassignMemberFromJob(ownerId: string, jobId: string, userId: string) {
+    const job = await this.prisma.job.findUnique({
+      where: { id: jobId },
+      include: { company: true },
+    });
+
+    if (!job || job.company.ownerId !== ownerId) {
+      throw new ForbiddenException('Ban khong co quyen go phan cong tin nay');
+    }
+
+    await this.prisma.jobAssignee.deleteMany({
+      where: { jobId, userId },
+    });
+
+    return { message: 'Da go phan cong' };
   }
 
   async cancelJoinRequest(userId: string, requestId: string) {

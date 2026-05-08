@@ -1,8 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { CreateApplicationDto, UpdateApplicationStatusDto } from './dto/application.dto';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { ApplicationStatus } from '@prisma/client';
+import { PrismaService } from 'src/core/database/prisma.service';
 import { NotificationService } from '../notification/notification.service';
+import { CreateApplicationDto, UpdateApplicationStatusDto } from './dto/application.dto';
 
 @Injectable()
 export class ApplicationService {
@@ -11,22 +11,19 @@ export class ApplicationService {
     private notificationService: NotificationService,
   ) {}
 
-  // 1. Candidate nộp đơn
   async create(candidateId: string, dto: CreateApplicationDto) {
-    // Check xem job có tồn tại và đang ACTIVE không
-    const job = await this.prisma.job.findUnique({ 
+    const job = await this.prisma.job.findUnique({
       where: { id: dto.jobId },
-      include: { company: true } 
+      include: { company: true },
     });
     if (!job || job.status !== 'ACTIVE' || job.isDeleted) {
-      throw new BadRequestException('Tin tuyển dụng không tồn tại hoặc đã đóng');
+      throw new BadRequestException('Tin tuyen dung khong ton tai hoac da dong');
     }
 
-    // Check xem đã nộp chưa
     const existing = await this.prisma.application.findFirst({
-      where: { jobId: dto.jobId, candidateId, isDeleted: false }
+      where: { jobId: dto.jobId, candidateId, isDeleted: false },
     });
-    if (existing) throw new BadRequestException('Bạn đã ứng tuyển công việc này rồi');
+    if (existing) throw new BadRequestException('Ban da ung tuyen cong viec nay roi');
 
     const application = await this.prisma.application.create({
       data: {
@@ -36,17 +33,16 @@ export class ApplicationService {
         status: ApplicationStatus.PENDING,
       },
       include: {
-        candidate: { select: { fullName: true } }
-      }
+        candidate: { select: { fullName: true } },
+      },
     });
 
-    // Thông báo cho nhà tuyển dụng (Chủ sở hữu công ty)
     await this.notificationService.create({
       receiverId: job.company.ownerId,
       senderId: candidateId,
       type: 'NEW_APPLICATION',
-      title: 'Ứng tuyển mới',
-      content: `Ứng viên ${application.candidate.fullName} đã nộp đơn cho vị trí ${job.title}`,
+      title: 'Ung tuyen moi',
+      content: `Ung vien ${application.candidate.fullName} da nop don cho vi tri ${job.title}`,
       targetType: 'APPLICATION',
       targetId: application.id,
     });
@@ -54,43 +50,63 @@ export class ApplicationService {
     return application;
   }
 
-  // 2. Candidate xem danh sách đã nộp
   async findByCandidate(candidateId: string) {
     return this.prisma.application.findMany({
       where: { candidateId, isDeleted: false },
       include: {
         job: { include: { company: true } },
-        resume: true
+        resume: true,
       },
-      orderBy: { applyDate: 'desc' }
+      orderBy: { applyDate: 'desc' },
     });
   }
 
-  // 3. Employer xem danh sách ứng viên nộp vào công ty mình
-  async findByEmployer(companyId: string) {
+  async findByEmployer(companyId: string, userId: string, isOwner: boolean) {
     const applications = await this.prisma.application.findMany({
-      where: { job: { companyId }, isDeleted: false },
+      where: {
+        isDeleted: false,
+        job: {
+          companyId,
+          OR: isOwner
+            ? undefined
+            : [{ createdById: userId }, { assignees: { some: { userId } } }],
+        },
+      },
       include: {
         candidate: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
-        job: { select: { title: true } },
-        resume: true
+        job: {
+          select: {
+            id: true,
+            title: true,
+            createdById: true,
+            assignees: {
+              include: {
+                user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+              },
+            },
+          },
+        },
+        resume: true,
+        employerActionBy: { select: { id: true, fullName: true, email: true } },
+        histories: {
+          include: { actor: { select: { id: true, fullName: true, email: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
       },
-      orderBy: { applyDate: 'desc' }
+      orderBy: { applyDate: 'desc' },
     });
 
-    // Tự động chuyển PENDING -> REVIEWING
     const pendingIds = applications
-      .filter(app => app.status === ApplicationStatus.PENDING)
-      .map(app => app.id);
+      .filter((app) => app.status === ApplicationStatus.PENDING)
+      .map((app) => app.id);
 
     if (pendingIds.length > 0) {
       await this.prisma.application.updateMany({
         where: { id: { in: pendingIds } },
-        data: { status: ApplicationStatus.REVIEWING }
+        data: { status: ApplicationStatus.REVIEWING },
       });
-      
-      // Cập nhật lại list trả về để đồng bộ UI
-      applications.forEach(app => {
+
+      applications.forEach((app) => {
         if (pendingIds.includes(app.id)) app.status = ApplicationStatus.REVIEWING;
       });
     }
@@ -98,46 +114,86 @@ export class ApplicationService {
     return applications;
   }
 
-  // 4. Employer cập nhật trạng thái (Duyệt/Từ chối/Hẹn phỏng vấn)
-  async updateStatus(applicationId: string, companyId: string, dto: UpdateApplicationStatusDto) {
+  async updateStatus(
+    applicationId: string,
+    companyId: string,
+    userId: string,
+    isOwner: boolean,
+    dto: UpdateApplicationStatusDto,
+  ) {
     const app = await this.prisma.application.findUnique({
       where: { id: applicationId },
-      include: { job: { include: { company: true } } }
+      include: {
+        job: {
+          include: {
+            company: true,
+            assignees: true,
+          },
+        },
+      },
     });
 
-    if (!app || app.job.companyId !== companyId) {
-      throw new ForbiddenException('Bạn không có quyền xử lý đơn này');
+    if (!this.canAccessApplication(app, companyId, userId, isOwner)) {
+      throw new ForbiddenException('Ban khong co quyen xu ly don nay');
     }
 
-    const updatedApp = await this.prisma.application.update({
-      where: { id: applicationId },
-      data: {
-        status: dto.status,
-        employerNote: dto.employerNote,
-        employerActionDate: new Date()
-      }
+    const updatedApp = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.application.update({
+        where: { id: applicationId },
+        data: {
+          status: dto.status,
+          employerNote: dto.employerNote,
+          employerActionDate: new Date(),
+          employerActionById: userId,
+        },
+      });
+
+      await tx.applicationHistory.create({
+        data: {
+          applicationId,
+          actorId: userId,
+          oldStatus: app!.status,
+          newStatus: dto.status,
+          note: dto.employerNote,
+        },
+      });
+
+      return updated;
     });
 
-    // Thông báo cho ứng viên
     let statusText = '';
-    switch(dto.status) {
-      case ApplicationStatus.ACCEPTED: statusText = 'được chấp nhận'; break;
-      case ApplicationStatus.REJECTED: statusText = 'bị từ chối'; break;
-      case ApplicationStatus.INTERVIEW: statusText = 'được mời phỏng vấn'; break;
+    switch (dto.status) {
+      case ApplicationStatus.ACCEPTED:
+        statusText = 'duoc chap nhan';
+        break;
+      case ApplicationStatus.REJECTED:
+        statusText = 'bi tu choi';
+        break;
+      case ApplicationStatus.INTERVIEW:
+        statusText = 'duoc moi phong van';
+        break;
     }
 
     if (statusText) {
       await this.notificationService.create({
-        receiverId: app.candidateId,
-        senderId: app.job.company.ownerId,
+        receiverId: app!.candidateId,
+        senderId: userId,
         type: 'APPLICATION_STATUS_UPDATED',
-        title: 'Cập nhật trạng thái ứng tuyển',
-        content: `Đơn ứng tuyển của bạn cho vị trí ${app.job.title} đã ${statusText}`,
+        title: 'Cap nhat trang thai ung tuyen',
+        content: `Don ung tuyen cua ban cho vi tri ${app!.job.title} da ${statusText}`,
         targetType: 'MY-APPLICATION',
         targetId: applicationId,
       });
     }
 
     return updatedApp;
+  }
+
+  private canAccessApplication(app: any, companyId: string, userId: string, isOwner: boolean) {
+    return !!app && !app.isDeleted && app.job.companyId === companyId && (
+      isOwner ||
+      app.job.createdById === userId ||
+      app.job.assignees?.some((assignee) => assignee.userId === userId)
+    );
   }
 }

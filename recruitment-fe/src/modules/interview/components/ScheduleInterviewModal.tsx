@@ -43,7 +43,7 @@ export const ScheduleInterviewModal = ({
           toast.success('Đã gửi lời mời phỏng vấn tới ứng viên');
           onClose();
         },
-        onError: () => toast.error('Thao tác thất bại'),
+        onError: (error: any) => toast.error(error.response?.data?.message || 'Thao tác thất bại'),
       }
     );
   };

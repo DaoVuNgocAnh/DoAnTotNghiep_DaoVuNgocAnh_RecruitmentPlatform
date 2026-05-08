@@ -9,13 +9,14 @@ import {
   Plus,
   Users,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser } from '@/modules/user/hooks/useUser';
-import { useMyJobs } from '@/modules/job/api/job.api';
 import { useEmployerApplications } from '@/modules/application/api/application.api';
 import { useEmployerInterviews } from '@/modules/interview/api/interview.api';
+import { useMyJobs } from '@/modules/job/api/job.api';
+import { useUser } from '@/modules/user/hooks/useUser';
 
 const StatCard = ({
   title,
@@ -49,6 +50,8 @@ export const EmployerDashboard = () => {
   const { data: applications = [], isLoading: appsLoading } = useEmployerApplications();
   const { data: interviews = [], isLoading: interviewsLoading } = useEmployerInterviews();
 
+  const scopeLabel = user?.isOwner ? 'toàn công ty' : 'phạm vi được phân công';
+  const roleLabel = user?.isOwner ? 'OWNER' : 'HR MEMBER';
   const activeJobs = jobs.filter((job: any) => job.status === 'ACTIVE').length;
   const pendingJobs = jobs.filter((job: any) => job.status === 'PENDING').length;
   const pendingApplications = applications.filter((app: any) =>
@@ -72,7 +75,7 @@ export const EmployerDashboard = () => {
             Tổng quan tuyển dụng
           </h1>
           <p className="ml-4 mt-1 text-sm font-medium italic text-slate-500">
-            Theo dõi hiệu quả tuyển dụng và các hoạt động mới nhất của doanh nghiệp.
+            Theo dõi hiệu quả tuyển dụng trong {scopeLabel}.
           </p>
         </div>
         <Button asChild className="rounded-2xl bg-[#00b14f] font-black hover:bg-[#009643]">
@@ -92,17 +95,17 @@ export const EmployerDashboard = () => {
               {user?.fullName || 'Nhà tuyển dụng'}
             </h2>
             <p className="mt-1 text-sm font-medium text-slate-500">
-              Trạng thái công ty: {user?.companyStatus || 'N/A'}
+              Trạng thái công ty: {user?.companyStatus || 'N/A'} · Dữ liệu theo {scopeLabel}
             </p>
           </div>
           <Badge className="w-fit rounded-xl border-none bg-green-50 px-4 py-2 font-black text-[#00b14f] hover:bg-green-50">
-            {user?.isOwner ? 'OWNER' : 'HR MEMBER'}
+            {roleLabel}
           </Badge>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Tổng tin tuyển dụng" value={jobs.length} icon={Briefcase} tone="bg-green-50 text-[#00b14f]" />
+        <StatCard title={`Tin tuyển dụng (${scopeLabel})`} value={jobs.length} icon={Briefcase} tone="bg-green-50 text-[#00b14f]" />
         <StatCard title="Tin đang hoạt động" value={activeJobs} icon={CheckCircle2} tone="bg-blue-50 text-blue-600" />
         <StatCard title="Ứng viên cần xử lý" value={pendingApplications} icon={Users} tone="bg-yellow-50 text-yellow-600" />
         <StatCard title="Lịch sắp tới" value={upcomingInterviews} icon={CalendarClock} tone="bg-purple-50 text-purple-600" />
@@ -123,7 +126,7 @@ export const EmployerDashboard = () => {
               <div className="py-10 text-center text-sm font-bold text-slate-400">Đang tải dữ liệu...</div>
             ) : recentJobs.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 py-10 text-center text-sm font-bold text-slate-400">
-                Chưa có tin tuyển dụng nào.
+                Chưa có tin tuyển dụng nào trong {scopeLabel}.
               </div>
             ) : (
               <div className="space-y-3">

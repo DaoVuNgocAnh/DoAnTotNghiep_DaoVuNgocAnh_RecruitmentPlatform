@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { InterviewService } from './interview.service';
 import { CreateInterviewDto, UpdateInterviewStatusDto } from './dto/interview.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -14,13 +14,15 @@ export class InterviewController {
   @Post()
   @Roles(Role.EMPLOYER)
   create(@Request() req, @Body() dto: CreateInterviewDto) {
-    return this.service.create(req.user.userId, req.user.companyId, dto);
+    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.service.create(req.user.userId, req.user.companyId, req.user.isOwner, dto);
   }
 
   @Get('employer')
   @Roles(Role.EMPLOYER)
   getEmployerInterviews(@Request() req) {
-    return this.service.findByEmployer(req.user.companyId);
+    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.service.findByEmployer(req.user.companyId, req.user.userId, req.user.isOwner);
   }
 
   @Get('my-interviews')

@@ -10,7 +10,8 @@ import {
   XCircle, 
   Loader2,
   CalendarCheck2,
-  Briefcase
+  Briefcase,
+  UserCog
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -95,6 +96,14 @@ export const EmployerInterviewsPage = () => {
                     </div>
 
                     <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-3">
+                      {interview.employer && (
+                        <div className="flex items-center gap-2.5">
+                          <UserCog size={16} className="text-[#00b14f]" />
+                          <span className="text-xs font-black text-slate-700 uppercase italic truncate">
+                            {interview.employer.fullName || interview.employer.email}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2.5">
                         <CalendarCheck2 size={16} className="text-[#00b14f]" />
                         <span className="text-xs font-black text-slate-700 uppercase italic">
