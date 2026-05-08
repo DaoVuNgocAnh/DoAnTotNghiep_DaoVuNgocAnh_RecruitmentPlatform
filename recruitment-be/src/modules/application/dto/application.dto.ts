@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, IsEnum, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsUUID,
+} from 'class-validator';
 import { ApplicationStatus } from '@prisma/client';
 
 export class CreateApplicationDto {

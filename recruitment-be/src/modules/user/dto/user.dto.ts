@@ -1,8 +1,17 @@
-import { IsEmail, IsEnum, IsOptional, IsString, IsPhoneNumber, IsUUID, IsDateString } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsPhoneNumber,
+  IsUUID,
+  IsDateString,
+} from 'class-validator';
 import { Role, UserStatus } from '@prisma/client';
 
 export class UserDto {
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   id?: string;
 
   @IsOptional()
@@ -16,30 +25,39 @@ export class UserDto {
   @IsString({ message: 'Họ tên phải là chuỗi' })
   fullName!: string;
 
-  @IsOptional() @IsEnum(Role)
+  @IsOptional()
+  @IsEnum(Role)
   role?: Role;
 
-  @IsOptional() @IsPhoneNumber('VN')
+  @IsOptional()
+  @IsPhoneNumber('VN')
   phone?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   address?: string;
 
-  @IsOptional() @IsDateString()
+  @IsOptional()
+  @IsDateString()
   dateOfBirth?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   bio?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   skills?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   avatarUrl?: string;
 
-  @IsOptional() @IsEnum(UserStatus)
+  @IsOptional()
+  @IsEnum(UserStatus)
   status?: UserStatus;
 
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   companyId?: string;
 }

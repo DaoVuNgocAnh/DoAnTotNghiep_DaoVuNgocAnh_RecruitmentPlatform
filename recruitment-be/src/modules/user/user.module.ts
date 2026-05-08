@@ -7,6 +7,6 @@ import { CloudinaryModule } from 'src/core/cloudinary/cloudinary.module';
   imports: [CloudinaryModule],
   controllers: [UserController],
   providers: [UserService],
-  exports: [UserService]
+  exports: [UserService],
 })
 export class UserModule {}

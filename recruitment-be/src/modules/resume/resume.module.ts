@@ -7,8 +7,8 @@ import { CloudinaryModule } from 'src/core/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
-    PrismaModule,     // Để cung cấp PrismaService cho ResumeService
-    CloudinaryModule  // Để cung cấp CloudinaryService cho ResumeService
+    PrismaModule, // Để cung cấp PrismaService cho ResumeService
+    CloudinaryModule, // Để cung cấp CloudinaryService cho ResumeService
   ],
   controllers: [ResumeController],
   providers: [ResumeService],

@@ -18,7 +18,7 @@ export class CompanyService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   // 1. Tạo công ty (Dành cho Owner)
@@ -84,7 +84,7 @@ export class CompanyService {
     });
     if (!company)
       throw new NotFoundException('Không tìm thấy công ty với mã số thuế này');
-    
+
     await this.cacheManager.set(cacheKey, company, 3600); // Cache 1 tiếng
     return company;
   }
@@ -104,15 +104,13 @@ export class CompanyService {
           'Công ty đang chờ duyệt chỉ có thể Chấp nhận hoặc Từ chối',
         );
       }
-    }
-    else if (currentStatus === 'VERIFIED') {
+    } else if (currentStatus === 'VERIFIED') {
       if (newStatus !== 'BLACKLISH') {
         throw new BadRequestException(
           'Công ty đã duyệt chỉ có thể đưa vào Danh sách đen',
         );
       }
-    }
-    else {
+    } else {
       throw new BadRequestException(
         'Không thể thay đổi trạng thái của hồ sơ đã bị Từ chối hoặc bị Chặn',
       );
@@ -230,12 +228,17 @@ export class CompanyService {
   }
 
   async sendJoinRequest(userId: string, companyId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { company: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { company: true },
+    });
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
     if (user?.companyId)
       throw new BadRequestException('Bạn đã là thành viên của một công ty!');
 
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
     if (!company) throw new NotFoundException('Công ty không tồn tại');
 
     const existingRequest = await this.prisma.joinRequest.findUnique({
@@ -310,16 +313,16 @@ export class CompanyService {
       },
       include: {
         _count: {
-          select: { 
-            jobs: { 
-              where: { 
-                status: 'ACTIVE', 
+          select: {
+            jobs: {
+              where: {
+                status: 'ACTIVE',
                 isDeleted: false,
-                OR: [{ expiredDate: null }, { expiredDate: { gt: now } }]
-              } 
-            } 
-          }
-        }
+                OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -331,7 +334,9 @@ export class CompanyService {
       where: {
         status: 'VERIFIED',
         isDeleted: false,
-        name: query.search ? { contains: query.search, mode: 'insensitive' } : undefined,
+        name: query.search
+          ? { contains: query.search, mode: 'insensitive' }
+          : undefined,
       },
       select: {
         id: true,
@@ -340,16 +345,16 @@ export class CompanyService {
         description: true,
         websiteUrl: true,
         _count: {
-          select: { 
-            jobs: { 
-              where: { 
-                status: 'ACTIVE', 
+          select: {
+            jobs: {
+              where: {
+                status: 'ACTIVE',
                 isDeleted: false,
-                OR: [{ expiredDate: null }, { expiredDate: { gt: now } }]
-              } 
-            } 
-          }
-        }
+                OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
+              },
+            },
+          },
+        },
       },
       orderBy: { isPremium: 'desc' },
     });
@@ -361,17 +366,14 @@ export class CompanyService {
       where: { id, status: 'VERIFIED', isDeleted: false },
       include: {
         jobs: {
-          where: { 
-            status: 'ACTIVE', 
+          where: {
+            status: 'ACTIVE',
             isDeleted: false,
-            OR: [
-              { expiredDate: null },
-              { expiredDate: { gt: now } }
-            ]
+            OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
           },
-          include: { category: true }
-        }
-      }
+          include: { category: true },
+        },
+      },
     });
 
     if (!company) throw new NotFoundException('Không tìm thấy công ty');
@@ -383,7 +385,11 @@ export class CompanyService {
       where: { ownerId },
       include: {
         members: {
-          where: { id: { not: ownerId }, isDeleted: false, role: Role.EMPLOYER },
+          where: {
+            id: { not: ownerId },
+            isDeleted: false,
+            role: Role.EMPLOYER,
+          },
           select: {
             id: true,
             fullName: true,
@@ -420,7 +426,8 @@ export class CompanyService {
       },
     });
 
-    if (!member) throw new NotFoundException('Khong tim thay thanh vien trong cong ty');
+    if (!member)
+      throw new NotFoundException('Khong tim thay thanh vien trong cong ty');
 
     const existing = await this.prisma.jobAssignee.findFirst({
       where: { jobId, userId },
@@ -435,7 +442,9 @@ export class CompanyService {
         assignedById: ownerId,
       },
       include: {
-        user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+        user: {
+          select: { id: true, fullName: true, email: true, avatarUrl: true },
+        },
       },
     });
   }

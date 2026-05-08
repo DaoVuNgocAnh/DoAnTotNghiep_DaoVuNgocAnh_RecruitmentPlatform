@@ -1,6 +1,16 @@
-import { 
-  Controller, Get, Patch, Body, UseGuards, Request, Param,
-  UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator 
+import {
+  Controller,
+  Get,
+  Patch,
+  Body,
+  UseGuards,
+  Request,
+  Param,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UserService } from './user.service';
@@ -30,7 +40,10 @@ export class UserController {
   @Patch(':id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  updateStatusByAdmin(@Param('id') id: string, @Body('status') status: UserStatus) {
+  updateStatusByAdmin(
+    @Param('id') id: string,
+    @Body('status') status: UserStatus,
+  ) {
     return this.userService.updateStatusByAdmin(id, status);
   }
 
@@ -58,7 +71,8 @@ export class UserController {
           new FileTypeValidator({ fileType: '.(jpg|jpeg|png)' }),
         ],
       }),
-    ) file: Express.Multer.File,
+    )
+    file: Express.Multer.File,
   ) {
     return this.userService.updateAvatar(req.user.userId, file);
   }

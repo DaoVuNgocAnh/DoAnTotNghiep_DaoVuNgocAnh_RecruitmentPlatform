@@ -60,7 +60,7 @@ export class AuthService {
     // 1. Tìm user bao gồm cả trạng thái
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
-      include: { company: true }
+      include: { company: true },
     });
 
     // 2. Kiểm tra tồn tại và Soft Delete
@@ -70,7 +70,9 @@ export class AuthService {
 
     // 3. Kiểm tra trạng thái tài khoản (Bị khóa)
     if (user.status === UserStatus.LOCKED) {
-      throw new ForbiddenException('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.');
+      throw new ForbiddenException(
+        'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin.',
+      );
     }
 
     // 4. Kiểm tra mật khẩu
@@ -80,11 +82,11 @@ export class AuthService {
     }
 
     // 5. Tạo Token (payload chứa ID UUID)
-    const payload = { 
-      userId: user.id, 
-      email: user.email, 
+    const payload = {
+      userId: user.id,
+      email: user.email,
       role: user.role,
-      companyId: user.companyId // Thêm companyId vào payload
+      companyId: user.companyId, // Thêm companyId vào payload
     };
 
     return {

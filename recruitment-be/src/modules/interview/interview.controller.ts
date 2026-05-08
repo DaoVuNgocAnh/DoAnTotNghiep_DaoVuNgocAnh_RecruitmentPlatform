@@ -1,6 +1,19 @@
-import { Controller, Post, Get, Patch, Body, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InterviewService } from './interview.service';
-import { CreateInterviewDto, UpdateInterviewStatusDto } from './dto/interview.dto';
+import {
+  CreateInterviewDto,
+  UpdateInterviewStatusDto,
+} from './dto/interview.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -14,15 +27,26 @@ export class InterviewController {
   @Post()
   @Roles(Role.EMPLOYER)
   create(@Request() req, @Body() dto: CreateInterviewDto) {
-    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
-    return this.service.create(req.user.userId, req.user.companyId, req.user.isOwner, dto);
+    if (!req.user.companyId)
+      throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.service.create(
+      req.user.userId,
+      req.user.companyId,
+      req.user.isOwner,
+      dto,
+    );
   }
 
   @Get('employer')
   @Roles(Role.EMPLOYER)
   getEmployerInterviews(@Request() req) {
-    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
-    return this.service.findByEmployer(req.user.companyId, req.user.userId, req.user.isOwner);
+    if (!req.user.companyId)
+      throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.service.findByEmployer(
+      req.user.companyId,
+      req.user.userId,
+      req.user.isOwner,
+    );
   }
 
   @Get('my-interviews')
@@ -33,7 +57,11 @@ export class InterviewController {
 
   @Patch(':id/status')
   @Roles(Role.CANDIDATE)
-  updateStatus(@Param('id') id: string, @Request() req, @Body() dto: UpdateInterviewStatusDto) {
+  updateStatus(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() dto: UpdateInterviewStatusDto,
+  ) {
     return this.service.updateStatus(req.user.userId, id, dto);
   }
 }

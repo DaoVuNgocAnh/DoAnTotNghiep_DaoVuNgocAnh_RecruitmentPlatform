@@ -13,9 +13,9 @@ export class EmailProcessor extends WorkerHost {
 
   async process(job: Job<any, any, string>): Promise<any> {
     const { to, subject, html } = job.data;
-    
+
     this.logger.log(`Đang gửi email tới ${to} (Job ID: ${job.id})...`);
-    
+
     try {
       await this.mailerService.sendMail({
         to,
@@ -24,8 +24,10 @@ export class EmailProcessor extends WorkerHost {
       });
       this.logger.log(`Đã gửi email thành công tới ${to}`);
     } catch (error) {
-      this.logger.error(`Lỗi khi gửi email tới ${to}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error; 
+      this.logger.error(
+        `Lỗi khi gửi email tới ${to}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw error;
     }
   }
 }

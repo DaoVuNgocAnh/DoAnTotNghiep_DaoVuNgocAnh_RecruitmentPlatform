@@ -82,7 +82,11 @@ export class CompanyController {
     @Param('jobId') jobId: string,
     @Body() dto: JobAssigneeDto,
   ) {
-    return this.companyService.assignMemberToJob(req.user.userId, jobId, dto.userId);
+    return this.companyService.assignMemberToJob(
+      req.user.userId,
+      jobId,
+      dto.userId,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -93,7 +97,11 @@ export class CompanyController {
     @Param('jobId') jobId: string,
     @Param('userId') userId: string,
   ) {
-    return this.companyService.unassignMemberFromJob(req.user.userId, jobId, userId);
+    return this.companyService.unassignMemberFromJob(
+      req.user.userId,
+      jobId,
+      userId,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

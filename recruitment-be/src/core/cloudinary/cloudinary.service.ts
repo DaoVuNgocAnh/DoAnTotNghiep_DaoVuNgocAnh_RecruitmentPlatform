@@ -10,13 +10,15 @@ export class CloudinaryService {
     return new Promise((resolve, reject) => {
       // 1. Xử lý tên file: Không dấu, không khoảng trắng
       const fileExt = path.extname(file.originalname).toLowerCase();
-      const originalName = path.parse(file.originalname).name
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Khử tiếng Việt có dấu
-        .replace(/\s+/g, '_') 
+      const originalName = path
+        .parse(file.originalname)
+        .name.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Khử tiếng Việt có dấu
+        .replace(/\s+/g, '_')
         .replace(/[^\w-]/g, '');
 
       const isPdf = fileExt === '.pdf';
-      
+
       // 2. Cấu hình upload
       const uploadOptions: any = {
         folder: 'smartcv_resumes',

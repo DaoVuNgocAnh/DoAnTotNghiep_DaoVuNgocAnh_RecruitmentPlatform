@@ -1,8 +1,17 @@
-import { IsNotEmpty, IsString, IsOptional, IsUrl, IsEnum, IsUUID, IsBoolean } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsUrl,
+  IsEnum,
+  IsUUID,
+  IsBoolean,
+} from 'class-validator';
 import { CompanyStatus } from '@prisma/client';
 
 export class CompanyDto {
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   id?: string;
 
   @IsNotEmpty({ message: 'Tên công ty không được để trống' })
@@ -14,18 +23,23 @@ export class CompanyDto {
   @IsNotEmpty({ message: 'Mô tả không được để trống' })
   description!: string;
 
-  @IsOptional() @IsUrl()
+  @IsOptional()
+  @IsUrl()
   websiteUrl?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   logoUrl?: string;
 
-  @IsOptional() @IsEnum(CompanyStatus)
+  @IsOptional()
+  @IsEnum(CompanyStatus)
   status?: CompanyStatus;
 
-  @IsOptional() @IsBoolean()
+  @IsOptional()
+  @IsBoolean()
   isPremium?: boolean;
 
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   ownerId?: string;
 }

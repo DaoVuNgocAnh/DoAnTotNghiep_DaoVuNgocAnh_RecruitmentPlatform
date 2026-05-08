@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { SavedItemScope, TargetType } from '@prisma/client';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { ToggleSavedItemDto } from './dto/toggle-saved-item.dto';
@@ -9,7 +13,12 @@ export class SavedItemsService {
 
   async updateNote(userId: string, itemId: string, note: string) {
     const item = await this.prisma.savedItem.findFirst({
-      where: { id: itemId, userId, scope: SavedItemScope.PERSONAL, isDeleted: false },
+      where: {
+        id: itemId,
+        userId,
+        scope: SavedItemScope.PERSONAL,
+        isDeleted: false,
+      },
     });
 
     if (!item) throw new NotFoundException('Khong tim thay muc da luu');
@@ -20,7 +29,12 @@ export class SavedItemsService {
     });
   }
 
-  async updateCompanyNote(userId: string, companyId: string, itemId: string, note: string) {
+  async updateCompanyNote(
+    userId: string,
+    companyId: string,
+    itemId: string,
+    note: string,
+  ) {
     await this.ensureEmployerInCompany(userId, companyId);
 
     const item = await this.prisma.savedItem.findFirst({
@@ -33,7 +47,8 @@ export class SavedItemsService {
       },
     });
 
-    if (!item) throw new NotFoundException('Khong tim thay ung vien trong kho cong ty');
+    if (!item)
+      throw new NotFoundException('Khong tim thay ung vien trong kho cong ty');
 
     return this.prisma.savedItem.update({
       where: { id: itemId },
@@ -74,7 +89,11 @@ export class SavedItemsService {
     return { saved: true, message: 'Da luu thanh cong' };
   }
 
-  async toggleCompanyCandidate(userId: string, companyId: string, candidateId: string) {
+  async toggleCompanyCandidate(
+    userId: string,
+    companyId: string,
+    candidateId: string,
+  ) {
     await this.ensureEmployerInCompany(userId, companyId);
     await this.ensureTargetExists(candidateId, TargetType.CANDIDATE);
 
@@ -209,7 +228,9 @@ export class SavedItemsService {
       return;
     }
 
-    const candidate = await this.prisma.user.findUnique({ where: { id: targetId } });
+    const candidate = await this.prisma.user.findUnique({
+      where: { id: targetId },
+    });
     if (!candidate) throw new NotFoundException('Khong tim thay ung vien');
   }
 
@@ -219,6 +240,9 @@ export class SavedItemsService {
       select: { id: true },
     });
 
-    if (!user) throw new ForbiddenException('Ban khong co quyen truy cap kho ung vien cong ty');
+    if (!user)
+      throw new ForbiddenException(
+        'Ban khong co quyen truy cap kho ung vien cong ty',
+      );
   }
 }

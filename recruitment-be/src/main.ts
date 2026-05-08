@@ -8,11 +8,13 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Kích hoạt Validation toàn cục
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true, // Tự động loại bỏ các trường không định nghĩa trong DTO
-    forbidNonWhitelisted: true, 
-    transform: true, // Tự động chuyển đổi kiểu dữ liệu
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Tự động loại bỏ các trường không định nghĩa trong DTO
+      forbidNonWhitelisted: true,
+      transform: true, // Tự động chuyển đổi kiểu dữ liệu
+    }),
+  );
 
   // Đăng ký Interceptor toàn cục
   const systemLogService = app.get(SystemLogService);

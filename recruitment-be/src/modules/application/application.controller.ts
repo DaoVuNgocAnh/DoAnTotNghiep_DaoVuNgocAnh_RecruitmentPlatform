@@ -1,6 +1,19 @@
-import { Controller, Post, Get, Patch, Body, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ApplicationService } from './application.service';
-import { CreateApplicationDto, UpdateApplicationStatusDto } from './dto/application.dto';
+import {
+  CreateApplicationDto,
+  UpdateApplicationStatusDto,
+} from './dto/application.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -26,14 +39,30 @@ export class ApplicationController {
   @Get('employer')
   @Roles(Role.EMPLOYER)
   getEmployerApps(@Request() req) {
-    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
-    return this.service.findByEmployer(req.user.companyId, req.user.userId, req.user.isOwner);
+    if (!req.user.companyId)
+      throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.service.findByEmployer(
+      req.user.companyId,
+      req.user.userId,
+      req.user.isOwner,
+    );
   }
 
   @Patch(':id/status')
   @Roles(Role.EMPLOYER)
-  updateStatus(@Param('id') id: string, @Request() req, @Body() dto: UpdateApplicationStatusDto) {
-    if (!req.user.companyId) throw new ForbiddenException('Bạn phải thuộc về một công ty');
-    return this.service.updateStatus(id, req.user.companyId, req.user.userId, req.user.isOwner, dto);
+  updateStatus(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() dto: UpdateApplicationStatusDto,
+  ) {
+    if (!req.user.companyId)
+      throw new ForbiddenException('Bạn phải thuộc về một công ty');
+    return this.service.updateStatus(
+      id,
+      req.user.companyId,
+      req.user.userId,
+      req.user.isOwner,
+      dto,
+    );
   }
 }

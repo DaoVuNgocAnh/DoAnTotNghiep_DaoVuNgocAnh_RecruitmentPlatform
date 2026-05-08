@@ -2,7 +2,8 @@ import { IsOptional, IsString, IsEnum, IsUUID } from 'class-validator';
 import { RequestStatus } from '@prisma/client';
 
 export class JoinRequestDto {
-  @IsOptional() @IsUUID()
+  @IsOptional()
+  @IsUUID()
   id?: string;
 
   @IsUUID()
@@ -11,9 +12,11 @@ export class JoinRequestDto {
   @IsUUID()
   companyId!: string;
 
-  @IsOptional() @IsEnum(RequestStatus)
+  @IsOptional()
+  @IsEnum(RequestStatus)
   status?: RequestStatus;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   message?: string;
 }

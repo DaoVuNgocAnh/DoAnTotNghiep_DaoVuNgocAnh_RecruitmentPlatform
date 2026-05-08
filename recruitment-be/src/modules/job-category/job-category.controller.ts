@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { JobCategoryService } from './job-category.service';
 import { JobCategoryDto } from './dto/job-category.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -22,5 +31,21 @@ export class JobCategoryController {
   @Roles(Role.ADMIN)
   async create(@Body() dto: JobCategoryDto) {
     return this.jobCategoryService.create(dto);
+  }
+
+  // 3. Cập nhật ngành nghề (Chỉ Admin hệ thống được phép)
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async update(@Param('id') id: string, @Body() dto: JobCategoryDto) {
+    return this.jobCategoryService.update(id, dto);
+  }
+
+  // 4. Xóa ngành nghề (Chỉ Admin hệ thống được phép - Soft delete)
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async remove(@Param('id') id: string) {
+    return this.jobCategoryService.remove(id);
   }
 }

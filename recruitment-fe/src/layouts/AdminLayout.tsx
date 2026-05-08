@@ -18,6 +18,7 @@ export default function AdminLayout() {
     if (path.includes('dashboard')) return 'Bảng điều khiển hệ thống';
     if (path.includes('companies')) return 'Phê duyệt doanh nghiệp';
     if (path.includes('users')) return 'Quản lý người dùng';
+    if (path.includes('job-categories')) return 'Quản lý ngành nghề';
     if (path.includes('system-history')) return 'Nhật ký hệ thống';
     return 'Hệ thống quản trị';
   };

@@ -12,9 +12,9 @@ export class JobSchedule {
   @Cron(CronExpression.EVERY_HOUR)
   async handleCron() {
     this.logger.debug('Running Cron Job: Closing expired jobs...');
-    
+
     const now = new Date();
-    
+
     const result = await this.prisma.job.updateMany({
       where: {
         status: JobStatus.ACTIVE,

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { CreateResumeDto } from './dto/resume.dto';
@@ -11,8 +15,13 @@ export class ResumeService {
     private cloudinary: CloudinaryService,
   ) {}
 
-  async create(userId: string, file: Express.Multer.File, dto: CreateResumeDto) {
-    if (!file) throw new BadRequestException('Vui lòng tải lên file CV (PDF/Docx)');
+  async create(
+    userId: string,
+    file: Express.Multer.File,
+    dto: CreateResumeDto,
+  ) {
+    if (!file)
+      throw new BadRequestException('Vui lòng tải lên file CV (PDF/Docx)');
 
     // 1. Kiểm tra định dạng file thủ công
     const allowedExtensions = ['.pdf', '.doc', '.docx'];
@@ -23,8 +32,13 @@ export class ResumeService {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
 
-    if (!allowedExtensions.includes(ext) || !allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Định dạng file không hợp lệ. Chỉ chấp nhận PDF, DOC, DOCX');
+    if (
+      !allowedExtensions.includes(ext) ||
+      !allowedMimeTypes.includes(file.mimetype)
+    ) {
+      throw new BadRequestException(
+        'Định dạng file không hợp lệ. Chỉ chấp nhận PDF, DOC, DOCX',
+      );
     }
 
     // 2. Upload lên Cloudinary
@@ -39,7 +53,9 @@ export class ResumeService {
     }
 
     // 4. Nếu là CV đầu tiên, tự động set làm mặc định
-    const count = await this.prisma.resume.count({ where: { candidateId: userId, isDeleted: false } });
+    const count = await this.prisma.resume.count({
+      where: { candidateId: userId, isDeleted: false },
+    });
     const shouldBeDefault = count === 0 ? true : dto.isDefault;
 
     // 5. Lưu vào Database
@@ -75,8 +91,11 @@ export class ResumeService {
   }
 
   async delete(userId: string, resumeId: string) {
-    const resume = await this.prisma.resume.findUnique({ where: { id: resumeId } });
-    if (!resume || resume.candidateId !== userId) throw new NotFoundException('Không tìm thấy CV');
+    const resume = await this.prisma.resume.findUnique({
+      where: { id: resumeId },
+    });
+    if (!resume || resume.candidateId !== userId)
+      throw new NotFoundException('Không tìm thấy CV');
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Đánh dấu xóa

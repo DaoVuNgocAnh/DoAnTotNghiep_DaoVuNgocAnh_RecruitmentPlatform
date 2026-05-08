@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsDateString, IsEnum, IsOptional } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 import { InterviewStatus } from '@prisma/client';
 
 export class CreateInterviewDto {

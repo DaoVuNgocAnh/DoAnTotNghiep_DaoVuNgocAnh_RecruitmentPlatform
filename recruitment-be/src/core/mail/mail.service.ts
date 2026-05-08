@@ -6,9 +6,7 @@ import { Queue } from 'bullmq';
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
-  constructor(
-    @InjectQueue('email_queue') private emailQueue: Queue
-  ) {}
+  constructor(@InjectQueue('email_queue') private emailQueue: Queue) {}
 
   async sendUserWelcome(email: string, name: string) {
     const html = `
@@ -28,12 +26,16 @@ export class MailService {
       subject: 'Chào mừng bạn đến với SmartCV!',
       html,
     });
-    
+
     this.logger.log(`Đã đẩy email chào mừng ${email} vào hàng chờ.`);
   }
 
   // Thêm method gửi email thông báo ứng tuyển (Job application)
-  async sendApplicationNotification(employerEmail: string, candidateName: string, jobTitle: string) {
+  async sendApplicationNotification(
+    employerEmail: string,
+    candidateName: string,
+    jobTitle: string,
+  ) {
     const html = `
       <div style="font-family: sans-serif; padding: 20px;">
         <h2>Thông báo ứng tuyển mới</h2>

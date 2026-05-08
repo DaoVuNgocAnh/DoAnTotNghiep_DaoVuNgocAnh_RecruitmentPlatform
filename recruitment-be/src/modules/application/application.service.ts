@@ -1,8 +1,15 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { ApplicationStatus } from '@prisma/client';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { NotificationService } from '../notification/notification.service';
-import { CreateApplicationDto, UpdateApplicationStatusDto } from './dto/application.dto';
+import {
+  CreateApplicationDto,
+  UpdateApplicationStatusDto,
+} from './dto/application.dto';
 
 @Injectable()
 export class ApplicationService {
@@ -17,13 +24,16 @@ export class ApplicationService {
       include: { company: true },
     });
     if (!job || job.status !== 'ACTIVE' || job.isDeleted) {
-      throw new BadRequestException('Tin tuyen dung khong ton tai hoac da dong');
+      throw new BadRequestException(
+        'Tin tuyen dung khong ton tai hoac da dong',
+      );
     }
 
     const existing = await this.prisma.application.findFirst({
       where: { jobId: dto.jobId, candidateId, isDeleted: false },
     });
-    if (existing) throw new BadRequestException('Ban da ung tuyen cong viec nay roi');
+    if (existing)
+      throw new BadRequestException('Ban da ung tuyen cong viec nay roi');
 
     const application = await this.prisma.application.create({
       data: {
@@ -73,7 +83,15 @@ export class ApplicationService {
         },
       },
       include: {
-        candidate: { select: { id: true, fullName: true, email: true, phone: true, avatarUrl: true } },
+        candidate: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
         job: {
           select: {
             id: true,
@@ -81,7 +99,14 @@ export class ApplicationService {
             createdById: true,
             assignees: {
               include: {
-                user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+                user: {
+                  select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    avatarUrl: true,
+                  },
+                },
               },
             },
           },
@@ -89,7 +114,9 @@ export class ApplicationService {
         resume: true,
         employerActionBy: { select: { id: true, fullName: true, email: true } },
         histories: {
-          include: { actor: { select: { id: true, fullName: true, email: true } } },
+          include: {
+            actor: { select: { id: true, fullName: true, email: true } },
+          },
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -107,7 +134,8 @@ export class ApplicationService {
       });
 
       applications.forEach((app) => {
-        if (pendingIds.includes(app.id)) app.status = ApplicationStatus.REVIEWING;
+        if (pendingIds.includes(app.id))
+          app.status = ApplicationStatus.REVIEWING;
       });
     }
 
@@ -189,11 +217,19 @@ export class ApplicationService {
     return updatedApp;
   }
 
-  private canAccessApplication(app: any, companyId: string, userId: string, isOwner: boolean) {
-    return !!app && !app.isDeleted && app.job.companyId === companyId && (
-      isOwner ||
-      app.job.createdById === userId ||
-      app.job.assignees?.some((assignee) => assignee.userId === userId)
+  private canAccessApplication(
+    app: any,
+    companyId: string,
+    userId: string,
+    isOwner: boolean,
+  ) {
+    return (
+      !!app &&
+      !app.isDeleted &&
+      app.job.companyId === companyId &&
+      (isOwner ||
+        app.job.createdById === userId ||
+        app.job.assignees?.some((assignee) => assignee.userId === userId))
     );
   }
 }

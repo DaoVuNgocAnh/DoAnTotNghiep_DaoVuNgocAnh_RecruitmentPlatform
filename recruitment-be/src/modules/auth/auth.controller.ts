@@ -1,4 +1,11 @@
-import { Body, Controller, Post, Get, UseGuards, Request } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -27,9 +34,9 @@ export class AuthController {
   @Roles(Role.EMPLOYER)
   @Get('test-employer')
   getTestEmployer(@Request() req) {
-    return { 
-      message: 'Chào Sếp!', 
-      user: req.user // Thông tin từ JwtStrategy
+    return {
+      message: 'Chào Sếp!',
+      user: req.user, // Thông tin từ JwtStrategy
     };
   }
 }

@@ -27,6 +27,7 @@ import { JoinPendingPage } from '@/modules/employer/pages/JoinPendingPage';
 import { ProfilePage } from '@/modules/user/pages/ProfilePage';
 import { AdminVerifyJobs } from '@/modules/admin/pages/AdminVerifyJobs';
 import { AdminDashboard } from '@/modules/admin/pages/AdminDashboard';
+import { AdminJobCategory } from '@/modules/admin/pages/AdminJobCategory';
 import { EmployerManageJobs } from '@/modules/employer/pages/EmployerManageJobs';
 import { MyResumesPage } from '@/modules/resume/pages/MyResumesPage';
 import { MyApplicationsPage } from '@/modules/application/pages/MyApplicationsPage';
@@ -232,6 +233,7 @@ export const router = createBrowserRouter([
       { path: 'companies', element: <AdminVerifyCompany /> },
       { path: 'jobs', element: <AdminVerifyJobs /> },
       { path: 'users', element: <AdminUserList /> },
+      { path: 'job-categories', element: <AdminJobCategory /> },
       { path: 'system-history', element: <AdminSystemHistory   /> },
     ],
   },

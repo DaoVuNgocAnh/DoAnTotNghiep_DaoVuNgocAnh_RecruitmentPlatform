@@ -1,5 +1,10 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { JobStatus, Role } from '@prisma/client';
 import { Cache } from 'cache-manager';
 import { PrismaService } from 'src/core/database/prisma.service';
@@ -69,7 +74,9 @@ export class JobService {
         status: JobStatus.ACTIVE,
         OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
         categoryId: query.categoryId || undefined,
-        title: query.search ? { contains: query.search, mode: 'insensitive' } : undefined,
+        title: query.search
+          ? { contains: query.search, mode: 'insensitive' }
+          : undefined,
       },
       include: {
         company: { select: { name: true, logoUrl: true } },
@@ -144,7 +151,11 @@ export class JobService {
     return job;
   }
 
-  async findAllForEmployer(companyId: string, userId: string, isOwner: boolean) {
+  async findAllForEmployer(
+    companyId: string,
+    userId: string,
+    isOwner: boolean,
+  ) {
     return this.prisma.job.findMany({
       where: {
         companyId,
@@ -158,7 +169,12 @@ export class JobService {
         assignees: {
           include: {
             user: {
-              select: { id: true, fullName: true, email: true, avatarUrl: true },
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                avatarUrl: true,
+              },
             },
           },
         },
@@ -167,7 +183,12 @@ export class JobService {
     });
   }
 
-  async closeJob(id: string, companyId: string, userId: string, isOwner: boolean) {
+  async closeJob(
+    id: string,
+    companyId: string,
+    userId: string,
+    isOwner: boolean,
+  ) {
     const job = await this.prisma.job.findUnique({
       where: { id },
       include: { assignees: true },
@@ -199,7 +220,10 @@ export class JobService {
     });
     if (!job) throw new NotFoundException('Khong tim thay tin tuyen dung');
 
-    if (role !== Role.ADMIN && !this.canManageJob(job, companyId, userId, isOwner)) {
+    if (
+      role !== Role.ADMIN &&
+      !this.canManageJob(job, companyId, userId, isOwner)
+    ) {
       throw new ForbiddenException('Khong co quyen');
     }
 
@@ -215,11 +239,18 @@ export class JobService {
     return updated;
   }
 
-  private canManageJob(job: any, companyId: string, userId: string, isOwner: boolean) {
-    return !!job && job.companyId === companyId && (
-      isOwner ||
-      job.createdById === userId ||
-      job.assignees?.some((assignee) => assignee.userId === userId)
+  private canManageJob(
+    job: any,
+    companyId: string,
+    userId: string,
+    isOwner: boolean,
+  ) {
+    return (
+      !!job &&
+      job.companyId === companyId &&
+      (isOwner ||
+        job.createdById === userId ||
+        job.assignees?.some((assignee) => assignee.userId === userId))
     );
   }
 }

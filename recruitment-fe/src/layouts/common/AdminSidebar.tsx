@@ -42,6 +42,11 @@ const menuItems = [
     path: '/admin/users',
   },
   {
+    title: 'Quản lý ngành nghề',
+    icon: <LayoutDashboard size={20} />,
+    path: '/admin/job-categories',
+  },
+  {
     title: 'Nhật ký hệ thống',
     icon: <History size={20} />,
     path: '/admin/system-history',

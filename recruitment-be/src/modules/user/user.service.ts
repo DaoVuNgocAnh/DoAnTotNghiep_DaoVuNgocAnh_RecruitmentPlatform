@@ -1,5 +1,9 @@
 // backend/src/modules/user/user.service.ts
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { UserDto } from './dto/user.dto';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
@@ -16,7 +20,7 @@ export class UserService {
     // 1. Lấy thông tin người yêu cầu (Để biết họ thuộc công ty nào)
     const requester = await this.prisma.user.findUnique({
       where: { id: requesterId },
-      select: { role: true, companyId: true }
+      select: { role: true, companyId: true },
     });
 
     // 2. Lấy thông tin ứng viên
@@ -24,32 +28,37 @@ export class UserService {
       where: { id: candidateId },
       include: {
         // Chỉ lấy những Application nộp vào công ty của người đang xem (nếu người xem là EMPLOYER)
-        applications: requester?.role === Role.EMPLOYER && requester.companyId ? {
-          where: { 
-            job: { companyId: requester.companyId },
-            isDeleted: false 
-          },
-          include: {
-            resume: true,
-            job: { select: { title: true } }
-          }
-        } : false,
+        applications:
+          requester?.role === Role.EMPLOYER && requester.companyId
+            ? {
+                where: {
+                  job: { companyId: requester.companyId },
+                  isDeleted: false,
+                },
+                include: {
+                  resume: true,
+                  job: { select: { title: true } },
+                },
+              }
+            : false,
       },
     });
 
-    if (!user || user.role !== 'CANDIDATE') throw new NotFoundException('Không tìm thấy ứng viên');
+    if (!user || user.role !== 'CANDIDATE')
+      throw new NotFoundException('Không tìm thấy ứng viên');
 
     // 3. Xử lý logic bảo mật: Chỉ trả về thông tin public + hồ sơ đã nộp cho công ty này
     const { password, ...result } = user;
 
     // Chuyển đổi applications thành list resumes rút gọn để FE dễ dùng
-    const submittedResumes = (user as any).applications?.map(app => ({
-      id: app.resume.id,
-      resumeName: app.resume.resumeName,
-      fileUrl: app.resume.fileUrl,
-      jobTitle: app.job.title,
-      applyDate: app.applyDate,
-    })) || [];
+    const submittedResumes =
+      (user as any).applications?.map((app) => ({
+        id: app.resume.id,
+        resumeName: app.resume.resumeName,
+        fileUrl: app.resume.fileUrl,
+        jobTitle: app.job.title,
+        applyDate: app.applyDate,
+      })) || [];
 
     return {
       ...result,
@@ -62,18 +71,18 @@ export class UserService {
     // Tận dụng sức mạnh của Prisma để lấy 1 lần duy nhất tất cả thông tin liên quan
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { 
+      include: {
         company: true, // Để check status và isOwner
         joinRequests: {
           // Chỉ lấy yêu cầu đang chờ duyệt của User này
           where: { status: 'PENDING' },
-          include: { 
-            company: { 
-              select: { id: true, name: true, taxCode: true } 
-            } 
+          include: {
+            company: {
+              select: { id: true, name: true, taxCode: true },
+            },
           },
           take: 1, // Tại 1 thời điểm User chỉ nên có 1 request Pending theo logic @@unique
-        }
+        },
       },
     });
 
@@ -88,18 +97,21 @@ export class UserService {
       logo_url: company?.logoUrl || null, // Trả về logo_url để FE dễ dùng chung cho cả Candidate/Employer
       // 1. Trạng thái phê duyệt của công ty (VERIFIED, PENDING, REJECTED, BLACKLISH)
       companyStatus: company?.status || null,
-      
+
       // 2. Logic check Owner: Nếu ID của User trùng với ownerId của Company
       isOwner: company ? company.ownerId === userId : false,
 
       // 3. Thông tin yêu cầu gia nhập đang chờ (nếu có)
       // Nếu có, FE sẽ hiện màn hình JoinPendingPage
-      pendingJoinRequest: joinRequests.length > 0 ? {
-        id: joinRequests[0].id,
-        companyId: joinRequests[0].companyId,
-        companyName: joinRequests[0].company.name,
-        taxCode: joinRequests[0].company.taxCode,
-      } : null,
+      pendingJoinRequest:
+        joinRequests.length > 0
+          ? {
+              id: joinRequests[0].id,
+              companyId: joinRequests[0].companyId,
+              companyName: joinRequests[0].company.name,
+              taxCode: joinRequests[0].company.taxCode,
+            }
+          : null,
     };
   }
 
@@ -138,7 +150,8 @@ export class UserService {
       select: { id: true, role: true, isDeleted: true },
     });
 
-    if (!user || user.isDeleted) throw new NotFoundException('Người dùng không tồn tại');
+    if (!user || user.isDeleted)
+      throw new NotFoundException('Người dùng không tồn tại');
     if (user.role === Role.ADMIN && status === UserStatus.LOCKED) {
       throw new BadRequestException('Không thể khóa tài khoản Admin khác');
     }
@@ -162,18 +175,19 @@ export class UserService {
 
   async updateProfile(userId: string, data: UserDto) {
     // Chỉ lấy các trường được phép update, tránh ghi đè email/password/role bừa bãi
-    const { fullName, phone, address, dateOfBirth, bio, skills, avatarUrl } = data;
+    const { fullName, phone, address, dateOfBirth, bio, skills, avatarUrl } =
+      data;
 
     return this.prisma.user.update({
       where: { id: userId },
-      data: { 
-        fullName, 
-        phone, 
-        address, 
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined, 
-        bio, 
-        skills, 
-        avatarUrl 
+      data: {
+        fullName,
+        phone,
+        address,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        bio,
+        skills,
+        avatarUrl,
       },
       select: {
         id: true,
@@ -193,11 +207,11 @@ export class UserService {
 
   async updateAvatar(userId: string, file: Express.Multer.File) {
     const uploadResult = await this.cloudinary.uploadFile(file);
-    
+
     return this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl: uploadResult.secure_url },
-      select: { avatarUrl: true }
+      select: { avatarUrl: true },
     });
   }
 }

@@ -1,7 +1,18 @@
-import { 
-  Controller, Post, Get, Patch, Delete, Body, 
-  Param, UseGuards, Request, UploadedFile, UseInterceptors,
-  ParseFilePipe, MaxFileSizeValidator, FileTypeValidator
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+  UploadedFile,
+  UseInterceptors,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ResumeService } from './resume.service';
@@ -27,8 +38,9 @@ export class ResumeController {
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
         ],
       }),
-    ) file: Express.Multer.File,
-    @Body() dto: CreateResumeDto
+    )
+    file: Express.Multer.File,
+    @Body() dto: CreateResumeDto,
   ) {
     return this.resumeService.create(req.user.userId, file, dto);
   }
