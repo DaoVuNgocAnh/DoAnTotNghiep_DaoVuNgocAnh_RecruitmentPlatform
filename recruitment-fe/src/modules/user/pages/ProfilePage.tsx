@@ -7,21 +7,17 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   User as UserIcon,
   Mail,
-  Phone,
-  MapPin,
   Shield,
   Loader2,
   Edit3,
   Save,
   X,
   Camera,
-  Calendar,
-  Building2,
-  FileText,
   Award,
+  CircleCheck,
+  Smartphone,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
 
 import { useFlashMessage } from '@/hooks/useFlashMessage';
 import { useUser } from '@/modules/user/hooks/useUser';
@@ -42,7 +38,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 const profileSchema = z.object({
@@ -79,7 +74,6 @@ export const ProfilePage = () => {
     },
   });
 
-  // Mutation cập nhật thông tin chữ
   const updateProfileMutation = useMutation({
     mutationFn: (values: ProfileFormValues) => userApi.updateProfile(values),
     onSuccess: () => {
@@ -92,7 +86,6 @@ export const ProfilePage = () => {
     },
   });
 
-  // Mutation cập nhật Avatar
   const updateAvatarMutation = useMutation({
     mutationFn: (file: File) => {
       const formData = new FormData();
@@ -124,315 +117,211 @@ export const ProfilePage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-12 w-12 animate-spin text-[#00b14f]" />
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] animate-pulse">
-            Đang tải hồ sơ...
-          </p>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-white">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-12 px-4">
-      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* CỘT TRÁI: AVATAR & QUICK INFO */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card className="overflow-hidden border-none shadow-[0_20px_50px_rgba(0,0,0,0.04)] rounded-[2.5rem] bg-white text-center">
-            <div className="h-32 bg-[#001529] relative"></div>
-            <CardContent className="pt-0 pb-10 px-8 relative">
-              <div className="flex justify-center">
-                <div className="relative -mt-16 group">
-                  <Avatar className="h-32 w-32 border-[6px] border-white shadow-2xl rounded-[2.5rem] overflow-hidden bg-slate-100">
-                    <AvatarImage
-                      src={user?.avatarUrl || ''}
-                      className="object-cover"
-                    />
-                    <AvatarFallback className="text-4xl bg-slate-100 text-[#00b14f] font-black uppercase">
-                      {user?.fullName?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  {/* Overlay loading khi đang upload */}
-                  {updateAvatarMutation.isPending && (
-                    <div className="absolute inset-0 bg-black/40 rounded-[2.5rem] flex items-center justify-center z-10">
-                      <Loader2 className="h-8 w-8 animate-spin text-white" />
+    <div className="min-h-screen bg-slate-50/50 py-12">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Left Column: Summary Card */}
+          <div className="lg:col-span-4 space-y-6">
+            <Card className="border-none shadow-sm rounded-3xl overflow-hidden bg-white">
+               <div className="h-32 bg-slate-900 relative">
+                  <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+               </div>
+               <CardContent className="px-8 pb-10 text-center relative">
+                  <div className="flex justify-center -mt-16 mb-6">
+                    <div className="relative group">
+                       <Avatar className="h-32 w-32 border-4 border-white shadow-xl rounded-[2.5rem] bg-white overflow-hidden">
+                          <AvatarImage src={user?.avatarUrl || ''} className="object-cover" />
+                          <AvatarFallback className="text-3xl bg-slate-50 text-primary font-black uppercase">
+                            {user?.fullName?.charAt(0)}
+                          </AvatarFallback>
+                       </Avatar>
+                       {updateAvatarMutation.isPending && (
+                         <div className="absolute inset-0 bg-black/40 rounded-[2.5rem] flex items-center justify-center z-10">
+                            <Loader2 className="h-8 w-8 animate-spin text-white" />
+                         </div>
+                       )}
+                       <button 
+                         onClick={() => fileInputRef.current?.click()}
+                         className="absolute bottom-0 right-0 p-2.5 bg-primary text-white rounded-2xl shadow-lg border-4 border-white hover:scale-110 transition-transform z-20"
+                       >
+                         <Camera size={16} />
+                       </button>
+                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
                     </div>
-                  )}
+                  </div>
 
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={updateAvatarMutation.isPending}
-                    className="absolute bottom-0 right-0 p-3 bg-[#00b14f] text-white rounded-2xl shadow-lg border-4 border-white hover:bg-[#009643] transition-all active:scale-90 z-20 group-hover:scale-110"
-                  >
-                    <Camera size={18} />
-                  </button>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleAvatarChange} 
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-2">
-                <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight">
-                  {user?.fullName}
-                </h1>
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Badge className="bg-[#00b14f]/10 text-[#00b14f] border-none px-4 py-1 font-black text-[10px] uppercase tracking-widest rounded-full">
-                    {user?.role}
+                  <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">{user?.fullName}</h1>
+                  <Badge variant="secondary" className="bg-primary/5 text-primary border-none font-bold text-[10px] uppercase tracking-widest px-4 py-1 rounded-full mb-8">
+                     {user?.role}
                   </Badge>
-                  {user?.name && (
-                    <Badge className="bg-blue-50 text-blue-600 border-none px-4 py-1 font-black text-[10px] uppercase tracking-widest rounded-full flex items-center gap-1.5">
-                      <Building2 size={10} /> {user.name}
-                    </Badge>
-                  )}
-                </div>
-              </div>
 
-              <div className="mt-8 pt-8 border-t border-slate-50 space-y-4">
-                <div className="flex items-center gap-3 text-slate-500 hover:text-slate-800 transition-colors cursor-default group">
-                  <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-[#00b14f]/10 transition-colors">
-                    <Mail size={14} className="group-hover:text-[#00b14f]" />
+                  <div className="space-y-4 pt-8 border-t border-slate-50">
+                     <div className="flex items-center gap-3 text-slate-500 font-bold text-xs">
+                        <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-primary">
+                           <Mail size={14} />
+                        </div>
+                        <span className="truncate">{user?.email}</span>
+                     </div>
+                     <div className="flex items-center gap-3 text-slate-500 font-bold text-xs">
+                        <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-primary">
+                           <Smartphone size={14} />
+                        </div>
+                        <span>{user?.phone || "Chưa cập nhật SĐT"}</span>
+                     </div>
                   </div>
-                  <span className="text-xs font-bold truncate">{user?.email}</span>
-                </div>
-                <div className="flex items-center gap-3 text-slate-500 hover:text-slate-800 transition-colors cursor-default group">
-                  <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-[#00b14f]/10 transition-colors">
-                    <Calendar size={14} className="group-hover:text-[#00b14f]" />
-                  </div>
-                  <span className="text-xs font-bold uppercase italic tracking-tighter">
-                    Gia nhập: {user?.createdAt ? format(new Date(user.createdAt), 'dd/MM/yyyy', { locale: vi }) : '---'}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+               </CardContent>
+            </Card>
 
-          <div className="bg-[#001529] p-8 rounded-[2.5rem] text-white shadow-xl overflow-hidden relative group">
-            <Shield className="absolute -right-4 -bottom-4 w-32 h-32 text-white/5 group-hover:rotate-12 transition-transform duration-500" />
-            <div className="relative z-10 space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#00b14f]">Trạng thái bảo mật</p>
-              <h3 className="text-lg font-black uppercase leading-tight">Tài khoản đã được bảo vệ</h3>
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-400 italic">
-                <div className="w-2 h-2 bg-[#00b14f] rounded-full animate-pulse"></div>
-                Đang hoạt động bình thường
-              </div>
+            <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group">
+               <Shield className="absolute -right-4 -bottom-4 w-32 h-32 text-white/5 group-hover:rotate-12 transition-transform duration-700" />
+               <div className="relative z-10">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-3">Tài khoản xác thực</p>
+                  <h3 className="text-lg font-black uppercase leading-tight mb-6">Mức độ hoàn thiện <br /> hồ sơ: 85%</h3>
+                  <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden mb-4">
+                     <div className="bg-primary h-full w-[85%] rounded-full shadow-[0_0_10px_rgba(0,177,79,0.5)]"></div>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 italic flex items-center gap-2">
+                     <CircleCheck size={12} className="text-primary" /> Bạn đã sẵn sàng ứng tuyển
+                  </p>
+               </div>
             </div>
           </div>
-        </div>
 
-        {/* CỘT PHẢI: FORM CHỈNH SỬA */}
-        <div className="lg:col-span-2">
-          <Card className="border-none shadow-[0_20px_50px_rgba(0,0,0,0.04)] rounded-[2.5rem] bg-white overflow-hidden h-full">
-            <CardHeader className="p-10 pb-0 flex flex-row items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#00b14f]/10 flex items-center justify-center text-[#00b14f]">
-                    <UserIcon size={24} />
+          {/* Right Column: Form */}
+          <div className="lg:col-span-8">
+            <Card className="border-transparent shadow-sm rounded-3xl bg-white overflow-hidden">
+               <CardHeader className="p-8 md:p-10 pb-0 flex flex-row items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                          <UserIcon size={20} />
+                       </div>
+                       Chi tiết hồ sơ
+                    </h2>
                   </div>
-                  Thông tin hồ sơ
-                </h2>
-                <p className="text-slate-400 text-xs font-medium mt-1 ml-13 italic">Quản lý và cập nhật thông tin cá nhân của bạn.</p>
-              </div>
-              <Button
-                variant={isEditing ? 'ghost' : 'outline'}
-                onClick={() => setIsEditing(!isEditing)}
-                className={cn(
-                  "rounded-2xl font-black text-[10px] uppercase tracking-widest h-10 px-6 transition-all",
-                  isEditing ? 'text-slate-400 hover:bg-slate-50' : 'border-[#00b14f] text-[#00b14f] hover:bg-[#00b14f] hover:text-white shadow-sm'
-                )}
-              >
-                {isEditing ? (
-                  <>
-                    <X size={14} className="mr-2" /> Hủy bỏ
-                  </>
-                ) : (
-                  <>
-                    <Edit3 size={14} className="mr-2" /> Chỉnh sửa
-                  </>
-                )}
-              </Button>
-            </CardHeader>
-
-            <CardContent className="p-10">
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-8"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                    <FormField
-                      control={form.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">
-                            Họ và tên đầy đủ
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              disabled={!isEditing}
-                              placeholder="Nguyễn Văn A"
-                              className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-black text-slate-700 disabled:opacity-70 disabled:bg-slate-50"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage className="text-[10px] font-bold uppercase tracking-tight" />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="dateOfBirth"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
-                            <Calendar size={12} className="text-[#00b14f]" /> Ngày sinh
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              disabled={!isEditing}
-                              className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-black text-slate-700 disabled:opacity-70 disabled:bg-slate-50"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage className="text-[10px] font-bold uppercase tracking-tight" />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
-                            <Phone size={12} className="text-[#00b14f]" /> Số điện thoại liên hệ
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Ví dụ: 0912345678"
-                              disabled={!isEditing}
-                              className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-black text-slate-700 disabled:opacity-70 disabled:bg-slate-50"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage className="text-[10px] font-bold uppercase tracking-tight" />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
-                          <MapPin size={12} className="text-[#00b14f]" /> Địa chỉ thường trú (Quê quán)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Nhập địa chỉ của bạn (VD: Quận 1, TP. Hồ Chí Minh)"
-                            disabled={!isEditing}
-                            className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-black text-slate-700 disabled:opacity-70 disabled:bg-slate-50"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-[10px] font-bold uppercase tracking-tight" />
-                      </FormItem>
+                  <Button
+                    variant={isEditing ? 'ghost' : 'outline'}
+                    onClick={() => setIsEditing(!isEditing)}
+                    className={cn(
+                      "rounded-xl font-black text-[10px] uppercase tracking-widest h-10 px-6 transition-all",
+                      isEditing ? 'text-slate-400' : 'border-primary text-primary hover:bg-primary hover:text-white'
                     )}
-                  />
+                  >
+                    {isEditing ? <><X size={14} className="mr-2" /> Hủy</> : <><Edit3 size={14} className="mr-2" /> Chỉnh sửa</>}
+                  </Button>
+               </CardHeader>
 
-                  <FormField
-                    control={form.control}
-                    name="bio"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
-                          <FileText size={12} className="text-[#00b14f]" /> Giới thiệu bản thân
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Chia sẻ ngắn gọn về kinh nghiệm, mục tiêu nghề nghiệp của bạn..."
-                            disabled={!isEditing}
-                            className="min-h-[120px] rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-medium text-slate-700 disabled:opacity-70 disabled:bg-slate-50 resize-none"
-                            {...field}
+               <CardContent className="p-8 md:p-10">
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <FormField
+                            control={form.control}
+                            name="fullName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Họ tên đầy đủ</FormLabel>
+                                <FormControl>
+                                  <Input disabled={!isEditing} className="h-12 rounded-xl border-slate-100 bg-slate-50 font-bold text-slate-700 focus-visible:ring-primary" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </FormControl>
-                        <FormMessage className="text-[10px] font-bold uppercase tracking-tight" />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="skills"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
-                          <Award size={12} className="text-[#00b14f]" /> Kỹ năng (Cách nhau bởi dấu phẩy)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Ví dụ: ReactJS, TypeScript, NodeJS, UI/UX Design..."
-                            disabled={!isEditing}
-                            className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-[#00b14f] font-black text-slate-700 disabled:opacity-70 disabled:bg-slate-50"
-                            {...field}
+                          <FormField
+                            control={form.control}
+                            name="dateOfBirth"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Ngày sinh</FormLabel>
+                                <FormControl>
+                                  <Input type="date" disabled={!isEditing} className="h-12 rounded-xl border-slate-100 bg-slate-50 font-bold text-slate-700 focus-visible:ring-primary" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </FormControl>
-                        <FormMessage className="text-[10px] font-bold uppercase tracking-tight" />
-                      </FormItem>
-                    )}
-                  />
+                          <FormField
+                            control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Số điện thoại</FormLabel>
+                                <FormControl>
+                                  <Input disabled={!isEditing} className="h-12 rounded-xl border-slate-100 bg-slate-50 font-bold text-slate-700 focus-visible:ring-primary" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="address"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Địa chỉ</FormLabel>
+                                <FormControl>
+                                  <Input disabled={!isEditing} className="h-12 rounded-xl border-slate-100 bg-slate-50 font-bold text-slate-700 focus-visible:ring-primary" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                       </div>
 
-                  {isEditing && (
-                    <div className="flex justify-end pt-4 animate-in fade-in slide-in-from-bottom-2">
-                      <Button
-                        type="submit"
-                        disabled={updateProfileMutation.isPending}
-                        className="bg-[#00b14f] hover:bg-[#009643] h-14 px-12 rounded-[1.25rem] font-black shadow-xl shadow-green-100 transition-all active:scale-95 uppercase tracking-widest"
-                      >
-                        {updateProfileMutation.isPending ? (
-                          <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                        ) : (
-                          <Save className="mr-3 h-5 w-5" />
-                        )}
-                        LƯU HỒ SƠ CÁ NHÂN
-                      </Button>
-                    </div>
-                  )}
-                </form>
-              </Form>
+                       <FormField
+                          control={form.control}
+                          name="skills"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1 flex items-center gap-2">
+                                <Award size={12} className="text-primary" /> Kỹ năng chuyên môn
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="VD: React, Node.js, UI/UX..." disabled={!isEditing} className="h-12 rounded-xl border-slate-100 bg-slate-50 font-bold text-slate-700 focus-visible:ring-primary" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                       />
 
-              <Separator className="my-10 opacity-30 border-dashed" />
+                       <FormField
+                          control={form.control}
+                          name="bio"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Giới thiệu bản thân</FormLabel>
+                              <FormControl>
+                                <Textarea placeholder="Chia sẻ ngắn gọn về bản thân..." disabled={!isEditing} className="min-h-[150px] rounded-2xl border-slate-100 bg-slate-50 font-medium text-slate-600 focus-visible:ring-primary resize-none" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                       />
 
-              <div className="bg-slate-50/80 p-8 rounded-[2rem] border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">
-                    Định danh hệ thống (UID)
-                  </p>
-                  <p className="text-xs text-slate-400 font-mono break-all opacity-60">
-                    {user?.id}
-                  </p>
-                </div>
-                <div className="bg-white px-4 py-2 rounded-xl border border-slate-200/50 shadow-sm self-start md:self-auto">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Bảo mật cấp độ 2</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                       {isEditing && (
+                         <div className="flex justify-end animate-in fade-in slide-in-from-bottom-2">
+                            <Button type="submit" disabled={updateProfileMutation.isPending} className="bg-primary hover:bg-primary/90 rounded-xl font-black uppercase tracking-widest text-xs px-12 h-14 shadow-lg shadow-primary/20">
+                               {updateProfileMutation.isPending ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" size={18} />}
+                               CẬP NHẬT NGAY
+                            </Button>
+                         </div>
+                       )}
+                    </form>
+                  </Form>
+               </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};

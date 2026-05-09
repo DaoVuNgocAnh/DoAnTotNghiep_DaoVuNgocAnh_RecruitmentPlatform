@@ -1,4 +1,4 @@
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
+﻿import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   ForbiddenException,
   Inject,
@@ -77,16 +77,31 @@ export class JobService {
         title: query.search
           ? { contains: query.search, mode: 'insensitive' }
           : undefined,
+        isFeatured: query.isFeatured === 'true' ? true : undefined,
       },
       include: {
         company: { select: { name: true, logoUrl: true } },
         category: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { isFeatured: 'desc' },
+        { createdAt: 'desc' }
+      ],
     });
 
     await this.cacheManager.set(cacheKey, jobs, 300);
     return jobs;
+  }
+
+  async updateFeaturedByAdmin(id: string, isFeatured: boolean) {
+    const job = await this.prisma.job.update({
+      where: { id },
+      data: { isFeatured },
+    });
+    
+    await this.cacheManager.del(`job_detail_${id}`);
+    await this.cacheManager.del('jobs_all');
+    return job;
   }
 
   async findOne(id: string) {

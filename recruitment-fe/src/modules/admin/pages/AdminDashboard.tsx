@@ -49,7 +49,7 @@ export const AdminDashboard = () => {
       pending: companies.filter((company: any) => company.status === 'PENDING').length,
       verified: companies.filter((company: any) => company.status === 'VERIFIED').length,
       rejected: companies.filter((company: any) => company.status === 'REJECTED').length,
-      blacklisted: companies.filter((company: any) => company.status === 'BLACKLISH').length,
+      blacklisted: companies.filter((company: any) => company.status === 'BLACKLIST').length,
     }),
     [companies],
   );

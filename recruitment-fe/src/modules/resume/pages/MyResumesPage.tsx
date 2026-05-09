@@ -18,6 +18,10 @@ import {
   Loader2,
   Plus,
   Info,
+  MoreVertical,
+  ShieldCheck,
+  FileCheck,
+  Calendar
 } from 'lucide-react';
 import {
   Dialog,
@@ -27,7 +31,14 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export const MyResumesPage = () => {
   const { data: resumes, isLoading } = useResumes();
@@ -44,8 +55,6 @@ export const MyResumesPage = () => {
       return toast.error('Vui lòng nhập tên và chọn file');
 
     const formData = new FormData();
-    
-    // Client-side validation
     const allowedExtensions = ['pdf', 'doc', 'docx'];
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     
@@ -53,7 +62,7 @@ export const MyResumesPage = () => {
       return toast.error('Chỉ chấp nhận file định dạng PDF, DOC, DOCX');
     }
 
-    if (file.size > 10 * 1024 * 1024) { // 5MB
+    if (file.size > 10 * 1024 * 1024) {
       return toast.error('Kích thước file không được vượt quá 10MB');
     }
 
@@ -71,63 +80,55 @@ export const MyResumesPage = () => {
   };
 
   return (
-    <div className="container mx-auto py-10 px-4 max-w-5xl animate-in fade-in duration-500">
-      <div className="flex justify-between items-center mb-8">
+    <div className="container mx-auto py-12 px-4 max-w-5xl animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight">
-            Quản lý CV
-          </h1>
-          <p className="text-slate-500 font-medium italic">
-            Tải lên các bản CV để sẵn sàng ứng tuyển mọi lúc.
-          </p>
+          <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Hồ sơ CV của tôi</h1>
+          <p className="text-slate-500 font-medium italic mt-1">Quản lý các phiên bản CV để tối ưu khả năng ứng tuyển.</p>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#00b14f] hover:bg-[#009643] rounded-2xl gap-2 font-black shadow-lg shadow-green-100 h-12 px-6">
-              <Plus size={20} /> TẢI LÊN CV MỚI
+            <Button className="bg-primary hover:bg-primary/90 rounded-2xl gap-2 font-black shadow-lg shadow-primary/20 h-12 px-8 uppercase tracking-widest text-xs transition-all active:scale-95">
+              <Plus size={18} /> Tải lên CV mới
             </Button>
           </DialogTrigger>
-          <DialogContent className="rounded-3xl max-w-md">
+          <DialogContent className="rounded-[2rem] max-w-md border-none">
             <DialogHeader>
-              <DialogTitle className="text-xl font-black uppercase text-[#00b14f]">
-                Tải lên hồ sơ
-              </DialogTitle>
+              <DialogTitle className="text-xl font-black uppercase text-slate-900">Tải lên hồ sơ mới</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-6 py-6">
               <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-slate-500">
-                  Tên gợi nhớ CV
-                </label>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tên gợi nhớ CV</label>
                 <Input
                   placeholder="Ví dụ: CV Fullstack Developer - 2024"
                   value={resumeName}
                   onChange={(e) => setResumeName(e.target.value)}
-                  className="rounded-xl h-12"
+                  className="rounded-xl h-12 border-slate-100 bg-slate-50 font-bold focus-visible:ring-primary"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-slate-500">
-                  Chọn file (PDF/Docx)
-                </label>
-                <Input
-                  type="file"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="rounded-xl h-12 pt-2.5"
-                />
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Chọn tệp tin (PDF, DOCX)</label>
+                <div className="relative group cursor-pointer">
+                   <Input
+                    type="file"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="rounded-xl h-24 border-2 border-dashed border-slate-200 bg-slate-50/50 pt-10 text-center cursor-pointer group-hover:border-primary/50 transition-colors"
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity">
+                     <Upload size={24} className="mb-2 text-primary" />
+                     <span className="text-[10px] font-bold uppercase">{file ? file.name : "Nhấn để chọn tệp"}</span>
+                  </div>
+                </div>
               </div>
             </div>
             <DialogFooter>
               <Button
                 onClick={handleUpload}
                 disabled={uploadMutation.isPending}
-                className="w-full bg-[#00b14f] font-black rounded-2xl h-12"
+                className="w-full bg-primary font-black rounded-xl h-12 uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
               >
-                {uploadMutation.isPending ? (
-                  <Loader2 className="animate-spin mr-2" />
-                ) : (
-                  <Upload className="mr-2" size={18} />
-                )}
+                {uploadMutation.isPending ? <Loader2 className="animate-spin mr-2" /> : <ShieldCheck className="mr-2" size={18} />}
                 XÁC NHẬN TẢI LÊN
               </Button>
             </DialogFooter>
@@ -136,78 +137,82 @@ export const MyResumesPage = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="animate-spin text-[#00b14f]" size={40} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2].map(i => <div key={i} className="h-40 bg-white rounded-3xl animate-pulse shadow-sm border border-slate-50"></div>)}
         </div>
       ) : resumes?.length === 0 ? (
-        <Card className="border-dashed border-2 py-20 text-center rounded-[2rem] bg-slate-50/50">
-          <FileText
-            className="mx-auto text-slate-300 mb-4 opacity-30"
-            size={64}
-          />
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">
-            Bạn chưa có bản CV nào trên hệ thống
-          </p>
+        <Card className="border-dashed border-2 py-32 text-center rounded-[3rem] bg-white shadow-inner">
+          <FileText className="mx-auto text-slate-200 mb-6 opacity-20" size={80} />
+          <p className="text-slate-500 font-black uppercase tracking-widest text-lg">Chưa có CV nào</p>
+          <p className="text-slate-400 font-medium mt-2 italic">Hãy tải lên bản CV tốt nhất của bạn để bắt đầu ứng tuyển.</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {resumes?.map((resume) => (
             <Card
               key={resume.id}
-              className={`group rounded-[2rem] border-2 transition-all duration-300 ${resume.isDefault ? 'border-[#00b14f] bg-green-50/10' : 'border-slate-100 hover:border-slate-200 shadow-sm'}`}
+              className={cn(
+                "group rounded-[2.5rem] border-transparent shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 bg-white overflow-hidden active:scale-[0.99]",
+                resume.isDefault && "ring-2 ring-primary/20 bg-primary/[0.02]"
+              )}
             >
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 bg-white rounded-2xl border shadow-sm flex items-center justify-center text-red-500 shrink-0">
-                    <FileText size={30} />
+              <CardContent className="p-8">
+                <div className="flex items-start gap-6">
+                  <div className="w-16 h-16 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center text-rose-500 shrink-0 group-hover:scale-110 transition-transform duration-500">
+                    <FileText size={32} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-black text-slate-800 truncate uppercase text-sm leading-none">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-black text-slate-900 truncate uppercase text-sm group-hover:text-primary transition-colors">
                         {resume.resumeName}
                       </h3>
-                      {resume.isDefault && (
-                        <Badge className="bg-[#00b14f] text-white text-[9px] font-black h-4 px-1.5 uppercase border-none">
-                          Mặc định
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                       <span className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(resume.uploadedAt).toLocaleDateString('vi-VN')}</span>
+                       {resume.isDefault && (
+                        <Badge className="bg-primary text-white text-[9px] font-black px-2 py-0.5 uppercase border-none rounded-full flex items-center gap-1">
+                          <FileCheck size={10} /> Mặc định
                         </Badge>
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                      Tải lên:{' '}
-                      {new Date(resume.uploadedAt).toLocaleDateString('vi-VN')}
-                    </p>
 
-                    <div className="flex gap-3 mt-4">
+                    <div className="flex gap-4 mt-6">
                       <a
                         href={resume.fileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[10px] font-black text-blue-600 hover:underline flex items-center gap-1 uppercase tracking-widest"
+                        className="text-[10px] font-black text-blue-600 hover:text-blue-700 flex items-center gap-1.5 uppercase tracking-[0.15em] transition-colors"
                       >
-                        <ExternalLink size={12} /> XEM FILE ONLINE
+                        <ExternalLink size={12} /> Xem online
                       </a>
                       {!resume.isDefault && (
                         <button
                           onClick={() => setDefaultMutation.mutate(resume.id)}
                           disabled={setDefaultMutation.isPending}
-                          className="text-[10px] font-black text-[#00b14f] hover:underline flex items-center gap-1"
+                          className="text-[10px] font-black text-primary hover:underline flex items-center gap-1.5 uppercase tracking-[0.15em]"
                         >
-                          <CheckCircle size={12} /> ĐẶT MẶC ĐỊNH
+                          <CheckCircle size={12} /> Đặt mặc định
                         </button>
                       )}
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl"
-                    onClick={() => {
-                      if (confirm('Xóa CV này?'))
-                        deleteMutation.mutate(resume.id);
-                    }}
-                  >
-                    <Trash2 size={18} />
-                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                       <Button variant="ghost" size="icon" className="text-slate-300 hover:text-slate-600 rounded-full h-8 w-8">
+                          <MoreVertical size={18} />
+                       </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="rounded-xl border-slate-100 p-2 shadow-xl">
+                       <DropdownMenuItem 
+                        className="text-rose-500 font-bold focus:text-rose-600 focus:bg-rose-50 gap-2 cursor-pointer rounded-lg"
+                        onClick={() => { if (confirm('Bạn có chắc chắn muốn xóa bản CV này?')) deleteMutation.mutate(resume.id); }}
+                       >
+                          <Trash2 size={14} /> Xóa hồ sơ
+                       </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardContent>
             </Card>
@@ -215,15 +220,15 @@ export const MyResumesPage = () => {
         </div>
       )}
 
-      <div className="mt-10 p-6 bg-[#001529] rounded-[2rem] text-white flex items-center gap-4 shadow-xl">
-        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-          <Info size={24} className="text-[#00b14f]" />
+      <div className="mt-12 p-8 bg-slate-900 rounded-[2.5rem] text-white flex flex-col md:flex-row items-center gap-6 shadow-2xl shadow-slate-200 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
+        <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
+          <Info size={28} className="text-primary" />
         </div>
         <div>
-          <p className="font-bold text-sm">Mẹo nhỏ:</p>
-          <p className="text-xs text-slate-400 font-medium leading-relaxed">
-            Hãy đặt CV tốt nhất của bạn làm **Mặc định** để hệ thống ưu tiên sử
-            dụng khi bạn nhấn "Ứng tuyển nhanh" tại các tin tuyển dụng.
+          <p className="font-black uppercase tracking-widest text-xs text-primary mb-1">Mẹo tối ưu hồ sơ</p>
+          <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-2xl">
+            Hãy đặt CV tốt nhất của bạn làm **Mặc định**. Hệ thống sẽ ưu tiên sử dụng bản CV này khi bạn thực hiện các thao tác "Ứng tuyển nhanh" tại các tin tuyển dụng hot.
           </p>
         </div>
       </div>

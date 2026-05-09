@@ -95,7 +95,7 @@ export class UserService {
       companyId: user.companyId,
       name: company?.name || null, // Trả về name thay vì companyName để FE dễ dùng chung cho cả Candidate/Employer
       logo_url: company?.logoUrl || null, // Trả về logo_url để FE dễ dùng chung cho cả Candidate/Employer
-      // 1. Trạng thái phê duyệt của công ty (VERIFIED, PENDING, REJECTED, BLACKLISH)
+      // 1. Trạng thái phê duyệt của công ty (VERIFIED, PENDING, REJECTED, BLACKLIST)
       companyStatus: company?.status || null,
 
       // 2. Logic check Owner: Nếu ID của User trùng với ownerId của Company

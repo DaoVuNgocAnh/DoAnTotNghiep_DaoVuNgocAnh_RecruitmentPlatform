@@ -107,7 +107,7 @@ const EmployerGuard = ({ children }: { children: React.ReactNode }) => {
     if (user.companyId) {
       if (user.companyStatus === 'PENDING') return <PendingApprovalPage />;
       if (user.companyStatus === 'REJECTED') return <RejectedPage />;
-      if (user.companyStatus === 'BLACKLISH') return <BlacklistPage />;
+      if (user.companyStatus === 'BLACKLIST') return <BlacklistPage />;
       return <>{children}</>;
     }
     if (user.pendingJoinRequest) return <JoinPendingPage />;

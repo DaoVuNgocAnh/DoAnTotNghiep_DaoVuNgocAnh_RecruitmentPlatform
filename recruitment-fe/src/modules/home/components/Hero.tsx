@@ -1,102 +1,79 @@
-// src/modules/home/components/Hero.tsx
 import { Search, MapPin, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface HeroProps {
   search: string;
-  setSearch: (value: string) => void;
+  setSearch: (val: string) => void;
   onSearch: () => void;
 }
 
 export const Hero = ({ search, setSearch, onSearch }: HeroProps) => {
-  const hotTags = ["ReactJS", "NodeJS", "Designer", "Marketing", "Remote"];
-
   return (
-    <div className="relative overflow-hidden bg-[#001529] pt-24 pb-32 px-4">
-      {/* Các thành phần trang trí nền */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[60%] rounded-full bg-[#00b14f]/10 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[60%] rounded-full bg-blue-500/10 blur-[120px]" />
+    <section className="relative py-20 lg:py-32 overflow-hidden bg-slate-950">
+      {/* Background Decor */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src="https://images.unsplash.com/photo-1521737706045-5396162d93e8?q=80&w=2070&auto=format&fit=crop" 
+          alt="Banner" 
+          className="w-full h-full object-cover opacity-20 scale-105 animate-pulse duration-[10s]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/50 to-slate-950"></div>
       </div>
 
-      <div className="container mx-auto text-center relative z-10">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/80 text-sm font-medium mb-8 backdrop-blur-sm">
-          <TrendingUp size={16} className="text-[#00b14f]" />
-          <span>Hơn 5,000+ cơ hội việc làm mới đang chờ bạn</span>
-        </div>
-        
-        <h1 className="text-4xl md:text-6xl font-black text-white mb-6 leading-[1.1] tracking-tight">
-          Sự nghiệp mơ ước <br />
-          Khởi đầu từ <span className="text-[#00b14f] relative">
-            SmartCV
-            <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0 5.5C50 2 150 2 200 5.5" stroke="#00b14f" strokeWidth="4" strokeLinecap="round"/>
-            </svg>
-          </span>
-        </h1>
-        
-        <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-12 font-medium">
-          Nền tảng kết nối ứng viên tài năng với các doanh nghiệp hàng đầu. Tìm kiếm, ứng tuyển và phát triển sự nghiệp của bạn ngay hôm nay.
-        </p>
-
-        {/* Thanh tìm kiếm nâng cao */}
-        <div className="max-w-5xl mx-auto bg-white p-2 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col md:flex-row gap-2 border-4 border-white/10 ring-1 ring-white/5">
-          <div className="flex-[2] relative group">
-            <Search className="absolute left-4 top-4 text-slate-400 group-focus-within:text-[#00b14f] transition-colors" size={24} />
-            <Input 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tên công việc, vị trí, kỹ năng..." 
-              className="h-14 pl-14 pr-4 border-none focus-visible:ring-0 text-slate-700 font-bold text-lg bg-transparent"
-              onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-            />
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-4xl mx-auto text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-[0.2em] mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <TrendingUp size={14} /> Nền tảng tuyển dụng thế hệ mới
           </div>
-          
-          <div className="flex-1 border-l border-slate-100 flex items-center px-2 group">
-            <MapPin className="text-slate-400 ml-2 group-focus-within:text-[#00b14f] transition-colors" size={20} />
-            <Select>
-              <SelectTrigger className="border-none focus:ring-0 shadow-none h-14 font-bold text-slate-700 text-lg">
-                <SelectValue placeholder="Toàn quốc" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-100 shadow-xl font-medium">
-                <SelectItem value="all">Toàn quốc</SelectItem>
-                <SelectItem value="hcm">TP. Hồ Chí Minh</SelectItem>
-                <SelectItem value="hn">Hà Nội</SelectItem>
-                <SelectItem value="dn">Đà Nẵng</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.1] tracking-tighter mb-6 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+            Tìm kiếm công việc <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">mơ ước</span> của bạn
+          </h1>
+          <p className="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto mb-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            Hàng ngàn cơ hội việc làm hấp dẫn từ các công ty hàng đầu đang chờ đón bạn. Bắt đầu sự nghiệp ngay hôm nay.
+          </p>
 
-          <Button 
-            onClick={onSearch}
-            className="h-14 px-10 bg-[#00b14f] hover:bg-[#009643] text-white font-black rounded-2xl text-lg shadow-lg shadow-green-900/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            TÌM KIẾM
-          </Button>
-        </div>
-
-        {/* Hot Tags */}
-        <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
-          <span className="text-slate-500 text-sm font-bold uppercase tracking-wider">Từ khóa phổ biến:</span>
-          {hotTags.map((tag) => (
-            <button 
-              key={tag}
-              onClick={() => { setSearch(tag); onSearch(); }}
-              className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 text-sm font-bold hover:bg-[#00b14f] hover:text-white hover:border-[#00b14f] transition-all"
+          {/* Search Box */}
+          <div className="bg-white p-2 md:p-3 rounded-2xl md:rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row gap-2 items-stretch animate-in fade-in zoom-in duration-1000 delay-300">
+            <div className="flex-1 flex items-center px-4 gap-3 border-b md:border-b-0 md:border-r border-slate-100 py-3 md:py-0">
+              <Search className="text-primary shrink-0" size={20} />
+              <input
+                type="text"
+                placeholder="Tên công việc, vị trí ứng tuyển..."
+                className="w-full outline-none text-sm font-bold text-slate-700 placeholder:text-slate-400"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && onSearch()}
+              />
+            </div>
+            <div className="flex-1 flex items-center px-4 gap-3 py-3 md:py-0 hidden sm:flex">
+              <MapPin className="text-primary shrink-0" size={20} />
+              <select className="w-full bg-transparent outline-none text-sm font-bold text-slate-700 appearance-none cursor-pointer">
+                <option>Tất cả địa điểm</option>
+                <option>Hà Nội</option>
+                <option>TP. Hồ Chí Minh</option>
+                <option>Đà Nẵng</option>
+              </select>
+            </div>
+            <Button 
+              onClick={onSearch}
+              className="bg-primary hover:bg-primary/90 text-white font-black text-base px-10 py-7 rounded-xl md:rounded-[2rem] shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              {tag}
-            </button>
-          ))}
+              TÌM KIẾM NGAY
+            </Button>
+          </div>
+
+          <div className="mt-8 flex flex-wrap justify-center gap-6 text-slate-500 text-sm font-bold">
+            <span className="text-white/60">Từ khóa phổ biến:</span>
+            {['ReactJS', 'Node.js', 'Designer', 'Marketing', 'Sales'].map((tag) => (
+              <button key={tag} className="hover:text-primary transition-colors">#{tag}</button>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+      
+      {/* Wave Decor */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#f4f7f6] to-transparent"></div>
+    </section>
   );
 };

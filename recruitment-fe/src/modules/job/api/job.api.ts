@@ -27,7 +27,8 @@ export interface Job {
   location: string;
   status: 'PENDING' | 'ACTIVE' | 'CLOSED' | 'REJECTED';
   viewCount: number;
-  expiredDate?: string; // Bổ sung
+  expiredDate?: string; 
+  isFeatured: boolean;
   companyId: string;
   categoryId: string;
   category: JobCategory;
@@ -46,6 +47,7 @@ export const jobApi = {
   // ADMIN APIs
   getAdminJobs: (status?: string) => apiClient.get<Job[]>("/jobs/admin/all", { params: { status } }),
   updateJobStatusAdmin: (id: string, status: string) => apiClient.patch(`/jobs/${id}/status/admin`, { status }),
+  updateFeaturedAdmin: (id: string, isFeatured: boolean) => apiClient.patch(`/jobs/${id}/featured`, { isFeatured }),
 
   // EMPLOYER APIs
   getMyJobs: () => apiClient.get<Job[]>("/jobs/my-jobs"),

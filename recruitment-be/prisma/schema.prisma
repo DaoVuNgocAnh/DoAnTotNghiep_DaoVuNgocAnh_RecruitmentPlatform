@@ -25,7 +25,7 @@ enum CompanyStatus {
   PENDING    // Chờ Admin hệ thống duyệt mã số thuế
   VERIFIED   // Đã duyệt, được hoạt động
   REJECTED   // Bị từ chối duyệt
-  BLACKLISH  // Vi phạm quy định
+  BLACKLIST  // Vi phạm quy định
 }
 
 enum RequestStatus {
@@ -109,6 +109,7 @@ model User {
   applicationActions Application[]   @relation("ApplicationActionBy")
   applicationHistories ApplicationHistory[] @relation("ApplicationHistoryActor")
 
+  @@index([companyId, role, isDeleted, createdAt])
   @@map("users")
 }
 
@@ -141,6 +142,8 @@ model Company {
   // Admin hệ thống tạo/duyệt
   createdById String?       @map("created_by") @db.Char(36)
 
+  @@index([status, isDeleted, createdAt])
+  @@index([status, isDeleted, isPremium])
   @@map("companies")
 }
 
@@ -156,6 +159,8 @@ model JoinRequest {
   company   Company @relation(fields: [companyId], references: [id])
 
   @@unique([userId, companyId]) // Một người chỉ gửi 1 yêu cầu tới 1 công ty
+  @@index([companyId, status, createdAt])
+  @@index([userId, status])
   @@map("join_requests")
 }
 
@@ -197,6 +202,10 @@ model Job {
   applications Application[]
   assignees    JobAssignee[]
 
+  @@index([status, isDeleted, categoryId, createdAt])
+  @@index([companyId, isDeleted, createdAt])
+  @@index([status, isDeleted, createdAt])
+  @@index([isFeatured, createdAt])
   @@map("jobs")
 }
 
@@ -250,6 +259,9 @@ model Application {
   employerActionBy User? @relation("ApplicationActionBy", fields: [employerActionById], references: [id])
   histories  ApplicationHistory[]
 
+  @@index([candidateId, isDeleted, applyDate])
+  @@index([jobId, isDeleted, applyDate])
+  @@index([status, isDeleted])
   @@map("applications")
 }
 

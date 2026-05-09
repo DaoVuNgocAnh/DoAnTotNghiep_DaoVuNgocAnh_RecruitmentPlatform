@@ -78,7 +78,7 @@ export const AdminVerifyCompany = () => {
         return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-none px-3 font-bold">PENDING</Badge>;
       case 'REJECTED':
         return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none px-3 font-bold">REJECTED</Badge>;
-      case 'BLACKLISH': // Theo đúng chính tả Enum Prisma của bạn
+      case 'BLACKLIST':
         return <Badge className="bg-zinc-900 text-white hover:bg-zinc-900 border-none px-3 font-bold">BLACKLIST</Badge>;
       default:
         return <Badge>{status}</Badge>;
@@ -120,7 +120,7 @@ export const AdminVerifyCompany = () => {
             </div>
             {/* Bộ lọc trạng thái */}
             <div className="flex bg-zinc-100 p-1 rounded-xl gap-1">
-              {['ALL', 'PENDING', 'VERIFIED', 'REJECTED', 'BLACKLISH'].map((s) => (
+              {['ALL', 'PENDING', 'VERIFIED', 'REJECTED', 'BLACKLIST'].map((s) => (
                 <button 
                   key={s}
                   onClick={() => setStatusFilter(s)}
@@ -130,7 +130,7 @@ export const AdminVerifyCompany = () => {
                     : "text-zinc-500 hover:text-zinc-800"
                   }`}
                 >
-                  {s === 'BLACKLISH' ? 'BLACKLIST' : s}
+                  {s}
                 </button>
               ))}
             </div>
@@ -231,15 +231,15 @@ export const AdminVerifyCompany = () => {
                           {/* 2. Nếu đang VERIFIED -> Chỉ hiện nút BLACKLIST */}
                           {company.status === 'VERIFIED' && (
                             <DropdownMenuItem 
-                              onClick={() => handleUpdateStatus(company.id, 'BLACKLISH')}
+                              onClick={() => handleUpdateStatus(company.id, 'BLACKLIST')}
                               className="text-zinc-900 gap-3 cursor-pointer p-3 font-bold rounded-xl bg-zinc-50 hover:bg-zinc-100 focus:bg-zinc-900 focus:text-white"
                             >
                               <ShieldAlert size={18} /> Chặn (Blacklist)
                             </DropdownMenuItem>
                           )}
 
-                          {/* 3. Nếu đã REJECTED hoặc BLACKLISH -> Vô hiệu hóa thao tác */}
-                          {(company.status === 'REJECTED' || company.status === 'BLACKLISH') && (
+                          {/* 3. Nếu đã REJECTED hoặc BLACKLIST -> Vô hiệu hóa thao tác */}
+                          {(company.status === 'REJECTED' || company.status === 'BLACKLIST') && (
                             <div className="p-4 text-center">
                               <p className="text-[10px] text-zinc-400 italic font-medium leading-relaxed">
                                 Hồ sơ đã ở trạng thái cuối. <br/> Không thể thay đổi thêm.

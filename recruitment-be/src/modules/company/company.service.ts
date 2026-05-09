@@ -105,7 +105,7 @@ export class CompanyService {
         );
       }
     } else if (currentStatus === 'VERIFIED') {
-      if (newStatus !== 'BLACKLISH') {
+      if (newStatus !== 'BLACKLIST') {
         throw new BadRequestException(
           'Công ty đã duyệt chỉ có thể đưa vào Danh sách đen',
         );

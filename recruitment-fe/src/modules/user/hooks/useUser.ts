@@ -15,7 +15,7 @@ export interface User {
   skills?: string | null;
   name?: string | null;
   companyId?: string | null;
-  companyStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'BLACKLISH' | null;
+  companyStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'BLACKLIST' | null;
   logo_url?: string | null;
   isOwner: boolean;
   createdAt: string;

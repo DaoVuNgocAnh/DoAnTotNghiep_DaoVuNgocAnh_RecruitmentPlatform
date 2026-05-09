@@ -47,6 +47,16 @@ export class JobController {
     return this.jobService.updateStatusByAdmin(id, status);
   }
 
+  @Patch(':id/featured')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async updateFeaturedAdmin(
+    @Param('id') id: string,
+    @Body('isFeatured') isFeatured: boolean,
+  ) {
+    return this.jobService.updateFeaturedByAdmin(id, isFeatured);
+  }
+
   // ROUTE EMPLOYER: Quản lý tin cá nhân
   @Get('my-jobs')
   @UseGuards(JwtAuthGuard, RolesGuard)
