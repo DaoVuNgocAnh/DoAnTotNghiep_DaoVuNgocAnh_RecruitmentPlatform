@@ -15,6 +15,7 @@ export default function AdminLayout() {
   const location = useLocation();
 
   const getPageTitle = (path: string) => {
+    if (path.includes('feedback')) return 'Góp ý người dùng';
     if (path.includes('dashboard')) return 'Bảng điều khiển hệ thống';
     if (path.includes('companies')) return 'Phê duyệt doanh nghiệp';
     if (path.includes('users')) return 'Quản lý người dùng';

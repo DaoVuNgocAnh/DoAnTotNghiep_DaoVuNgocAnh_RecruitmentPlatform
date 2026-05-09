@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from './common/Header';
 import { Footer } from './common/Footer';
 import { AppBreadcrumb } from '@/components/shared/AppBreadcrumb';
+import { FloatingActionMenu } from '@/components/shared/FloatingActionMenu';
 
 export default function MainLayout() {
   const { pathname } = useLocation();
@@ -18,6 +19,7 @@ export default function MainLayout() {
         )}
         <Outlet />
       </main>
+      <FloatingActionMenu />
       <Footer />
     </div>
   );

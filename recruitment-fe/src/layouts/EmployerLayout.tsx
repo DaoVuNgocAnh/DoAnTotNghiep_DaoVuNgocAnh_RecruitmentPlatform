@@ -1,16 +1,23 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { EmployerSidebar } from './common/EmployerSidebar';
 import { useUser } from '@/modules/user/hooks/useUser'; // SỬ DỤNG HOOK MỚI
-import { Search, ShieldCheck, Zap } from 'lucide-react';
+import { Headphones, Search, ShieldCheck, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils'; 
 import NotificationDropdown from '@/modules/notification/components/NotificationDropdown';
 
 // UI COMPONENTS
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { AppBreadcrumb } from '@/components/shared/AppBreadcrumb';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { SupportChatWidget } from '@/components/shared/support/SupportChatWidget';
 
 export default function EmployerLayout() {
   const { data: user } = useUser(); 
@@ -46,6 +53,25 @@ export default function EmployerLayout() {
           </div>
 
           <div className="flex items-center gap-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="hidden h-9 rounded-full border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:border-[#00b14f]/30 hover:text-[#00b14f] md:inline-flex"
+                >
+                  <Headphones size={15} />
+                  Hỗ trợ
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                sideOffset={12}
+                className="w-[380px] rounded-3xl border-slate-100 p-0 shadow-2xl"
+              >
+                <SupportChatWidget />
+              </PopoverContent>
+            </Popover>
+
             <div className="hidden xl:flex items-center gap-3 bg-slate-50 px-4 py-1.5 rounded-2xl border border-slate-100 shadow-sm">
                <Zap size={14} className="text-[#00b14f] fill-[#00b14f]" />
                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">Doanh nghiệp:</span>

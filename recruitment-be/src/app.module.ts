@@ -23,6 +23,7 @@ import { InterviewModule } from './modules/interview/interview.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { SavedItemsModule } from './modules/savedItems/saved-items.module';
 import { SystemLogModule } from './modules/system-log/system-log.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { SystemLogModule } from './modules/system-log/system-log.module';
     NotificationModule,
     SavedItemsModule,
     SystemLogModule,
+    FeedbackModule,
   ],
   controllers: [],
   providers: [],

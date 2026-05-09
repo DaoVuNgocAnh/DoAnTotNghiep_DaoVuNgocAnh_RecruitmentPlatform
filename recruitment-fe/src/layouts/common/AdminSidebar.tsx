@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   User as UserIcon,
   Briefcase,
+  MessageSquareText,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
@@ -50,6 +51,11 @@ const menuItems = [
     title: 'Nhật ký hệ thống',
     icon: <History size={20} />,
     path: '/admin/system-history',
+  },
+  {
+    title: 'Góp ý người dùng',
+    icon: <MessageSquareText size={20} />,
+    path: '/admin/feedback',
   },
   { title: 'Hồ sơ cá nhân', icon: <UserIcon size={20} />, path: '/profile' },
 ];

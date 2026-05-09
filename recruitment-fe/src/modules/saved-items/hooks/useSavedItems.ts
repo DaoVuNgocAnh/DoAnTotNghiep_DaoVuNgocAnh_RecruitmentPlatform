@@ -3,10 +3,11 @@ import { savedItemsApi } from "../api/saved-items.api";
 import { toast } from "sonner";
 import type { TargetType } from "../api/saved-items.api";
 
-export const useSavedItems = (type?: TargetType) => {
+export const useSavedItems = (type?: TargetType, enabled = true) => {
   return useQuery({
     queryKey: ["saved-items", type],
     queryFn: () => savedItemsApi.getAll(type),
+    enabled,
   });
 };
 

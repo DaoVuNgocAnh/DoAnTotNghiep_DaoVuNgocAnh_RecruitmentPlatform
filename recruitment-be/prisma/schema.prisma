@@ -108,6 +108,7 @@ model User {
   assignedJobs   JobAssignee[]       @relation("JobAssigneeCreator")
   applicationActions Application[]   @relation("ApplicationActionBy")
   applicationHistories ApplicationHistory[] @relation("ApplicationHistoryActor")
+  feedbacks      Feedback[]
 
   @@index([companyId, role, isDeleted, createdAt])
   @@map("users")
@@ -355,4 +356,22 @@ model SystemLog {
   user        User?    @relation(fields: [userId], references: [id])
 
   @@map("system_logs")
+}
+
+model Feedback {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String?  @map("user_id") @db.Char(36)
+  type      String
+  title     String
+  content   String   @db.Text
+  pageUrl   String?  @map("page_url") @db.Text
+  status    String   @default("NEW")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@map("feedbacks")
 }
