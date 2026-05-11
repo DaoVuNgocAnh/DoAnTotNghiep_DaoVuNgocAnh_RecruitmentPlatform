@@ -41,6 +41,7 @@ import { CompaniesPage } from '@/modules/company/pages/CompaniesPage';
 import { CompanyDetailPage } from '@/modules/company/pages/CompanyDetailPage';
 import { AdminSystemHistory } from '@/modules/admin/pages/AdminSystemHistory';
 import { AdminFeedbackPage } from '@/modules/admin/pages/AdminFeedbackPage';
+import { AdminPremiumRequests } from '@/modules/admin/pages/AdminPremiumRequests';
 
 const GuardLoader = ({ message }: { message: string }) => (
   <div className="h-screen w-full flex flex-col items-center justify-center bg-[#f4f7f6] gap-4 text-center">
@@ -237,6 +238,7 @@ export const router = createBrowserRouter([
       { path: 'job-categories', element: <AdminJobCategory /> },
       { path: 'system-history', element: <AdminSystemHistory   /> },
       { path: 'feedback', element: <AdminFeedbackPage /> },
+      { path: 'premium-requests', element: <AdminPremiumRequests /> },
     ],
   },
   {

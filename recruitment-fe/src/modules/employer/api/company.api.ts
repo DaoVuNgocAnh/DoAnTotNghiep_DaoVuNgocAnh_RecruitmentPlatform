@@ -26,4 +26,14 @@ export const companyApi = {
 
   cancelJoinRequest: (requestId: string) =>
     axiosClient.delete(`/companies/requests/${requestId}/cancel`),
+
+  // PREMIUM REQUESTS
+  createPremiumRequest: (data: { contactPhone: string; contactEmail: string; note?: string }) =>
+    axiosClient.post('/companies/premium-request', data),
+
+  getAdminPremiumRequests: (status?: string) =>
+    axiosClient.get('/companies/admin/premium-requests', { params: { status } }),
+
+  handlePremiumRequest: (id: string, status: 'APPROVED' | 'REJECTED') =>
+    axiosClient.patch(`/companies/premium-request/${id}/handle`, { status }),
 };

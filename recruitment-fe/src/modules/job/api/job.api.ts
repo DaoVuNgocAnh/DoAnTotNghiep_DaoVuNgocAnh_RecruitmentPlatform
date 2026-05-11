@@ -32,7 +32,7 @@ export interface Job {
   companyId: string;
   categoryId: string;
   category: JobCategory;
-  company: { name: string; logoUrl?: string; };
+  company: { name: string; logoUrl?: string; isPremium?: boolean; };
   assignees?: JobAssignee[];
   createdAt: string;
 }
@@ -47,7 +47,7 @@ export const jobApi = {
   // ADMIN APIs
   getAdminJobs: (status?: string) => apiClient.get<Job[]>("/jobs/admin/all", { params: { status } }),
   updateJobStatusAdmin: (id: string, status: string) => apiClient.patch(`/jobs/${id}/status/admin`, { status }),
-  updateFeaturedAdmin: (id: string, isFeatured: boolean) => apiClient.patch(`/jobs/${id}/featured`, { isFeatured }),
+  getTrendingJobs: () => apiClient.get<Job[]>("/jobs/trending"),
 
   // EMPLOYER APIs
   getMyJobs: () => apiClient.get<Job[]>("/jobs/my-jobs"),
@@ -79,6 +79,11 @@ export const useMyJobs = () => useQuery({
 export const useAdminJobs = (status?: string) => useQuery({
   queryKey: ['admin-jobs', status],
   queryFn: () => jobApi.getAdminJobs(status).then((res) => res.data),
+});
+
+export const useTrendingJobs = () => useQuery({
+  queryKey: ['jobs-trending'],
+  queryFn: () => jobApi.getTrendingJobs().then((res) => res.data),
 });
 
 export const useCreateJob = () => {

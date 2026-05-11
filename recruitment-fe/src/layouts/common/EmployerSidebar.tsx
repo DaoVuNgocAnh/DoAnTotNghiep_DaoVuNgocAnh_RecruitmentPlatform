@@ -11,6 +11,8 @@ import {
   User as UserIcon,
   CalendarCheck2,
   Heart,
+  ShieldCheck,
+  Clock,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUser } from '@/modules/user/hooks/useUser';
@@ -110,25 +112,25 @@ export const EmployerSidebar = () => {
               {user?.name?.charAt(0) || 'C'}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-[11px] font-black truncate uppercase tracking-tight leading-none mb-1.5">
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
+            <p className="text-white text-[11px] font-black truncate uppercase tracking-tight leading-none">
               {user?.companyStatus === 'VERIFIED'
                 ? user?.name || 'Doanh nghiệp'
                 : 'Đang xác thực...'}
             </p>
-            <div className="flex items-center gap-1">
-              <CheckCircle2
-                size={10}
-                className={
-                  user?.companyStatus === 'VERIFIED'
-                    ? 'text-[#00b14f]'
-                    : 'text-slate-500'
-                }
-              />
-              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-none">
-                {user?.companyStatus || 'No Status'}
-              </span>
-            </div>
+            {user?.isPremium ? (
+              <Badge className="w-fit flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-600 text-white border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-md ring-1 ring-amber-500/50 shadow-lg shadow-amber-900/20">
+                <ShieldCheck size={12} /> Đối tác uy tín
+              </Badge>
+            ) : user?.companyStatus === 'VERIFIED' ? (
+              <Badge className="w-fit flex items-center justify-center gap-1.5 bg-[#00b14f]/10 text-[#00b14f] border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-md ring-1 ring-[#00b14f]/30">
+                <CheckCircle2 size={12} /> Đã xác thực
+              </Badge>
+            ) : (
+              <Badge className="w-fit flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400 border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-md ring-1 ring-slate-700">
+                <Clock size={12} /> Đang chờ duyệt
+              </Badge>
+            )}
           </div>
         </div>
       </div>

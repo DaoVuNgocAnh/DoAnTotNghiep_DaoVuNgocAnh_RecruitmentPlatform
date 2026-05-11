@@ -98,6 +98,9 @@ export class UserService {
       // 1. Trạng thái phê duyệt của công ty (VERIFIED, PENDING, REJECTED, BLACKLIST)
       companyStatus: company?.status || null,
 
+      // Check xem công ty có phải Premium không
+      isPremium: company?.isPremium || false,
+
       // 2. Logic check Owner: Nếu ID của User trùng với ownerId của Company
       isOwner: company ? company.ownerId === userId : false,
 

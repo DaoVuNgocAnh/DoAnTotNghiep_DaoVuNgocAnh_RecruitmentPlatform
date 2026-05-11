@@ -1,4 +1,4 @@
-﻿import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   ForbiddenException,
   Inject,
@@ -77,31 +77,70 @@ export class JobService {
         title: query.search
           ? { contains: query.search, mode: 'insensitive' }
           : undefined,
-        isFeatured: query.isFeatured === 'true' ? true : undefined,
       },
       include: {
-        company: { select: { name: true, logoUrl: true } },
+        company: { select: { name: true, logoUrl: true, isPremium: true } },
         category: true,
       },
-      orderBy: [
-        { isFeatured: 'desc' },
-        { createdAt: 'desc' }
-      ],
+      orderBy: [{ company: { isPremium: 'desc' } }, { createdAt: 'desc' }],
     });
 
     await this.cacheManager.set(cacheKey, jobs, 300);
     return jobs;
   }
 
-  async updateFeaturedByAdmin(id: string, isFeatured: boolean) {
-    const job = await this.prisma.job.update({
-      where: { id },
-      data: { isFeatured },
-    });
-    
-    await this.cacheManager.del(`job_detail_${id}`);
-    await this.cacheManager.del('jobs_all');
-    return job;
+  async getTrendingJobs(limit: number = 10) {
+    const trendingJobs: any[] = await this.prisma.$queryRaw`
+      SELECT 
+        j.id,
+        j.title,
+        j.salary,
+        j.location,
+        j.view_count as "viewCount",
+        j.created_at as "createdAt",
+        j.expired_date as "expiredDate",
+        j.status,
+        c.id as "companyId",
+        c.company_name as "companyName",
+        c.logo_url as "companyLogo",
+        c.is_premium as "isPremiumCompany",
+        cat.id as "categoryId",
+        cat.category_name as "categoryName",
+        (
+          (j.view_count * 0.4 + (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.is_deleted = false) * 0.6) /
+          pow(EXTRACT(EPOCH FROM (NOW() - j.created_at)) / 3600 + 2, 1.5)
+        ) as "hotScore"
+      FROM jobs j
+      JOIN companies c ON j.company_id = c.id
+      JOIN job_categories cat ON j.category_id = cat.id
+      WHERE j.status = 'ACTIVE' 
+        AND j.is_deleted = false
+        AND (j.expired_date IS NULL OR j.expired_date > NOW())
+      ORDER BY "hotScore" DESC
+      LIMIT ${limit}
+    `;
+
+    // Map the results to match the Job interface expected by Frontend
+    return trendingJobs.map((job) => ({
+      id: job.id,
+      title: job.title,
+      salary: job.salary,
+      location: job.location,
+      status: job.status,
+      viewCount: job.viewCount,
+      createdAt: job.createdAt,
+      expiredDate: job.expiredDate,
+      company: {
+        id: job.companyId,
+        name: job.companyName,
+        logoUrl: job.companyLogo,
+        isPremium: job.isPremiumCompany,
+      },
+      category: {
+        id: job.categoryId,
+        name: job.categoryName,
+      },
+    }));
   }
 
   async findOne(id: string) {
@@ -136,7 +175,9 @@ export class JobService {
   async updateStatusByAdmin(id: string, status: JobStatus) {
     const job = await this.prisma.job.update({
       where: { id },
-      data: { status },
+      data: {
+        status,
+      },
       include: { company: true },
     });
 

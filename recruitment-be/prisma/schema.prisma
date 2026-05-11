@@ -41,6 +41,12 @@ enum JobStatus {
   REJECTED
 }
 
+enum PremiumRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ApplicationStatus {
   PENDING
   REVIEWING
@@ -109,6 +115,7 @@ model User {
   applicationActions Application[]   @relation("ApplicationActionBy")
   applicationHistories ApplicationHistory[] @relation("ApplicationHistoryActor")
   feedbacks      Feedback[]
+  premiumRequests PremiumRequest[]
 
   @@index([companyId, role, isDeleted, createdAt])
   @@map("users")
@@ -142,6 +149,7 @@ model Company {
   
   // Admin hệ thống tạo/duyệt
   createdById String?       @map("created_by") @db.Char(36)
+  premiumRequests PremiumRequest[]
 
   @@index([status, isDeleted, createdAt])
   @@index([status, isDeleted, isPremium])
@@ -374,4 +382,21 @@ model Feedback {
   @@index([status, createdAt])
   @@index([userId, createdAt])
   @@map("feedbacks")
+}
+
+model PremiumRequest {
+  id           String               @id @default(uuid()) @db.Char(36)
+  companyId    String               @map("company_id") @db.Char(36)
+  userId       String               @map("user_id") @db.Char(36)
+  status       PremiumRequestStatus @default(PENDING)
+  contactPhone String               @map("contact_phone")
+  contactEmail String               @map("contact_email")
+  note         String?              @db.Text
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+
+  company      Company              @relation(fields: [companyId], references: [id])
+  user         User                 @relation(fields: [userId], references: [id])
+
+  @@map("premium_requests")
 }

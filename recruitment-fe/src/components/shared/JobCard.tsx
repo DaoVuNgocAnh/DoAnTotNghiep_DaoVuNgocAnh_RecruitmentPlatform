@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, MapPin, Building2, ArrowUpRight, Flame } from "lucide-react";
+import { DollarSign, MapPin, Building2, ArrowUpRight, Flame, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Job } from "@/modules/job/api/job.api";
 import { SaveButton } from "@/modules/saved-items/components/SaveButton";
@@ -9,20 +9,22 @@ import { cn } from "@/lib/utils";
 interface JobCardProps {
   job: Job;
   variant?: 'grid' | 'list';
+  isTrending?: boolean;
 }
 
-export const JobCard = ({ job, variant = 'grid' }: JobCardProps) => {
+export const JobCard = ({ job, variant = 'grid', isTrending }: JobCardProps) => {
   const isList = variant === 'list';
+  const isPremium = job.company?.isPremium;
 
   return (
-    <div className={cn("relative group", job.isFeatured && "animate-in fade-in duration-700")}>
+    <div className={cn("relative group", (job.isFeatured || isTrending) && "animate-in fade-in duration-700")}>
       <Link to={`/jobs/${job.id}`}>
         <Card className={cn(
           "transition-all duration-500 border-transparent shadow-sm hover:shadow-2xl hover:shadow-primary/10 cursor-pointer bg-white active:scale-[0.98] border-l-4",
           isList ? "flex flex-row p-4 gap-6 items-center" : "flex flex-col p-6 rounded-[2rem]",
-          job.isFeatured 
-            ? "border-l-amber-500 bg-gradient-to-r from-amber-50/30 to-transparent shadow-amber-100/50" 
-            : "hover:border-l-primary"
+          isPremium 
+            ? "border-l-amber-500 bg-gradient-to-r from-amber-50/20 to-transparent" 
+            : isTrending ? "border-l-rose-500" : "hover:border-l-primary"
         )}>
           {/* Logo Section */}
           <div className={cn(
@@ -39,12 +41,19 @@ export const JobCard = ({ job, variant = 'grid' }: JobCardProps) => {
           {/* Content Section */}
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start gap-4">
-              <h3 className={cn(
-                "font-black text-slate-900 group-hover:text-primary transition-colors leading-tight line-clamp-2 uppercase tracking-tight",
-                isList ? "text-lg" : "text-base mb-2"
-              )}>
-                {job.title}
-              </h3>
+              <div className="flex flex-col flex-1">
+                {isPremium && (
+                  <div className="flex items-center gap-1 text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1.5">
+                    <ShieldCheck size={10} className="fill-amber-600/10" /> Đối tác uy tín
+                  </div>
+                )}
+                <h3 className={cn(
+                  "font-black text-slate-900 group-hover:text-primary transition-colors leading-tight line-clamp-2 uppercase tracking-tight",
+                  isList ? "text-lg" : "text-base mb-2"
+                )}>
+                  {job.title}
+                </h3>
+              </div>
               {!isList && (
                 <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-white transition-all shrink-0 shadow-sm">
                   <ArrowUpRight size={20} />
@@ -70,9 +79,9 @@ export const JobCard = ({ job, variant = 'grid' }: JobCardProps) => {
                <Badge variant="secondary" className="bg-slate-100 text-slate-500 border-none text-[9px] font-black px-2.5 py-1 uppercase tracking-wider rounded-lg">
                   {job.category.name}
                </Badge>
-               {job.isFeatured && (
-                 <Badge className="bg-amber-500 text-white hover:bg-amber-600 border-none text-[9px] font-black px-3 py-1 uppercase tracking-[0.1em] flex items-center gap-1.5 rounded-lg shadow-lg shadow-amber-200 animate-pulse">
-                    <Flame size={12} className="fill-current" /> Hot Job
+               {isTrending && (
+                 <Badge className="bg-rose-500 text-white hover:bg-rose-600 border-none text-[9px] font-black px-3 py-1 uppercase tracking-[0.1em] flex items-center gap-1.5 rounded-lg shadow-lg shadow-rose-200">
+                    <Flame size={12} className="fill-current" /> Xu hướng
                  </Badge>
                )}
             </div>

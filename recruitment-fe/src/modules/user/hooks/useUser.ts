@@ -18,6 +18,7 @@ export interface User {
   companyStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'BLACKLIST' | null;
   logo_url?: string | null;
   isOwner: boolean;
+  isPremium: boolean;
   createdAt: string;
   pendingJoinRequest?: {
     id: string;

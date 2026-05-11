@@ -1,484 +1,348 @@
 import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-  ForbiddenException,
   BadRequestException,
-  Inject,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
+import {
+  CompanyStatus,
+  RequestStatus,
+  Role,
+  PremiumRequestStatus,
+} from '@prisma/client';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { CompanyDto } from './dto/company.dto';
-import { RequestStatus, CompanyStatus, Role } from '@prisma/client';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
 import { NotificationService } from '../notification/notification.service';
+import { CompanyDto } from './dto/company.dto';
+import { CreatePremiumRequestDto } from './dto/premium-request.dto';
 
 @Injectable()
 export class CompanyService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  // 1. Tạo công ty (Dành cho Owner)
-  async create(ownerId: string, dto: CompanyDto) {
-    const exist = await this.prisma.company.findUnique({
-      where: { taxCode: dto.taxCode },
-    });
-    if (exist) throw new ConflictException('Mã số thuế này đã được đăng ký!');
-
-    const user = await this.prisma.user.findUnique({ where: { id: ownerId } });
-    if (user?.companyId)
-      throw new BadRequestException('Bạn đã thuộc về một công ty khác!');
-
-    const company = await this.prisma.$transaction(async (tx) => {
-      const company = await tx.company.create({
-        data: {
-          name: dto.name,
-          taxCode: dto.taxCode,
-          description: dto.description,
-          websiteUrl: dto.websiteUrl,
-          logoUrl: dto.logoUrl,
-          ownerId: ownerId,
-        },
-      });
-
-      await tx.user.update({
-        where: { id: ownerId },
-        data: { companyId: company.id },
-      });
-
-      return company;
-    });
-
-    // Thông báo cho Admin có công ty mới đăng ký
-    await this.notificationService.sendToAdmins({
-      senderId: ownerId,
-      type: 'NEW_COMPANY_REGISTERED',
-      title: 'Yêu cầu duyệt công ty mới',
-      content: `Doanh nghiệp ${company.name} vừa đăng ký và đang chờ duyệt.`,
-      targetType: 'COMPANY',
-      targetId: company.id,
-    });
-
-    return company;
-  }
-
-  // 2. Tìm kiếm theo Mã số thuế (Cho HR xin gia nhập) - Caching
-  async findByTaxCode(taxCode: string) {
-    const cacheKey = `company_taxcode_${taxCode}`;
-    const cachedCompany = await this.cacheManager.get(cacheKey);
-    if (cachedCompany) return cachedCompany;
-
-    const company = await this.prisma.company.findUnique({
-      where: { taxCode },
-      select: {
-        id: true,
-        name: true,
-        logoUrl: true,
-        taxCode: true,
-        status: true,
-        description: true,
-      },
-    });
-    if (!company)
-      throw new NotFoundException('Không tìm thấy công ty với mã số thuế này');
-
-    await this.cacheManager.set(cacheKey, company, 3600); // Cache 1 tiếng
-    return company;
-  }
-
-  // 8. Admin cập nhật trạng thái - Clear cache
-  async updateStatusByAdmin(companyId: string, newStatus: CompanyStatus) {
-    const company = await this.prisma.company.findUnique({
-      where: { id: companyId },
-    });
-    if (!company) throw new NotFoundException('Không tìm thấy công ty');
-
-    const currentStatus = company.status;
-
-    if (currentStatus === 'PENDING') {
-      if (newStatus !== 'VERIFIED' && newStatus !== 'REJECTED') {
-        throw new BadRequestException(
-          'Công ty đang chờ duyệt chỉ có thể Chấp nhận hoặc Từ chối',
-        );
-      }
-    } else if (currentStatus === 'VERIFIED') {
-      if (newStatus !== 'BLACKLIST') {
-        throw new BadRequestException(
-          'Công ty đã duyệt chỉ có thể đưa vào Danh sách đen',
-        );
-      }
-    } else {
-      throw new BadRequestException(
-        'Không thể thay đổi trạng thái của hồ sơ đã bị Từ chối hoặc bị Chặn',
-      );
-    }
-
-    const updated = await this.prisma.company.update({
-      where: { id: companyId },
-      data: { status: newStatus },
-    });
-
-    // Thông báo cho chủ sở hữu công ty
-    let title = '';
-    let content = '';
-    let type = '';
-
-    if (newStatus === 'VERIFIED') {
-      type = 'COMPANY_VERIFIED';
-      title = 'Công ty đã được duyệt';
-      content = `Chúc mừng! Công ty ${company.name} của bạn đã được Admin phê duyệt.`;
-    } else if (newStatus === 'REJECTED') {
-      type = 'COMPANY_REJECTED';
-      title = 'Yêu cầu duyệt công ty bị từ chối';
-      content = `Rất tiếc, hồ sơ công ty ${company.name} đã bị từ chối. Vui lòng kiểm tra lại thông tin.`;
-    }
-
-    if (type) {
-      await this.notificationService.create({
-        receiverId: company.ownerId,
-        type,
-        title,
-        content,
-        targetType: 'COMPANY',
-        targetId: company.id,
-      });
-    }
-
-    // Clear cache
-    await this.cacheManager.del(`company_taxcode_${company.taxCode}`);
-    return updated;
-  }
-
-  async handleJoinRequest(
-    ownerId: string,
-    requestId: string,
-    status: RequestStatus,
-  ) {
-    const request = await this.prisma.joinRequest.findUnique({
-      where: { id: requestId },
-      include: { company: true },
-    });
-
-    if (!request) throw new NotFoundException('Yêu cầu không tồn tại');
-    if (request.company.ownerId !== ownerId)
-      throw new ForbiddenException('Bạn không có quyền duyệt yêu cầu này');
-
-    if (status === 'ACCEPTED') {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id: request.userId },
-          data: { companyId: request.companyId },
-        });
-        await tx.joinRequest.update({
-          where: { id: requestId },
-          data: { status: 'ACCEPTED' },
-        });
-      });
-
-      // Thông báo cho HR
-      await this.notificationService.create({
-        receiverId: request.userId,
-        senderId: ownerId,
-        type: 'JOIN_REQUEST_ACCEPTED',
-        title: 'Yêu cầu gia nhập được chấp nhận',
-        content: `Bạn đã trở thành thành viên của công ty ${request.company.name}`,
-        targetType: 'COMPANY',
-        targetId: request.companyId,
-      });
-
-      return { message: 'Đã chấp nhận yêu cầu' };
-    }
-
-    await this.prisma.joinRequest.update({
-      where: { id: requestId },
-      data: { status: 'REJECTED' },
-    });
-
-    // Thông báo cho HR
-    await this.notificationService.create({
-      receiverId: request.userId,
-      senderId: ownerId,
-      type: 'JOIN_REQUEST_REJECTED',
-      title: 'Yêu cầu gia nhập bị từ chối',
-      content: `Yêu cầu gia nhập công ty ${request.company.name} của bạn đã bị từ chối.`,
-      targetType: 'COMPANY',
-      targetId: request.companyId,
-    });
-
-    return { message: 'Đã từ chối yêu cầu' };
-  }
-
-  async getMyCompanyRequests(ownerId: string) {
-    const company = await this.prisma.company.findUnique({
-      where: { ownerId },
-    });
-    if (!company) throw new NotFoundException('Bạn chưa sở hữu công ty nào');
-
-    return this.prisma.joinRequest.findMany({
-      where: { companyId: company.id, status: 'PENDING' },
-      include: {
-        user: {
-          select: { id: true, fullName: true, email: true, avatarUrl: true },
-        },
-      },
-    });
-  }
-
-  async sendJoinRequest(userId: string, companyId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { company: true },
-    });
-    if (!user) throw new NotFoundException('Người dùng không tồn tại');
-    if (user?.companyId)
-      throw new BadRequestException('Bạn đã là thành viên của một công ty!');
-
-    const company = await this.prisma.company.findUnique({
-      where: { id: companyId },
-    });
-    if (!company) throw new NotFoundException('Công ty không tồn tại');
-
-    const existingRequest = await this.prisma.joinRequest.findUnique({
-      where: { userId_companyId: { userId, companyId } },
-    });
-    if (existingRequest)
-      throw new BadRequestException('Bạn đã gửi yêu cầu tới công ty này rồi');
-
-    const request = await this.prisma.joinRequest.create({
-      data: { userId, companyId },
-    });
-
-    // Thông báo cho chủ sở hữu công ty
-    await this.notificationService.create({
-      receiverId: company.ownerId,
-      senderId: userId,
-      type: 'JOIN_REQUEST_SENT',
-      title: 'Yêu cầu gia nhập mới',
-      content: `Ứng viên ${user.fullName} muốn gia nhập công ty của bạn.`,
-      targetType: 'COMPANY',
-      targetId: companyId,
-    });
-
-    return request;
-  }
-
-  async deleteRejectedCompany(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { company: true },
-    });
-
-    if (!user || !user.companyId || !user.company) {
-      throw new NotFoundException('Không tìm thấy hồ sơ công ty');
-    }
-
-    if (user.company.status !== 'REJECTED') {
-      throw new BadRequestException(
-        'Chỉ có thể tạo lại hồ sơ khi trạng thái hiện tại là REJECTED',
-      );
-    }
-
-    if (user.company.ownerId !== userId) {
-      throw new ForbiddenException(
-        'Chỉ chủ sở hữu mới có quyền thực hiện thao tác này',
-      );
-    }
-
-    return this.prisma.$transaction(async (tx) => {
-      await tx.joinRequest.deleteMany({
-        where: { companyId: user.companyId as string },
-      });
-      await tx.company.delete({ where: { id: user.companyId as string } });
-      return tx.user.update({
-        where: { id: userId },
-        data: { companyId: null },
-      });
-    });
-  }
-
-  async findAllForAdmin(query: { status?: CompanyStatus; search?: string }) {
-    const now = new Date();
+  async findAllPublic(query: { search?: string }) {
     return this.prisma.company.findMany({
       where: {
-        status: query.status || undefined,
-        OR: query.search
-          ? [
-              { name: { contains: query.search, mode: 'insensitive' } },
-              { taxCode: { contains: query.search } },
-            ]
+        status: CompanyStatus.VERIFIED,
+        isDeleted: false,
+        name: query.search
+          ? { contains: query.search, mode: 'insensitive' }
           : undefined,
       },
       include: {
         _count: {
-          select: {
-            jobs: {
-              where: {
-                status: 'ACTIVE',
-                isDeleted: false,
-                OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
-              },
-            },
-          },
+          select: { jobs: { where: { status: 'ACTIVE', isDeleted: false } } },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findAllPublic(query: { search?: string }) {
-    const now = new Date();
+  async findOnePublic(id: string) {
+    const company = await this.prisma.company.findFirst({
+      where: { id, status: CompanyStatus.VERIFIED, isDeleted: false },
+      include: {
+        jobs: {
+          where: { status: 'ACTIVE', isDeleted: false },
+          include: { category: true },
+        },
+      },
+    });
+    if (!company) throw new NotFoundException('Khong tim thay cong ty');
+    return company;
+  }
+
+  async findByTaxCode(taxCode: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { taxCode },
+      select: { id: true, name: true, logoUrl: true, status: true },
+    });
+    if (!company) throw new NotFoundException('Khong tim thay doanh nghiep');
+    return company;
+  }
+
+  async create(userId: string, dto: CompanyDto) {
+    // 1. Kiem tra xem user da co cong ty chua
+    const existing = await this.prisma.company.findFirst({
+      where: { ownerId: userId },
+    });
+    if (existing) throw new BadRequestException('Ban da so huu mot cong ty');
+
+    // 2. Kiem tra xem user co phai HR cua cong ty khac khong
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Nguoi dung khong ton tai');
+    if (user.companyId)
+      throw new BadRequestException('Ban dang thuoc mot cong ty khac');
+
+    // 3. Tao cong ty o trang thai PENDING
+    const company = await this.prisma.company.create({
+      data: {
+        name: dto.name,
+        taxCode: dto.taxCode,
+        description: dto.description,
+        websiteUrl: dto.websiteUrl,
+        logoUrl: dto.logoUrl,
+        ownerId: userId,
+        status: CompanyStatus.PENDING,
+      },
+    });
+
+    // 4. Cap nhat user thanh HR cua chinh cong ty minh
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { companyId: company.id },
+    });
+
+    return company;
+  }
+
+  async sendJoinRequest(userId: string, companyId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Nguoi dung khong ton tai');
+    if (user.companyId)
+      throw new BadRequestException('Ban da thuoc mot cong ty');
+
+    // Check existing request
+    const existing = await this.prisma.joinRequest.findUnique({
+      where: { userId_companyId: { userId, companyId } }
+    });
+    if (existing) throw new BadRequestException('Ban da gui yeu cau cho cong ty nay');
+
+    return this.prisma.joinRequest.create({
+      data: { userId, companyId, status: RequestStatus.PENDING },
+    });
+  }
+
+  async getMyCompanyRequests(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { ownedCompany: true },
+    });
+    if (!user || !user.ownedCompany) throw new ForbiddenException('Ban khong phai Owner');
+
+    return this.prisma.joinRequest.findMany({
+      where: { companyId: user.ownedCompany.id, status: RequestStatus.PENDING },
+      include: { user: { select: { id: true, fullName: true, email: true } } },
+    });
+  }
+
+  async getMembers(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.companyId) throw new NotFoundException('Ban khong thuoc cong ty');
+
+    return this.prisma.user.findMany({
+      where: { companyId: user.companyId, isDeleted: false },
+      select: { id: true, fullName: true, email: true, role: true },
+    });
+  }
+
+  async handleJoinRequest(userId: string, requestId: string, status: RequestStatus) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { ownedCompany: true },
+    });
+    if (!user || !user.ownedCompany) throw new ForbiddenException('Ban khong phai Owner');
+
+    const request = await this.prisma.joinRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!request || request.companyId !== user.ownedCompany.id)
+      throw new NotFoundException();
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedRequest = await tx.joinRequest.update({
+        where: { id: requestId },
+        data: { status },
+      });
+
+      if (status === RequestStatus.ACCEPTED) {
+        await tx.user.update({
+          where: { id: request.userId },
+          data: { companyId: request.companyId },
+        });
+      }
+      return updatedRequest;
+    });
+  }
+
+  async findAllForAdmin(query: { status?: CompanyStatus; search?: string }) {
     return this.prisma.company.findMany({
       where: {
-        status: 'VERIFIED',
+        status: query.status || undefined,
         isDeleted: false,
         name: query.search
           ? { contains: query.search, mode: 'insensitive' }
           : undefined,
       },
-      select: {
-        id: true,
-        name: true,
-        logoUrl: true,
-        description: true,
-        websiteUrl: true,
-        _count: {
-          select: {
-            jobs: {
-              where: {
-                status: 'ACTIVE',
-                isDeleted: false,
-                OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
-              },
-            },
-          },
-        },
-      },
-      orderBy: { isPremium: 'desc' },
+      include: { owner: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findOnePublic(id: string) {
-    const now = new Date();
-    const company = await this.prisma.company.findUnique({
-      where: { id, status: 'VERIFIED', isDeleted: false },
-      include: {
-        jobs: {
-          where: {
-            status: 'ACTIVE',
-            isDeleted: false,
-            OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
-          },
-          include: { category: true },
-        },
-      },
+  async updateStatusByAdmin(id: string, status: CompanyStatus) {
+    return this.prisma.company.update({
+      where: { id },
+      data: { status },
     });
-
-    if (!company) throw new NotFoundException('Không tìm thấy công ty');
-    return company;
   }
 
-  async getMembers(ownerId: string) {
-    const company = await this.prisma.company.findUnique({
-      where: { ownerId },
-      include: {
-        members: {
-          where: {
-            id: { not: ownerId },
-            isDeleted: false,
-            role: Role.EMPLOYER,
-          },
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            avatarUrl: true,
-            phone: true,
-            createdAt: true,
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-      },
+  async assignMemberToJob(ownerId: string, jobId: string, memberId: string) {
+    const owner = await this.prisma.user.findUnique({
+      where: { id: ownerId },
+      include: { ownedCompany: true },
     });
+    if (!owner || !owner.ownedCompany)
+      throw new ForbiddenException('Chi chu cong ty moi co quyen phan cong');
 
-    if (!company) throw new NotFoundException('Ban chua so huu cong ty nao');
-    return company.members;
-  }
-
-  async assignMemberToJob(ownerId: string, jobId: string, userId: string) {
-    const job = await this.prisma.job.findUnique({
-      where: { id: jobId },
-      include: { company: true },
-    });
-
-    if (!job || job.company.ownerId !== ownerId) {
-      throw new ForbiddenException('Ban khong co quyen phan cong tin nay');
+    // Check if job belongs to company
+    const job = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (!job || job.companyId !== owner.ownedCompany.id) {
+      throw new ForbiddenException('Tin tuyen dung nay khong thuoc cong ty cua ban');
     }
 
-    const member = await this.prisma.user.findFirst({
-      where: {
-        id: userId,
-        companyId: job.companyId,
-        role: Role.EMPLOYER,
-        isDeleted: false,
-      },
+    const member = await this.prisma.user.findUnique({ where: { id: memberId } });
+    if (!member) throw new NotFoundException('Khong tim thay nguoi dung');
+    if (member.companyId !== owner.ownedCompany.id)
+      throw new BadRequestException('Nguoi nay khong thuoc cong ty cua ban');
+
+    // Check existing assignment to avoid unique constraint error
+    const existing = await this.prisma.jobAssignee.findUnique({
+      where: { jobId_userId: { jobId, userId: memberId } }
     });
-
-    if (!member)
-      throw new NotFoundException('Khong tim thay thanh vien trong cong ty');
-
-    const existing = await this.prisma.jobAssignee.findFirst({
-      where: { jobId, userId },
-    });
-
     if (existing) return existing;
 
     return this.prisma.jobAssignee.create({
-      data: {
-        jobId,
-        userId,
-        assignedById: ownerId,
-      },
-      include: {
-        user: {
-          select: { id: true, fullName: true, email: true, avatarUrl: true },
-        },
-      },
+      data: { jobId, userId: memberId, assignedById: ownerId },
     });
   }
 
-  async unassignMemberFromJob(ownerId: string, jobId: string, userId: string) {
-    const job = await this.prisma.job.findUnique({
-      where: { id: jobId },
-      include: { company: true },
+  async unassignMemberFromJob(ownerId: string, jobId: string, memberId: string) {
+    const owner = await this.prisma.user.findUnique({
+      where: { id: ownerId },
+      include: { ownedCompany: true },
     });
+    if (!owner || !owner.ownedCompany)
+      throw new ForbiddenException('Chi chu cong ty moi co quyen go phan cong');
 
-    if (!job || job.company.ownerId !== ownerId) {
-      throw new ForbiddenException('Ban khong co quyen go phan cong tin nay');
+    // Check if job belongs to company
+    const job = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (!job || job.companyId !== owner.ownedCompany.id) {
+      throw new ForbiddenException('Tin tuyen dung nay khong thuoc cong ty cua ban');
     }
 
-    await this.prisma.jobAssignee.deleteMany({
-      where: { jobId, userId },
+    return this.prisma.jobAssignee.deleteMany({
+      where: { jobId, userId: memberId },
     });
-
-    return { message: 'Da go phan cong' };
   }
 
   async cancelJoinRequest(userId: string, requestId: string) {
     const request = await this.prisma.joinRequest.findUnique({
       where: { id: requestId },
     });
+    if (!request || request.userId !== userId) throw new NotFoundException();
+    if (request.status !== RequestStatus.PENDING)
+      throw new BadRequestException('Yeu cau da duoc xu ly, khong the huy');
 
-    if (!request) throw new NotFoundException('Yêu cầu không tồn tại');
+    return this.prisma.joinRequest.delete({ where: { id: requestId } });
+  }
 
-    if (request.userId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền rút lại yêu cầu này');
+  async deleteRejectedCompany(userId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { ownerId: userId },
+    });
+    if (!company) throw new NotFoundException('Khong tim thay cong ty');
+    if (company.status !== CompanyStatus.REJECTED) {
+      throw new BadRequestException('Chi co the xoa cong ty bi tu choi');
     }
 
-    return this.prisma.joinRequest.delete({
-      where: { id: requestId },
+    return this.prisma.company.delete({ where: { id: company.id } });
+  }
+
+  // ==========================================
+  // PREMIUM REQUESTS LOGIC
+  // ==========================================
+
+  async createPremiumRequest(userId: string, dto: CreatePremiumRequestDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { ownedCompany: true },
     });
+
+    if (!user || !user.ownedCompany) {
+      throw new ForbiddenException('Chi chu doanh nghiep moi co the dang ky');
+    }
+
+    // Kiem tra neu dang co yeu cau PENDING
+    const existing = await this.prisma.premiumRequest.findFirst({
+      where: {
+        companyId: user.ownedCompany.id,
+        status: PremiumRequestStatus.PENDING,
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Ban dang co mot yeu cau dang cho xu ly');
+    }
+
+    const request = await this.prisma.premiumRequest.create({
+      data: {
+        ...dto,
+        companyId: user.ownedCompany.id,
+        userId: userId,
+        status: PremiumRequestStatus.PENDING,
+      },
+      include: { company: true },
+    });
+
+    await this.notificationService.sendToAdmins({
+      senderId: userId,
+      type: 'PREMIUM_UPGRADE_REQUEST',
+      title: 'Yeu cau nang cap Doi tac uy tin',
+      content: `Doanh nghiep ${request.company.name} muon nang cap len goi Premium.`,
+      targetType: 'COMPANY',
+      targetId: request.companyId,
+    });
+
+    return request;
+  }
+
+  async findAllPremiumRequests(status?: PremiumRequestStatus) {
+    return this.prisma.premiumRequest.findMany({
+      where: { status: status || undefined },
+      include: {
+        company: true,
+        user: { select: { fullName: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async handlePremiumRequest(id: string, status: PremiumRequestStatus) {
+    const request = await this.prisma.premiumRequest.update({
+      where: { id },
+      data: { status },
+      include: { company: true },
+    });
+
+    if (status === PremiumRequestStatus.APPROVED) {
+      // Tu dong nang cap cong ty
+      await this.prisma.company.update({
+        where: { id: request.companyId },
+        data: { isPremium: true },
+      });
+
+      await this.notificationService.create({
+        receiverId: request.userId,
+        type: 'PREMIUM_APPROVED',
+        title: 'Nang cap Doi tac uy tin thanh cong',
+        content: `Chuc mung! Cong ty ${request.company.name} cua ban da tro thanh Doi tac uy tin.`,
+        targetType: 'COMPANY',
+        targetId: request.companyId,
+      });
+    }
+
+    return request;
   }
 }

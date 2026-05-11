@@ -14,9 +14,10 @@ import { CompanyService } from './company.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role, RequestStatus, CompanyStatus } from '@prisma/client'; // Import thêm CompanyStatus
+import { Role, RequestStatus, CompanyStatus, PremiumRequestStatus } from '@prisma/client';
 import { CompanyDto } from './dto/company.dto';
 import { JobAssigneeDto } from './dto/job-assignee.dto';
+import { CreatePremiumRequestDto } from './dto/premium-request.dto';
 
 @Controller('companies')
 export class CompanyController {
@@ -148,5 +149,33 @@ export class CompanyController {
   @Roles(Role.EMPLOYER)
   cancelRequest(@Request() req, @Param('id') id: string) {
     return this.companyService.cancelJoinRequest(req.user.userId, id);
+  }
+
+  // ==========================================
+  // PREMIUM REQUESTS
+  // ==========================================
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYER)
+  @Post('premium-request')
+  createPremiumRequest(@Request() req, @Body() dto: CreatePremiumRequestDto) {
+    return this.companyService.createPremiumRequest(req.user.userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('admin/premium-requests')
+  findAllPremiumRequests(@Query('status') status?: PremiumRequestStatus) {
+    return this.companyService.findAllPremiumRequests(status);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('premium-request/:id/handle')
+  handlePremiumRequest(
+    @Param('id') id: string,
+    @Body('status') status: PremiumRequestStatus,
+  ) {
+    return this.companyService.handlePremiumRequest(id, status);
   }
 }

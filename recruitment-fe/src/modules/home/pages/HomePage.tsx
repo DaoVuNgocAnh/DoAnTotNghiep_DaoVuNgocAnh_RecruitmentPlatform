@@ -1,8 +1,7 @@
-import { useAllJobs } from "../../job/api/job.api";
-import type { Job } from "../../job/api/job.api";
+import { useAllJobs, useTrendingJobs } from "../../job/api/job.api";
 import { JobCard } from "@/components/shared/JobCard";
 import { Loader2, Info, ChevronRight, Flame, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Hero } from "../components/Hero";
 import { StatsSection } from "../components/StatsSection";
 import { CategorySection } from "../components/CategorySection";
@@ -14,13 +13,17 @@ export const HomePage = () => {
   const [search, setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const { data: jobs, isLoading } = useAllJobs({ search: searchQuery });
+  const { data: trendingJobs } = useTrendingJobs();
+
+  // Tạo một Set chứa ID của các tin trending để kiểm tra nhanh
+  const trendingIds = useMemo(() => 
+    new Set(trendingJobs?.map(j => j.id) || []), 
+    [trendingJobs]
+  );
 
   const handleSearch = () => {
     setSearchQuery(search);
   };
-
-  const hotJobs = jobs?.filter(job => job.isFeatured) || [];
-  const regularJobs = jobs?.filter(job => !job.isFeatured) || [];
 
   return (
     <div className="bg-[#f4f7f6] min-h-screen">
@@ -30,8 +33,8 @@ export const HomePage = () => {
       {/* Stats Section */}
       <StatsSection />
 
-      {/* Hot Jobs Section (Only show if there are hot jobs and no active search) */}
-      {hotJobs.length > 0 && !searchQuery && (
+      {/* Trending Jobs Section (Scoring Algorithm) */}
+      {!searchQuery && trendingJobs && trendingJobs.length > 0 && (
         <div className="bg-slate-950 py-24 relative overflow-hidden">
            <div className="absolute top-0 right-0 p-24 opacity-10 pointer-events-none">
               <Flame size={300} className="text-primary animate-pulse" />
@@ -43,20 +46,20 @@ export const HomePage = () => {
                     <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
                        <Flame size={28} className="text-white" />
                     </div>
-                    Việc làm <span className="text-primary italic">Tiêu điểm</span>
+                    Việc làm <span className="text-primary italic">Xu hướng</span>
                   </h2>
-                  <p className="text-slate-400 font-medium mt-4 ml-2 italic">Những cơ hội nghề nghiệp hấp dẫn nhất đang chờ đón bạn</p>
+                  <p className="text-slate-400 font-medium mt-4 ml-2 italic">Những cơ hội nghề nghiệp đang thu hút sự quan tâm lớn nhất</p>
                 </div>
                 <div className="hidden md:flex gap-4">
                    <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-widest">
-                      Đã kiểm duyệt 100%
+                      Cập nhật tự động
                    </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {hotJobs.slice(0, 6).map((job: Job) => (
-                  <JobCard key={job.id} job={job} />
+                {trendingJobs.slice(0, 6).map((job) => (
+                  <JobCard key={job.id} job={job} isTrending={true} />
                 ))}
               </div>
            </div>
@@ -91,7 +94,7 @@ export const HomePage = () => {
             <Loader2 className="animate-spin text-primary" size={64} />
             <p className="font-bold text-slate-400 animate-pulse uppercase tracking-[0.3em] text-xs">Sàng lọc cơ hội tốt nhất...</p>
           </div>
-        ) : regularJobs.length === 0 && hotJobs.length === 0 ? (
+        ) : !jobs || jobs.length === 0 ? (
           <div className="text-center py-32 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
              <div className="bg-slate-50 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
                 <Info className="text-slate-200" size={48} />
@@ -101,8 +104,12 @@ export const HomePage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {(searchQuery ? jobs : regularJobs)?.slice(0, 12).map((job: Job) => (
-              <JobCard key={job.id} job={job} />
+            {jobs.slice(0, 12).map((job) => (
+              <JobCard 
+                key={job.id} 
+                job={job} 
+                isTrending={trendingIds.has(job.id)} 
+              />
             ))}
           </div>
         )}

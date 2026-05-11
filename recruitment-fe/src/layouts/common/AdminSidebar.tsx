@@ -10,6 +10,7 @@ import {
   User as UserIcon,
   Briefcase,
   MessageSquareText,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,11 @@ const menuItems = [
     title: 'Duyệt Công ty',
     icon: <Building size={20} />,
     path: '/admin/companies',
+  },
+  {
+    title: 'Duyệt Premium',
+    icon: <ShieldCheck size={20} />,
+    path: '/admin/premium-requests',
   },
   {
     title: 'Duyệt tin tuyển dụng',

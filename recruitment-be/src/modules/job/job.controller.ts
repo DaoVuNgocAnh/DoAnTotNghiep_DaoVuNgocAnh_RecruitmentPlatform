@@ -11,7 +11,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { JobService } from './job.service';
-import { JobDto } from './dto/job.dto';
+import { JobDto, UpdateJobStatusAdminDto } from './dto/job.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -37,25 +37,22 @@ export class JobController {
     return this.jobService.findAllForAdmin(status);
   }
 
+  @Get('trending')
+  async getTrending() {
+    return this.jobService.getTrendingJobs();
+  }
+
   @Patch(':id/status/admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   async updateStatusAdmin(
     @Param('id') id: string,
-    @Body('status') status: JobStatus,
+    @Body() dto: UpdateJobStatusAdminDto,
   ) {
-    return this.jobService.updateStatusByAdmin(id, status);
+    return this.jobService.updateStatusByAdmin(id, dto.status);
   }
 
-  @Patch(':id/featured')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  async updateFeaturedAdmin(
-    @Param('id') id: string,
-    @Body('isFeatured') isFeatured: boolean,
-  ) {
-    return this.jobService.updateFeaturedByAdmin(id, isFeatured);
-  }
+  // Remove the old featured endpoint if it existed or was planned
 
   // ROUTE EMPLOYER: Quản lý tin cá nhân
   @Get('my-jobs')

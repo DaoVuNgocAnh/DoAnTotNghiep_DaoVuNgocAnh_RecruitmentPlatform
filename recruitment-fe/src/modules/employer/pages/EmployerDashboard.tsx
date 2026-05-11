@@ -7,6 +7,7 @@ import {
   FileText,
   type LucideIcon,
   Plus,
+  ShieldCheck,
   Users,
 } from 'lucide-react';
 
@@ -17,6 +18,7 @@ import { useEmployerApplications } from '@/modules/application/api/application.a
 import { useEmployerInterviews } from '@/modules/interview/api/interview.api';
 import { useMyJobs } from '@/modules/job/api/job.api';
 import { useUser } from '@/modules/user/hooks/useUser';
+import { PremiumUpgradeModal } from '../components/PremiumUpgradeModal';
 
 const StatCard = ({
   title,
@@ -71,9 +73,31 @@ export const EmployerDashboard = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="border-l-4 border-[#00b14f] pl-4 text-2xl font-black uppercase tracking-tight text-[#001529]">
-            Tổng quan tuyển dụng
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="border-l-4 border-[#00b14f] pl-4 text-2xl font-black uppercase tracking-tight text-[#001529]">
+              Tổng quan tuyển dụng
+            </h1>
+            {user?.isPremium ? (
+              <Badge className="bg-amber-50 text-amber-600 border-amber-200 font-black text-[10px] uppercase py-1 rounded-xl">
+                <ShieldCheck size={12} className="mr-1" /> Đối tác uy tín
+              </Badge>
+            ) : (
+              user?.isOwner && (
+                <PremiumUpgradeModal
+                  defaultEmail={user?.email ?? undefined}
+                  defaultPhone={user?.phone ?? undefined}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-full border border-amber-200"
+                  >
+                    Nâng cấp VIP ngay
+                  </Button>
+                </PremiumUpgradeModal>
+              )
+            )}
+          </div>
           <p className="ml-4 mt-1 text-sm font-medium italic text-slate-500">
             Theo dõi hiệu quả tuyển dụng trong {scopeLabel}.
           </p>
@@ -94,9 +118,40 @@ export const EmployerDashboard = () => {
             <h2 className="mt-1 text-xl font-black text-slate-900">
               {user?.fullName || 'Nhà tuyển dụng'}
             </h2>
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              Trạng thái công ty: {user?.companyStatus || 'N/A'} · Dữ liệu theo {scopeLabel}
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
+              <span>Trạng thái công ty:</span>
+              {user?.isPremium ? (
+                <Badge className="bg-gradient-to-r from-amber-400 to-amber-600 text-white border-none font-black text-[10px] uppercase px-2 py-0.5 rounded-md shadow-lg shadow-amber-900/20">
+                  <ShieldCheck size={12} className="mr-1" /> Đối tác uy tín
+                </Badge>
+              ) : user?.companyStatus === 'VERIFIED' ? (
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-[#00b14f]/10 text-[#00b14f] border-none font-black text-[10px] uppercase px-2 py-0.5 rounded-md">
+                    <CheckCircle2 size={12} className="mr-1" /> Đã xác thực
+                  </Badge>
+                  {user?.isOwner && (
+                    <PremiumUpgradeModal
+                      defaultEmail={user?.email ?? undefined}
+                      defaultPhone={user?.phone ?? undefined}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-200"
+                      >
+                        Nâng cấp VIP ngay
+                      </Button>
+                    </PremiumUpgradeModal>
+                  )}
+                </div>
+              ) : (
+                <Badge className="bg-slate-100 text-slate-500 border-none font-black text-[10px] uppercase px-2 py-0.5 rounded-md">
+                  <Clock size={12} className="mr-1" /> {user?.companyStatus || 'N/A'}
+                </Badge>
+              )}
+              <span className="text-slate-300">|</span>
+              <span>Dữ liệu theo {scopeLabel}</span>
+            </div>
           </div>
           <Badge className="w-fit rounded-xl border-none bg-green-50 px-4 py-2 font-black text-[#00b14f] hover:bg-green-50">
             {roleLabel}

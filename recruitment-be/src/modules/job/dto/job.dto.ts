@@ -42,3 +42,9 @@ export class JobDto {
 
   @IsOptional() @IsBoolean() isDeleted?: boolean; // is_deleted
 }
+
+export class UpdateJobStatusAdminDto {
+  @IsNotEmpty()
+  @IsEnum(JobStatus)
+  status: JobStatus;
+}
