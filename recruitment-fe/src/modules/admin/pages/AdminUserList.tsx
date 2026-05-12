@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Lock, Mail, Search, Shield, Unlock, UserCog, Users } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Pagination } from '@/components/shared/Pagination';
 
 const roles = ['ALL', 'ADMIN', 'EMPLOYER', 'CANDIDATE'] as const;
 const statuses = ['ALL', 'ACTIVE', 'LOCKED'] as const;
@@ -28,14 +29,18 @@ const roleTone: Record<AdminUser['role'], string> = {
 
 export const AdminUserList = () => {
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [role, setRole] = useState<(typeof roles)[number]>('ALL');
   const [status, setStatus] = useState<(typeof statuses)[number]>('ALL');
 
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ['admin-users'],
-    queryFn: () => adminApi.getUsers().then((res) => res.data),
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-users', page, role, status, search],
+    queryFn: () => adminApi.getUsers({ page, role, status, search }).then((res) => res.data),
   });
+
+  const users = data?.data || [];
+  const meta = data?.meta;
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, nextStatus }: { id: string; nextStatus: 'ACTIVE' | 'LOCKED' }) =>
@@ -48,20 +53,6 @@ export const AdminUserList = () => {
       toast.error(error.response?.data?.message || 'Không thể cập nhật trạng thái');
     },
   });
-
-  const filteredUsers = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    return users.filter((user) => {
-      const matchesSearch =
-        !keyword ||
-        user.fullName.toLowerCase().includes(keyword) ||
-        user.email.toLowerCase().includes(keyword) ||
-        user.company?.name?.toLowerCase().includes(keyword);
-      const matchesRole = role === 'ALL' || user.role === role;
-      const matchesStatus = status === 'ALL' || user.status === status;
-      return matchesSearch && matchesRole && matchesStatus;
-    });
-  }, [role, search, status, users]);
 
   const lockedCount = users.filter((user) => user.status === 'LOCKED').length;
 
@@ -81,7 +72,7 @@ export const AdminUserList = () => {
             <CardContent className="flex items-center gap-3 p-4">
               <Users className="text-blue-600" size={22} />
               <div>
-                <p className="text-[10px] font-black uppercase text-zinc-400">Tổng user</p>
+                <p className="text-[10px] font-black uppercase text-zinc-400">Tổng trang</p>
                 <p className="text-xl font-black text-zinc-900">{users.length}</p>
               </div>
             </CardContent>
@@ -90,7 +81,7 @@ export const AdminUserList = () => {
             <CardContent className="flex items-center gap-3 p-4">
               <Lock className="text-red-600" size={22} />
               <div>
-                <p className="text-[10px] font-black uppercase text-zinc-400">Đang khóa</p>
+                <p className="text-[10px] font-black uppercase text-zinc-400">Đang khóa (Trang này)</p>
                 <p className="text-xl font-black text-zinc-900">{lockedCount}</p>
               </div>
             </CardContent>
@@ -108,7 +99,10 @@ export const AdminUserList = () => {
               <Search className="absolute left-3 top-2.5 text-zinc-400" size={16} />
               <Input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
                 placeholder="Tìm theo tên, email, công ty..."
                 className="h-10 rounded-xl bg-zinc-50 pl-9"
               />
@@ -121,7 +115,10 @@ export const AdminUserList = () => {
                   variant={role === item ? 'default' : 'outline'}
                   size="sm"
                   className="rounded-xl font-black"
-                  onClick={() => setRole(item)}
+                  onClick={() => {
+                    setRole(item);
+                    setPage(1);
+                  }}
                 >
                   {item}
                 </Button>
@@ -135,7 +132,10 @@ export const AdminUserList = () => {
                   variant={status === item ? 'default' : 'outline'}
                   size="sm"
                   className="rounded-xl font-black"
-                  onClick={() => setStatus(item)}
+                  onClick={() => {
+                    setStatus(item);
+                    setPage(1);
+                  }}
                 >
                   {item}
                 </Button>
@@ -161,14 +161,14 @@ export const AdminUserList = () => {
                     Đang tải danh sách người dùng...
                   </TableCell>
                 </TableRow>
-              ) : filteredUsers.length === 0 ? (
+              ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-16 text-center text-sm font-bold text-zinc-400">
                     Không tìm thấy người dùng phù hợp.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map((user) => (
+                users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="px-8 py-5">
                       <div className="flex items-center gap-3">
@@ -244,6 +244,15 @@ export const AdminUserList = () => {
               )}
             </TableBody>
           </Table>
+
+          {meta && (
+            <Pagination
+              currentPage={page}
+              totalPages={meta.totalPages}
+              onPageChange={(p) => setPage(p)}
+              className="border-t"
+            />
+          )}
         </CardContent>
       </Card>
     </div>

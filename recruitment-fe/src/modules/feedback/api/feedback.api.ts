@@ -1,4 +1,5 @@
 import axiosClient from '@/api/axiosClient';
+import type { PaginatedResponse } from '@/types/pagination';
 
 export type FeedbackType = 'BUG' | 'SUGGESTION' | 'QUESTION' | 'OTHER';
 export type FeedbackStatus = 'NEW' | 'REVIEWING' | 'RESOLVED';
@@ -32,11 +33,18 @@ export const feedbackApi = {
   create: (payload: CreateFeedbackPayload) =>
     axiosClient.post<Feedback>('/feedback', payload),
 
-  getAll: (params?: { status?: FeedbackStatus | 'ALL'; type?: FeedbackType | 'ALL' }) =>
-    axiosClient.get<Feedback[]>('/feedback', {
+  getAll: (params?: {
+    status?: FeedbackStatus | 'ALL';
+    type?: FeedbackType | 'ALL';
+    page?: number;
+    limit?: number;
+  }) =>
+    axiosClient.get<PaginatedResponse<Feedback>>('/feedback', {
       params: {
         status: params?.status === 'ALL' ? undefined : params?.status,
         type: params?.type === 'ALL' ? undefined : params?.type,
+        page: params?.page,
+        limit: params?.limit,
       },
     }),
 

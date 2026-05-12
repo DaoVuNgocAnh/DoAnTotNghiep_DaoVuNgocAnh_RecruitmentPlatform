@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 interface HeroProps {
   search: string;
   setSearch: (val: string) => void;
+  location: string;
+  setLocation: (val: string) => void;
   onSearch: () => void;
 }
 
-export const Hero = ({ search, setSearch, onSearch }: HeroProps) => {
+export const Hero = ({ search, setSearch, location, setLocation, onSearch }: HeroProps) => {
   return (
     <section className="relative py-20 lg:py-32 overflow-hidden bg-slate-950">
       {/* Background Decor */}
@@ -46,13 +48,19 @@ export const Hero = ({ search, setSearch, onSearch }: HeroProps) => {
                 onKeyDown={(e) => e.key === "Enter" && onSearch()}
               />
             </div>
-            <div className="flex-1 flex items-center px-4 gap-3 py-3 md:py-0 hidden sm:flex">
+            <div className="flex-1 flex items-center px-4 gap-3 py-3 md:py-0 sm:flex">
               <MapPin className="text-primary shrink-0" size={20} />
-              <select className="w-full bg-transparent outline-none text-sm font-bold text-slate-700 appearance-none cursor-pointer">
-                <option>Tất cả địa điểm</option>
-                <option>Hà Nội</option>
-                <option>TP. Hồ Chí Minh</option>
-                <option>Đà Nẵng</option>
+              <select 
+                className="w-full bg-transparent outline-none text-sm font-bold text-slate-700 appearance-none cursor-pointer"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              >
+                <option value="Tất cả địa điểm">Tất cả địa điểm</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                <option value="Đà Nẵng">Đà Nẵng</option>
+                <option value="Cần Thơ">Cần Thơ</option>
+                <option value="Hải Phòng">Hải Phòng</option>
               </select>
             </div>
             <Button 

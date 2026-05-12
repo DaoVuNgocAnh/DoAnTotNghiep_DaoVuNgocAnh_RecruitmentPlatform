@@ -40,10 +40,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Pagination } from '@/components/shared/Pagination';
 
 export const AdminJobCategory = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<JobCategory | null>(null);
@@ -54,10 +58,12 @@ export const AdminJobCategory = () => {
   const [description, setDescription] = useState('');
 
   // 1. Fetch data
-  const { data: categories = [], isLoading } = useQuery({
-    queryKey: ['admin-job-categories'],
-    queryFn: () => jobCategoryApi.getAll().then((res) => res.data),
+  const { data: categoriesData, isLoading } = useQuery({
+    queryKey: ['admin-job-categories', page],
+    queryFn: () => jobCategoryApi.getAll({ page, limit }).then((res) => res.data),
   });
+
+  const categories = categoriesData?.data || [];
 
   // 2. Mutations
   const createMutation = useMutation({
@@ -167,7 +173,7 @@ export const AdminJobCategory = () => {
             <LayoutGrid className="text-blue-600" size={22} />
             <div>
               <p className="text-[10px] font-black uppercase text-zinc-400">Tổng danh mục</p>
-              <p className="text-xl font-black text-zinc-900">{categories.length}</p>
+              <p className="text-xl font-black text-zinc-900">{categoriesData?.meta?.total || 0}</p>
             </div>
           </CardContent>
         </Card>
@@ -262,6 +268,16 @@ export const AdminJobCategory = () => {
             )}
           </TableBody>
         </Table>
+
+        {categoriesData && (
+          <div className="p-4 border-t border-zinc-100">
+            <Pagination
+              currentPage={page}
+              totalPages={categoriesData.meta.totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Dialog */}

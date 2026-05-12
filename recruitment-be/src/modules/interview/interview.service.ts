@@ -8,6 +8,10 @@ import {
   CreateInterviewDto,
   UpdateInterviewStatusDto,
 } from './dto/interview.dto';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class InterviewService {
@@ -91,61 +95,107 @@ export class InterviewService {
     companyId: string,
     employerId: string,
     isOwner: boolean,
-  ) {
-    return this.prisma.interview.findMany({
-      where: {
-        isDeleted: false,
-        application: {
-          job: {
-            companyId,
-            OR: isOwner
-              ? undefined
-              : [
-                  { createdById: employerId },
-                  { assignees: { some: { userId: employerId } } },
-                ],
-          },
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      isDeleted: false,
+      application: {
+        job: {
+          companyId,
+          OR: isOwner
+            ? undefined
+            : [
+                { createdById: employerId },
+                { assignees: { some: { userId: employerId } } },
+              ],
         },
       },
-      include: {
-        employer: { select: { id: true, fullName: true, email: true } },
-        application: {
-          include: {
-            candidate: {
-              select: { id: true, fullName: true, email: true, phone: true },
-            },
-            job: {
-              select: {
-                id: true,
-                title: true,
-                assignees: {
-                  include: {
-                    user: { select: { id: true, fullName: true, email: true } },
+    };
+
+    const [total, interviews] = await this.prisma.$transaction([
+      this.prisma.interview.count({ where }),
+      this.prisma.interview.findMany({
+        where,
+        include: {
+          employer: { select: { id: true, fullName: true, email: true } },
+          application: {
+            include: {
+              candidate: {
+                select: { id: true, fullName: true, email: true, phone: true },
+              },
+              job: {
+                select: {
+                  id: true,
+                  title: true,
+                  assignees: {
+                    include: {
+                      user: {
+                        select: { id: true, fullName: true, email: true },
+                      },
+                    },
                   },
                 },
               },
             },
           },
         },
+        orderBy: { interviewDate: 'asc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: interviews,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { interviewDate: 'asc' },
-    });
+    };
   }
 
-  async findByCandidate(candidateId: string) {
-    return this.prisma.interview.findMany({
-      where: { application: { candidateId }, isDeleted: false },
-      include: {
-        application: {
-          include: {
-            job: {
-              include: { company: { select: { name: true, logoUrl: true } } },
+  async findByCandidate(
+    candidateId: string,
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const where = { application: { candidateId }, isDeleted: false };
+
+    const [total, interviews] = await this.prisma.$transaction([
+      this.prisma.interview.count({ where }),
+      this.prisma.interview.findMany({
+        where,
+        include: {
+          application: {
+            include: {
+              job: {
+                include: { company: { select: { name: true, logoUrl: true } } },
+              },
             },
           },
         },
+        orderBy: { interviewDate: 'asc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: interviews,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { interviewDate: 'asc' },
-    });
+    };
   }
 
   async updateStatus(

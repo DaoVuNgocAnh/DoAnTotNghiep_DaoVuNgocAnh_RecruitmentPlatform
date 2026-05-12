@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../core/database/prisma.service';
 import { CreateSystemLogDto, SystemLogQueryDto } from './dto/system-log.dto';
+import { PaginatedResponse } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class SystemLogService {
@@ -13,7 +14,7 @@ export class SystemLogService {
     });
   }
 
-  async findAll(query: SystemLogQueryDto) {
+  async findAll(query: SystemLogQueryDto): Promise<PaginatedResponse<any>> {
     const { page = 1, limit = 10, actionType, targetType, userEmail } = query;
     const skip = (page - 1) * limit;
     const where: Prisma.SystemLogWhereInput = {};
@@ -26,7 +27,8 @@ export class SystemLogService {
       where.user = { email: { contains: userEmail, mode: 'insensitive' } };
     }
 
-    const [data, total] = await Promise.all([
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.systemLog.count({ where }),
       this.prisma.systemLog.findMany({
         where,
         skip,
@@ -34,8 +36,16 @@ export class SystemLogService {
         orderBy: { actionDate: 'desc' },
         include: { user: { select: { email: true, fullName: true } } },
       }),
-      this.prisma.systemLog.count({ where }),
     ]);
-    return { data, total, page, limit };
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

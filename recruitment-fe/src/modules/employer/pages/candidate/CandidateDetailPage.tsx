@@ -107,7 +107,7 @@ export const CandidateDetailPage = () => {
                 </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
-                {candidate.resumes?.length > 0 ? (
+                {candidate.resumes && candidate.resumes.length > 0 ? (
                     candidate.resumes.map((resume: any) => (
                         <div key={resume.id} className="group p-5 bg-white rounded-3xl border-2 border-slate-50 hover:border-green-100 hover:bg-green-50/30 transition-all duration-300">
                             <div className="flex items-start justify-between gap-4 mb-3">

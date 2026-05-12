@@ -5,6 +5,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 
 export class CreateFeedbackDto {
   @IsIn(['BUG', 'SUGGESTION', 'QUESTION', 'OTHER'])
@@ -26,7 +27,7 @@ export class CreateFeedbackDto {
   pageUrl?: string;
 }
 
-export class FeedbackQueryDto {
+export class FeedbackQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsIn(['NEW', 'REVIEWING', 'RESOLVED'])
   status?: string;

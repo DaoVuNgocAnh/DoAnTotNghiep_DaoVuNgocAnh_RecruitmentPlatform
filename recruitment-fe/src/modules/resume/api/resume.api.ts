@@ -1,4 +1,5 @@
 import apiClient from "@/api/axiosClient";
+import type { PaginatedResponse } from "@/types/pagination";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export interface Resume {
@@ -10,7 +11,8 @@ export interface Resume {
 }
 
 export const resumeApi = {
-  getMyResumes: () => apiClient.get<Resume[]>("/resumes/my"),
+  getMyResumes: (params?: { page?: number; limit?: number }) => 
+    apiClient.get<PaginatedResponse<Resume>>("/resumes/my", { params }),
   
   uploadResume: (formData: FormData) => apiClient.post("/resumes/upload", formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -23,9 +25,9 @@ export const resumeApi = {
 
 // --- HOOKS ---
 
-export const useResumes = (enabled: boolean = true) => useQuery({
-  queryKey: ['resumes'],
-  queryFn: () => resumeApi.getMyResumes().then(res => res.data),
+export const useResumes = (params?: { page?: number; limit?: number }, enabled: boolean = true) => useQuery({
+  queryKey: ['resumes', params?.page, params?.limit],
+  queryFn: () => resumeApi.getMyResumes(params).then(res => res.data),
   enabled,
 });
 

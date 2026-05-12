@@ -37,8 +37,9 @@ export const FloatingActionMenu = () => {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const isCandidate = user?.role === 'CANDIDATE';
   const shouldShow = !user || isCandidate;
-  const { data: savedJobs } = useSavedItems(
+  const { data: savedJobsData } = useSavedItems(
     'JOB',
+    undefined,
     isAuthenticated && isCandidate,
   );
 
@@ -58,7 +59,7 @@ export const FloatingActionMenu = () => {
     {
       label: 'Đã lưu',
       icon: Heart,
-      badge: savedJobs?.length || 0,
+      badge: savedJobsData?.data?.length || 0,
       compact: true,
       onClick: () =>
         requireLogin('/saved-jobs', 'Vui lòng đăng nhập để xem việc đã lưu'),

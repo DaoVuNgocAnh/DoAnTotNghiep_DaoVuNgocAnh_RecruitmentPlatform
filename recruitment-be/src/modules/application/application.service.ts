@@ -10,6 +10,10 @@ import {
   CreateApplicationDto,
   UpdateApplicationStatusDto,
 } from './dto/application.dto';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class ApplicationService {
@@ -60,68 +64,108 @@ export class ApplicationService {
     return application;
   }
 
-  async findByCandidate(candidateId: string) {
-    return this.prisma.application.findMany({
-      where: { candidateId, isDeleted: false },
-      include: {
-        job: { include: { company: true } },
-        resume: true,
+  async findByCandidate(
+    candidateId: string,
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const where = { candidateId, isDeleted: false };
+
+    const [total, applications] = await this.prisma.$transaction([
+      this.prisma.application.count({ where }),
+      this.prisma.application.findMany({
+        where,
+        include: {
+          job: { include: { company: true } },
+          resume: true,
+        },
+        orderBy: { applyDate: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: applications,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { applyDate: 'desc' },
-    });
+    };
   }
 
-  async findByEmployer(companyId: string, userId: string, isOwner: boolean) {
-    const applications = await this.prisma.application.findMany({
-      where: {
-        isDeleted: false,
-        job: {
-          companyId,
-          OR: isOwner
-            ? undefined
-            : [{ createdById: userId }, { assignees: { some: { userId } } }],
-        },
+  async findByEmployer(
+    companyId: string,
+    userId: string,
+    isOwner: boolean,
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      isDeleted: false,
+      job: {
+        companyId,
+        OR: isOwner
+          ? undefined
+          : [{ createdById: userId }, { assignees: { some: { userId } } }],
       },
-      include: {
-        candidate: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-            avatarUrl: true,
+    };
+
+    const [total, applications] = await this.prisma.$transaction([
+      this.prisma.application.count({ where }),
+      this.prisma.application.findMany({
+        where,
+        include: {
+          candidate: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              avatarUrl: true,
+            },
           },
-        },
-        job: {
-          select: {
-            id: true,
-            title: true,
-            createdById: true,
-            assignees: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    fullName: true,
-                    email: true,
-                    avatarUrl: true,
+          job: {
+            select: {
+              id: true,
+              title: true,
+              createdById: true,
+              assignees: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      email: true,
+                      avatarUrl: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        resume: true,
-        employerActionBy: { select: { id: true, fullName: true, email: true } },
-        histories: {
-          include: {
-            actor: { select: { id: true, fullName: true, email: true } },
+          resume: true,
+          employerActionBy: {
+            select: { id: true, fullName: true, email: true },
           },
-          orderBy: { createdAt: 'desc' },
+          histories: {
+            include: {
+              actor: { select: { id: true, fullName: true, email: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+          },
         },
-      },
-      orderBy: { applyDate: 'desc' },
-    });
+        orderBy: { applyDate: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
 
     const pendingIds = applications
       .filter((app) => app.status === ApplicationStatus.PENDING)
@@ -139,7 +183,15 @@ export class ApplicationService {
       });
     }
 
-    return applications;
+    return {
+      data: applications,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async updateStatus(

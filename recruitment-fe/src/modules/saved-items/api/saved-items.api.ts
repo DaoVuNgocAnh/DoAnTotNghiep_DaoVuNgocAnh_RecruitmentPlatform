@@ -1,4 +1,5 @@
 import axiosClient from "@/api/axiosClient";
+import type { PaginatedResponse } from "@/types/pagination";
 
 export type TargetType = 'JOB' | 'CANDIDATE';
 
@@ -35,9 +36,9 @@ export const savedItemsApi = {
     return response.data;
   },
 
-  getAll: async (type?: TargetType): Promise<SavedItem[]> => {
+  getAll: async (params?: { type?: TargetType; page?: number; limit?: number }): Promise<PaginatedResponse<SavedItem>> => {
     const response = await axiosClient.get("/saved-items", {
-      params: { type },
+      params,
     });
     return response.data;
   },
@@ -47,8 +48,8 @@ export const savedItemsApi = {
     return response.data;
   },
 
-  getCompanyCandidates: async (): Promise<SavedItem[]> => {
-    const response = await axiosClient.get("/saved-items/company/candidates");
+  getCompanyCandidates: async (params?: { page?: number; limit?: number }): Promise<PaginatedResponse<SavedItem>> => {
+    const response = await axiosClient.get("/saved-items/company/candidates", { params });
     return response.data;
   },
 

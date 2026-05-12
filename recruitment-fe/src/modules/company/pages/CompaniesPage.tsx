@@ -13,14 +13,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Pagination } from '@/components/shared/Pagination';
 
 export const CompaniesPage = () => {
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const limit = 9;
 
-  const { data: companies, isLoading } = useQuery({
-    queryKey: ['public-companies', search],
-    queryFn: () => companyApi.getCompanies({ search }).then(res => res.data),
+  const { data: companiesData, isLoading } = useQuery({
+    queryKey: ['public-companies', search, page],
+    queryFn: () => companyApi.getCompanies({ search, page, limit }).then(res => res.data),
   });
+
+  const companies = companiesData?.data || [];
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-32">
@@ -122,6 +127,16 @@ export const CompaniesPage = () => {
                 </Card>
               </Link>
             ))}
+          </div>
+        )}
+
+        {companiesData && (
+          <div className="mt-16 flex justify-center">
+            <Pagination
+              currentPage={page}
+              totalPages={companiesData.meta.totalPages}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </div>

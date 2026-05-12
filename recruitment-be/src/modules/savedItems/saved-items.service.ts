@@ -6,6 +6,10 @@ import {
 import { SavedItemScope, TargetType } from '@prisma/client';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { ToggleSavedItemDto } from './dto/toggle-saved-item.dto';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class SavedItemsService {
@@ -128,40 +132,88 @@ export class SavedItemsService {
     return { saved: true, message: 'Da dua vao kho ung vien cong ty' };
   }
 
-  async findAll(userId: string, targetType?: TargetType) {
-    const items = await this.prisma.savedItem.findMany({
-      where: {
-        userId,
-        targetType: targetType || undefined,
-        scope: SavedItemScope.PERSONAL,
-        isDeleted: false,
-      },
-      include: {
-        user: { select: { id: true, fullName: true, email: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(
+    userId: string,
+    pagination: PaginationQueryDto,
+    targetType?: TargetType,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
 
-    return this.populateDetails(items);
+    const where = {
+      userId,
+      targetType: targetType || undefined,
+      scope: SavedItemScope.PERSONAL,
+      isDeleted: false,
+    };
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.savedItem.count({ where }),
+      this.prisma.savedItem.findMany({
+        where,
+        include: {
+          user: { select: { id: true, fullName: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const populatedData = await this.populateDetails(items);
+
+    return {
+      data: populatedData,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async findCompanyCandidates(userId: string, companyId: string) {
+  async findCompanyCandidates(
+    userId: string,
+    companyId: string,
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
     await this.ensureEmployerInCompany(userId, companyId);
 
-    const items = await this.prisma.savedItem.findMany({
-      where: {
-        companyId,
-        targetType: TargetType.CANDIDATE,
-        scope: SavedItemScope.COMPANY,
-        isDeleted: false,
-      },
-      include: {
-        user: { select: { id: true, fullName: true, email: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const where = {
+      companyId,
+      targetType: TargetType.CANDIDATE,
+      scope: SavedItemScope.COMPANY,
+      isDeleted: false,
+    };
 
-    return this.populateDetails(items);
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.savedItem.count({ where }),
+      this.prisma.savedItem.findMany({
+        where,
+        include: {
+          user: { select: { id: true, fullName: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const populatedData = await this.populateDetails(items);
+
+    return {
+      data: populatedData,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async checkStatus(userId: string, targetId: string) {

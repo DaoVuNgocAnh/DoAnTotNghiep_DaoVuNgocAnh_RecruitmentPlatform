@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 
 export class CreateSystemLogDto {
   @IsOptional()
@@ -22,19 +23,7 @@ export class CreateSystemLogDto {
   description?: string;
 }
 
-export class SystemLogQueryDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit: number = 10;
-
+export class SystemLogQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   actionType?: string;

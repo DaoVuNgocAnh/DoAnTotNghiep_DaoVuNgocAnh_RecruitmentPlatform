@@ -11,6 +11,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,25 +30,33 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
+import { cn, formatSalary } from '@/lib/utils';
 import { useUser } from '@/modules/user/hooks/useUser';
 import { companyApi } from '../api/company.api';
 import { jobApi, useMyJobs, useTrendingJobs } from '../../job/api/job.api';
+import { Pagination } from '@/components/shared/Pagination';
 
 export const EmployerManageJobs = () => {
-  const { data: jobs, isLoading } = useMyJobs();
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const { data: jobsData, isLoading } = useMyJobs({ page, limit });
   const { data: trendingJobs } = useTrendingJobs();
   const { data: user } = useUser();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  const jobs = jobsData?.data || [];
+  const meta = jobsData?.meta;
+
   const trendingIds = new Set(trendingJobs?.map((j) => j.id) || []);
 
-  const { data: members = [] } = useQuery({
+  const { data: membersData } = useQuery({
     queryKey: ['company-members'],
     queryFn: () => companyApi.getMembers().then((res) => res.data),
     enabled: !!user?.isOwner,
   });
+
+  const members = membersData?.data || [];
 
   const refreshJobs = () =>
     queryClient.invalidateQueries({ queryKey: ['my-jobs'] });
@@ -190,7 +199,7 @@ export const EmployerManageJobs = () => {
                       </p>
                       <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-tighter italic">
                         <span>{job.category?.name}</span>
-                        <span>Lương: {job.salary}</span>
+                        <span>Lương: {formatSalary(job.salaryMin, job.salaryMax, job.isSalaryNegotiable)}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
@@ -292,6 +301,14 @@ export const EmployerManageJobs = () => {
           </TableBody>
         </Table>
       </div>
+
+      {meta && (
+        <Pagination 
+          currentPage={page} 
+          totalPages={meta.totalPages} 
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 };

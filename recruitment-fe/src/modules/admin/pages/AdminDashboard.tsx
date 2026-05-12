@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Building2, Briefcase, Clock, type LucideIcon, ShieldCheck, Users } from 'lucide-react';
 import { adminApi } from '../api/admin.api';
@@ -33,40 +32,25 @@ const StatCard = ({
 );
 
 export const AdminDashboard = () => {
-  const { data: companies = [] } = useQuery({
-    queryKey: ['admin-companies-dashboard'],
-    queryFn: () => adminApi.getCompanies().then((res) => res.data),
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: () => adminApi.getStats().then((res) => res.data),
   });
-  const { data: users = [] } = useQuery({
-    queryKey: ['admin-users'],
-    queryFn: () => adminApi.getUsers().then((res) => res.data),
+
+  const { data: companiesData } = useQuery({
+    queryKey: ['admin-companies-recent'],
+    queryFn: () => adminApi.getCompanies({ page: 1, limit: 5 }).then((res) => res.data),
   });
-  const { data: pendingJobs = [] } = useAdminJobs('PENDING');
-  const { data: activeJobs = [] } = useAdminJobs('ACTIVE');
 
-  const companyStats = useMemo(
-    () => ({
-      pending: companies.filter((company: any) => company.status === 'PENDING').length,
-      verified: companies.filter((company: any) => company.status === 'VERIFIED').length,
-      rejected: companies.filter((company: any) => company.status === 'REJECTED').length,
-      blacklisted: companies.filter((company: any) => company.status === 'BLACKLIST').length,
-    }),
-    [companies],
-  );
+  useAdminJobs({ status: 'PENDING', limit: 1 });
+  useAdminJobs({ status: 'ACTIVE', limit: 1 });
 
-  const userStats = useMemo(
-    () => ({
-      admin: users.filter((user) => user.role === 'ADMIN').length,
-      employer: users.filter((user) => user.role === 'EMPLOYER').length,
-      candidate: users.filter((user) => user.role === 'CANDIDATE').length,
-      locked: users.filter((user) => user.status === 'LOCKED').length,
-    }),
-    [users],
-  );
+  if (isLoading) return <div className="flex h-[60vh] items-center justify-center text-zinc-400 font-bold uppercase text-xs tracking-widest">Đang tải thống kê...</div>;
 
-  const newestCompanies = [...companies]
-    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  const companies = stats?.companies || { total: 0, byStatus: {} };
+  const users = stats?.users || { total: 0, byRole: {}, byStatus: {} };
+  const jobs = stats?.jobs || { total: 0, byStatus: {} };
+  const recentCompanies = companiesData?.data || [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -80,10 +64,10 @@ export const AdminDashboard = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Doanh nghiệp" value={companies.length} icon={Building2} className="bg-blue-50 text-blue-600" />
-        <StatCard title="Chờ duyệt công ty" value={companyStats.pending} icon={Clock} className="bg-yellow-50 text-yellow-600" />
-        <StatCard title="Tin chờ duyệt" value={pendingJobs.length} icon={Briefcase} className="bg-purple-50 text-purple-600" />
-        <StatCard title="Người dùng" value={users.length} icon={Users} className="bg-green-50 text-green-600" />
+        <StatCard title="Doanh nghiệp" value={companies.total} icon={Building2} className="bg-blue-50 text-blue-600" />
+        <StatCard title="Chờ duyệt công ty" value={companies.byStatus['PENDING'] || 0} icon={Clock} className="bg-yellow-50 text-yellow-600" />
+        <StatCard title="Tin chờ duyệt" value={jobs.byStatus['PENDING'] || 0} icon={Briefcase} className="bg-purple-50 text-purple-600" />
+        <StatCard title="Người dùng" value={users.total} icon={Users} className="bg-green-50 text-green-600" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
@@ -95,10 +79,10 @@ export const AdminDashboard = () => {
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             {([
-              ['VERIFIED', companyStats.verified, 'bg-green-50 text-green-600'],
-              ['PENDING', companyStats.pending, 'bg-yellow-50 text-yellow-600'],
-              ['REJECTED', companyStats.rejected, 'bg-red-50 text-red-600'],
-              ['BLACKLIST', companyStats.blacklisted, 'bg-zinc-100 text-zinc-700'],
+              ['VERIFIED', companies.byStatus['VERIFIED'] || 0, 'bg-green-50 text-green-600'],
+              ['PENDING', companies.byStatus['PENDING'] || 0, 'bg-yellow-50 text-yellow-600'],
+              ['REJECTED', companies.byStatus['REJECTED'] || 0, 'bg-red-50 text-red-600'],
+              ['BLACKLIST', companies.byStatus['BLACKLIST'] || 0, 'bg-zinc-100 text-zinc-700'],
             ] as Array<[string, number, string]>).map(([label, value, tone]) => (
               <div key={label} className="rounded-2xl bg-zinc-50 p-4">
                 <Badge className={`border-none font-black ${tone}`}>{label}</Badge>
@@ -116,10 +100,10 @@ export const AdminDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {([
-              ['Admin', userStats.admin],
-              ['Employer', userStats.employer],
-              ['Candidate', userStats.candidate],
-              ['Locked', userStats.locked],
+              ['Admin', users.byRole['ADMIN'] || 0],
+              ['Employer', users.byRole['EMPLOYER'] || 0],
+              ['Candidate', users.byRole['CANDIDATE'] || 0],
+              ['Locked', users.byStatus['LOCKED'] || 0],
             ] as Array<[string, number]>).map(([label, value]) => (
               <div key={label} className="flex items-center justify-between rounded-2xl bg-zinc-50 p-4">
                 <span className="text-sm font-black uppercase text-zinc-600">{label}</span>
@@ -138,12 +122,12 @@ export const AdminDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {newestCompanies.length === 0 ? (
+            {recentCompanies.length === 0 ? (
               <div className="py-8 text-center text-sm font-bold text-zinc-400">
                 Chưa có dữ liệu doanh nghiệp.
               </div>
             ) : (
-              newestCompanies.map((company: any) => (
+              recentCompanies.map((company: any) => (
                 <div key={company.id} className="flex items-center justify-between rounded-2xl border border-zinc-100 p-4">
                   <div>
                     <p className="font-black text-zinc-900">{company.name}</p>
@@ -168,14 +152,14 @@ export const AdminDashboard = () => {
             <div className="flex items-center gap-3 rounded-2xl bg-yellow-50 p-4 text-yellow-700">
               <Clock size={20} />
               <div>
-                <p className="font-black">{pendingJobs.length} tin chờ duyệt</p>
+                <p className="font-black">{jobs.byStatus['PENDING'] || 0} tin chờ duyệt</p>
                 <p className="text-xs font-medium">Cần kiểm tra nội dung và trạng thái công ty.</p>
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-2xl bg-green-50 p-4 text-green-700">
               <ShieldCheck size={20} />
               <div>
-                <p className="font-black">{activeJobs.length} tin đang hoạt động</p>
+                <p className="font-black">{jobs.byStatus['ACTIVE'] || 0} tin đang hoạt động</p>
                 <p className="text-xs font-medium">Đang hiển thị công khai trên trang tuyển dụng.</p>
               </div>
             </div>

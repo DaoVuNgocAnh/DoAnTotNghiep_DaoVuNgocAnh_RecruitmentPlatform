@@ -3,18 +3,18 @@ import { savedItemsApi } from "../api/saved-items.api";
 import { toast } from "sonner";
 import type { TargetType } from "../api/saved-items.api";
 
-export const useSavedItems = (type?: TargetType, enabled = true) => {
+export const useSavedItems = (type?: TargetType, params?: { page?: number; limit?: number }, enabled = true) => {
   return useQuery({
-    queryKey: ["saved-items", type],
-    queryFn: () => savedItemsApi.getAll(type),
+    queryKey: ["saved-items", type, params?.page, params?.limit],
+    queryFn: () => savedItemsApi.getAll({ type, ...params }),
     enabled,
   });
 };
 
-export const useCompanyTalentPool = () => {
+export const useCompanyTalentPool = (params?: { page?: number; limit?: number }) => {
   return useQuery({
-    queryKey: ["saved-items", "company-candidates"],
-    queryFn: () => savedItemsApi.getCompanyCandidates(),
+    queryKey: ["saved-items", "company-candidates", params?.page, params?.limit],
+    queryFn: () => savedItemsApi.getCompanyCandidates(params),
   });
 };
 

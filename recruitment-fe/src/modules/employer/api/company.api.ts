@@ -1,4 +1,5 @@
 import axiosClient from '@/api/axiosClient';
+import type { PaginatedResponse } from '@/types/pagination';
 
 export const companyApi = {
   searchByTaxCode: (taxCode: string) =>
@@ -11,9 +12,11 @@ export const companyApi = {
 
   deleteMyCompany: () => axiosClient.delete('/companies/my-company'),
 
-  getJoinRequests: () => axiosClient.get('/companies/my-company/requests'),
+  getJoinRequests: (params?: { page?: number; limit?: number }) => 
+    axiosClient.get<PaginatedResponse<any>>('/companies/my-company/requests', { params }),
 
-  getMembers: () => axiosClient.get('/companies/my-company/members'),
+  getMembers: (params?: { page?: number; limit?: number }) => 
+    axiosClient.get<PaginatedResponse<any>>('/companies/my-company/members', { params }),
 
   assignMemberToJob: (jobId: string, userId: string) =>
     axiosClient.post(`/companies/jobs/${jobId}/assignees`, { userId }),
@@ -31,8 +34,11 @@ export const companyApi = {
   createPremiumRequest: (data: { contactPhone: string; contactEmail: string; note?: string }) =>
     axiosClient.post('/companies/premium-request', data),
 
-  getAdminPremiumRequests: (status?: string) =>
-    axiosClient.get('/companies/admin/premium-requests', { params: { status } }),
+  getAdminPremiumRequests: (params?: { status?: string; page?: number; limit?: number }) => {
+    const cleanParams = { ...params };
+    if (cleanParams.status === 'ALL') delete cleanParams.status;
+    return axiosClient.get<PaginatedResponse<any>>('/companies/admin/premium-requests', { params: cleanParams });
+  },
 
   handlePremiumRequest: (id: string, status: 'APPROVED' | 'REJECTED') =>
     axiosClient.patch(`/companies/premium-request/${id}/handle`, { status }),

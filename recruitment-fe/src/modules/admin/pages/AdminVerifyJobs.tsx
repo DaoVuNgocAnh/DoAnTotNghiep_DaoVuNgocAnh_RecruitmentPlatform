@@ -7,12 +7,23 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, X, Building2, Calendar, Loader2, Info, AlertCircle, ShieldCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, formatSalary } from "@/lib/utils";
+import { Pagination } from '@/components/shared/Pagination';
 
 export const AdminVerifyJobs = () => {
   const [currentStatus, setCurrentStatus] = useState<string>('PENDING');
-  const { data: jobs, isLoading } = useAdminJobs(currentStatus === 'ALL' ? undefined : currentStatus);
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  
+  const { data: jobsData, isLoading } = useAdminJobs({ 
+    status: currentStatus === 'ALL' ? undefined : currentStatus,
+    page,
+    limit
+  });
   const queryClient = useQueryClient();
+
+  const jobs = jobsData?.data || [];
+  const meta = jobsData?.meta;
 
   const handleVerify = async (id: string, status: string) => {
     const toastId = toast.loading("Đang cập nhật trạng thái...");
@@ -43,7 +54,7 @@ export const AdminVerifyJobs = () => {
           <p className="text-zinc-500 text-sm font-medium italic">Hệ thống phân loại tin tự động: Thường - Nổi bật - Uy tín.</p>
         </div>
         
-        <Tabs value={currentStatus} onValueChange={setCurrentStatus} className="w-fit">
+        <Tabs value={currentStatus} onValueChange={(val) => { setCurrentStatus(val); setPage(1); }} className="w-fit">
           <TabsList className="bg-zinc-100 p-1 rounded-xl">
             <TabsTrigger value="ALL" className="rounded-lg font-bold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">TẤT CẢ</TabsTrigger>
             <TabsTrigger value="PENDING" className="rounded-lg font-bold text-xs px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm">CHỜ DUYỆT</TabsTrigger>
@@ -84,7 +95,7 @@ export const AdminVerifyJobs = () => {
                   <TableCell>
                     <p className="font-bold text-zinc-900 leading-tight mb-1 line-clamp-1">{job.title}</p>
                     <div className="flex items-center gap-3 text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
-                      <span className="text-emerald-600">Lương: {job.salary}</span>
+                      <span className="text-emerald-600">Lương: {formatSalary(job.salaryMin, job.salaryMax, job.isSalaryNegotiable)}</span>
                       <span className="flex items-center gap-1">
                         <Calendar size={12}/> {job.expiredDate ? new Date(job.expiredDate).toLocaleDateString('vi-VN') : "Vô thời hạn"}
                       </span>
@@ -149,6 +160,14 @@ export const AdminVerifyJobs = () => {
           </TableBody>
         </Table>
       </div>
+
+      {meta && (
+        <Pagination 
+          currentPage={page} 
+          totalPages={meta.totalPages} 
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 };

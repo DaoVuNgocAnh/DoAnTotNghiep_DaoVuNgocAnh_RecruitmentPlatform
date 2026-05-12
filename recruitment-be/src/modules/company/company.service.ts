@@ -7,13 +7,21 @@ import {
 import {
   CompanyStatus,
   RequestStatus,
-  Role,
   PremiumRequestStatus,
+  Prisma,
 } from '@prisma/client';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { CompanyDto } from './dto/company.dto';
 import { CreatePremiumRequestDto } from './dto/premium-request.dto';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dto/pagination.dto';
+import {
+  AdminCompanyQueryDto,
+  GetCompaniesQueryDto,
+} from './dto/company-query.dto';
 
 @Injectable()
 export class CompanyService {
@@ -22,22 +30,46 @@ export class CompanyService {
     private notificationService: NotificationService,
   ) {}
 
-  async findAllPublic(query: { search?: string }) {
-    return this.prisma.company.findMany({
-      where: {
-        status: CompanyStatus.VERIFIED,
-        isDeleted: false,
-        name: query.search
-          ? { contains: query.search, mode: 'insensitive' }
-          : undefined,
-      },
-      include: {
-        _count: {
-          select: { jobs: { where: { status: 'ACTIVE', isDeleted: false } } },
+  async findAllPublic(
+    query: GetCompaniesQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const search = query.search;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.CompanyWhereInput = {
+      status: CompanyStatus.VERIFIED,
+      isDeleted: false,
+      name: search
+        ? { contains: search, mode: 'insensitive' as Prisma.QueryMode }
+        : undefined,
+    };
+
+    const [total, companies] = await this.prisma.$transaction([
+      this.prisma.company.count({ where }),
+      this.prisma.company.findMany({
+        where,
+        include: {
+          _count: {
+            select: { jobs: true },
+          },
         },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: companies,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async findOnePublic(id: string) {
@@ -106,44 +138,107 @@ export class CompanyService {
 
     // Check existing request
     const existing = await this.prisma.joinRequest.findUnique({
-      where: { userId_companyId: { userId, companyId } }
+      where: { userId_companyId: { userId, companyId } },
     });
-    if (existing) throw new BadRequestException('Ban da gui yeu cau cho cong ty nay');
+    if (existing)
+      throw new BadRequestException('Ban da gui yeu cau cho cong ty nay');
 
     return this.prisma.joinRequest.create({
       data: { userId, companyId, status: RequestStatus.PENDING },
     });
   }
 
-  async getMyCompanyRequests(userId: string) {
+  async getMyCompanyRequests(
+    userId: string,
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const page = Number(pagination.page) || 1;
+    const limit = Number(pagination.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { ownedCompany: true },
     });
-    if (!user || !user.ownedCompany) throw new ForbiddenException('Ban khong phai Owner');
+    if (!user || !user.ownedCompany)
+      throw new ForbiddenException('Ban khong phai Owner');
 
-    return this.prisma.joinRequest.findMany({
-      where: { companyId: user.ownedCompany.id, status: RequestStatus.PENDING },
-      include: { user: { select: { id: true, fullName: true, email: true } } },
-    });
+    const where = {
+      companyId: user.ownedCompany.id,
+      status: RequestStatus.PENDING,
+    };
+
+    const [total, requests] = await this.prisma.$transaction([
+      this.prisma.joinRequest.count({ where }),
+      this.prisma.joinRequest.findMany({
+        where,
+        include: {
+          user: { select: { id: true, fullName: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: requests,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async getMembers(userId: string) {
+  async getMembers(
+    userId: string,
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const page = Number(pagination.page) || 1;
+    const limit = Number(pagination.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.companyId) throw new NotFoundException('Ban khong thuoc cong ty');
+    if (!user || !user.companyId)
+      throw new NotFoundException('Ban khong thuoc cong ty');
 
-    return this.prisma.user.findMany({
-      where: { companyId: user.companyId, isDeleted: false },
-      select: { id: true, fullName: true, email: true, role: true },
-    });
+    const where = { companyId: user.companyId, isDeleted: false };
+
+    const [total, members] = await this.prisma.$transaction([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        select: { id: true, fullName: true, email: true, role: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: members,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async handleJoinRequest(userId: string, requestId: string, status: RequestStatus) {
+  async handleJoinRequest(
+    userId: string,
+    requestId: string,
+    status: RequestStatus,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { ownedCompany: true },
     });
-    if (!user || !user.ownedCompany) throw new ForbiddenException('Ban khong phai Owner');
+    if (!user || !user.ownedCompany)
+      throw new ForbiddenException('Ban khong phai Owner');
 
     const request = await this.prisma.joinRequest.findUnique({
       where: { id: requestId },
@@ -167,18 +262,42 @@ export class CompanyService {
     });
   }
 
-  async findAllForAdmin(query: { status?: CompanyStatus; search?: string }) {
-    return this.prisma.company.findMany({
-      where: {
-        status: query.status || undefined,
-        isDeleted: false,
-        name: query.search
-          ? { contains: query.search, mode: 'insensitive' }
-          : undefined,
+  async findAllForAdmin(
+    query: AdminCompanyQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const { status, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.CompanyWhereInput = {
+      status: status || undefined,
+      isDeleted: false,
+      name: search
+        ? { contains: search, mode: 'insensitive' as Prisma.QueryMode }
+        : undefined,
+    };
+
+    const [total, companies] = await this.prisma.$transaction([
+      this.prisma.company.count({ where }),
+      this.prisma.company.findMany({
+        where,
+        include: { owner: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: companies,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      include: { owner: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async updateStatusByAdmin(id: string, status: CompanyStatus) {
@@ -199,17 +318,21 @@ export class CompanyService {
     // Check if job belongs to company
     const job = await this.prisma.job.findUnique({ where: { id: jobId } });
     if (!job || job.companyId !== owner.ownedCompany.id) {
-      throw new ForbiddenException('Tin tuyen dung nay khong thuoc cong ty cua ban');
+      throw new ForbiddenException(
+        'Tin tuyen dung nay khong thuoc cong ty cua ban',
+      );
     }
 
-    const member = await this.prisma.user.findUnique({ where: { id: memberId } });
+    const member = await this.prisma.user.findUnique({
+      where: { id: memberId },
+    });
     if (!member) throw new NotFoundException('Khong tim thay nguoi dung');
     if (member.companyId !== owner.ownedCompany.id)
       throw new BadRequestException('Nguoi nay khong thuoc cong ty cua ban');
 
     // Check existing assignment to avoid unique constraint error
     const existing = await this.prisma.jobAssignee.findUnique({
-      where: { jobId_userId: { jobId, userId: memberId } }
+      where: { jobId_userId: { jobId, userId: memberId } },
     });
     if (existing) return existing;
 
@@ -218,7 +341,11 @@ export class CompanyService {
     });
   }
 
-  async unassignMemberFromJob(ownerId: string, jobId: string, memberId: string) {
+  async unassignMemberFromJob(
+    ownerId: string,
+    jobId: string,
+    memberId: string,
+  ) {
     const owner = await this.prisma.user.findUnique({
       where: { id: ownerId },
       include: { ownedCompany: true },
@@ -229,7 +356,9 @@ export class CompanyService {
     // Check if job belongs to company
     const job = await this.prisma.job.findUnique({ where: { id: jobId } });
     if (!job || job.companyId !== owner.ownedCompany.id) {
-      throw new ForbiddenException('Tin tuyen dung nay khong thuoc cong ty cua ban');
+      throw new ForbiddenException(
+        'Tin tuyen dung nay khong thuoc cong ty cua ban',
+      );
     }
 
     return this.prisma.jobAssignee.deleteMany({
@@ -258,6 +387,62 @@ export class CompanyService {
     }
 
     return this.prisma.company.delete({ where: { id: company.id } });
+  }
+
+  // ==========================================
+  // ADMIN STATS
+  // ==========================================
+
+  async getAdminStats() {
+    const [
+      totalUsers,
+      userByRole,
+      userStatus,
+      totalCompanies,
+      companyStatus,
+      totalJobs,
+      jobStatus,
+    ] = await Promise.all([
+      this.prisma.user.count({ where: { isDeleted: false } }),
+      this.prisma.user.groupBy({
+        by: ['role'],
+        where: { isDeleted: false },
+        _count: true,
+      }),
+      this.prisma.user.groupBy({
+        by: ['status'],
+        where: { isDeleted: false },
+        _count: true,
+      }),
+      this.prisma.company.count({ where: { isDeleted: false } }),
+      this.prisma.company.groupBy({
+        by: ['status'],
+        where: { isDeleted: false },
+        _count: true,
+      }),
+      this.prisma.job.count({ where: { isDeleted: false } }),
+      this.prisma.job.groupBy({
+        by: ['status'],
+        where: { isDeleted: false },
+        _count: true,
+      }),
+    ]);
+
+    return {
+      users: {
+        total: totalUsers,
+        byRole: userByRole.reduce((acc, curr) => ({ ...acc, [curr.role]: curr._count }), {}),
+        byStatus: userStatus.reduce((acc, curr) => ({ ...acc, [curr.status]: curr._count }), {}),
+      },
+      companies: {
+        total: totalCompanies,
+        byStatus: companyStatus.reduce((acc, curr) => ({ ...acc, [curr.status]: curr._count }), {}),
+      },
+      jobs: {
+        total: totalJobs,
+        byStatus: jobStatus.reduce((acc, curr) => ({ ...acc, [curr.status]: curr._count }), {}),
+      },
+    };
   }
 
   // ==========================================
@@ -308,15 +493,39 @@ export class CompanyService {
     return request;
   }
 
-  async findAllPremiumRequests(status?: PremiumRequestStatus) {
-    return this.prisma.premiumRequest.findMany({
-      where: { status: status || undefined },
-      include: {
-        company: true,
-        user: { select: { fullName: true, email: true } },
+  async findAllPremiumRequests(
+    pagination: PaginationQueryDto,
+    status?: PremiumRequestStatus,
+  ): Promise<PaginatedResponse<any>> {
+    const page = Number(pagination.page) || 1;
+    const limit = Number(pagination.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const where = { status: status || undefined };
+
+    const [total, requests] = await this.prisma.$transaction([
+      this.prisma.premiumRequest.count({ where }),
+      this.prisma.premiumRequest.findMany({
+        where,
+        include: {
+          company: true,
+          user: { select: { fullName: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: requests,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async handlePremiumRequest(id: string, status: PremiumRequestStatus) {

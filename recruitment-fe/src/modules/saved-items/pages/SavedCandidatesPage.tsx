@@ -16,13 +16,18 @@ import {
   useUpdateCompanyNote,
   useUpdateNote,
 } from "../hooks/useSavedItems";
+import { Pagination } from "@/components/shared/Pagination";
 
 type TabKey = "personal" | "company";
 
 const SavedCandidatesPage = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("personal");
-  const { data: personalItems, isLoading: personalLoading } = useSavedItems("CANDIDATE");
-  const { data: companyItems, isLoading: companyLoading } = useCompanyTalentPool();
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  const { data: personalItemsData, isLoading: personalLoading } = useSavedItems("CANDIDATE", { page, limit }, activeTab === "personal");
+  const { data: companyItemsData, isLoading: companyLoading } = useCompanyTalentPool({ page, limit });
+  
   const togglePersonal = useToggleSave();
   const toggleCompany = useToggleCompanyCandidate();
   const updatePersonalNote = useUpdateNote();
@@ -30,8 +35,14 @@ const SavedCandidatesPage = () => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
 
-  const items = activeTab === "personal" ? personalItems : companyItems;
+  const itemsData = activeTab === "personal" ? personalItemsData : companyItemsData;
+  const items = itemsData?.data || [];
   const isLoading = activeTab === "personal" ? personalLoading : companyLoading;
+
+  const handleTabChange = (tab: TabKey) => {
+    setActiveTab(tab);
+    setPage(1);
+  };
 
   const handleSaveNote = (itemId: string) => {
     if (activeTab === "personal") {
@@ -62,7 +73,7 @@ const SavedCandidatesPage = () => {
           </p>
         </div>
         <Badge variant="outline" className="w-fit font-bold">
-          {items?.length || 0} ứng viên
+          {itemsData?.meta?.total || 0} ứng viên
         </Badge>
       </div>
 
@@ -71,7 +82,7 @@ const SavedCandidatesPage = () => {
           type="button"
           variant={activeTab === "personal" ? "default" : "ghost"}
           className="rounded-xl font-black"
-          onClick={() => setActiveTab("personal")}
+          onClick={() => handleTabChange("personal")}
         >
           <User size={16} className="mr-2" /> Của tôi
         </Button>
@@ -79,7 +90,7 @@ const SavedCandidatesPage = () => {
           type="button"
           variant={activeTab === "company" ? "default" : "ghost"}
           className="rounded-xl font-black"
-          onClick={() => setActiveTab("company")}
+          onClick={() => handleTabChange("company")}
         >
           <UsersRound size={16} className="mr-2" /> Công ty
         </Button>
@@ -198,6 +209,16 @@ const SavedCandidatesPage = () => {
               );
             })
           )}
+        </div>
+      )}
+
+      {itemsData && (
+        <div className="mt-8 flex justify-center">
+          <Pagination
+            currentPage={page}
+            totalPages={itemsData.meta.totalPages}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>

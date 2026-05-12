@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -11,8 +11,9 @@ import {
 } from 'lucide-react';
 import { adminApi } from '../api/admin.api';
 import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-// UI COMPONENTS CỦA BẠN
+// UI COMPONENTS
 import {
   Table,
   TableBody,
@@ -33,43 +34,42 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Pagination } from '@/components/shared/Pagination';
 
 export const AdminVerifyCompany = () => {
-  const [companies, setCompanies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  const fetchCompanies = async () => {
-    setLoading(true);
-    try {
-      const res = await adminApi.getCompanies({ 
-        status: statusFilter === 'ALL' ? undefined : statusFilter,
-        search: searchTerm 
-      });
-      setCompanies(res.data);
-    } catch (error) {
-      toast.error("Không thể tải danh sách công ty");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-companies', page, statusFilter, searchTerm],
+    queryFn: () => adminApi.getCompanies({ 
+      page,
+      status: statusFilter === 'ALL' ? undefined : statusFilter,
+      search: searchTerm 
+    }).then(res => res.data),
+  });
 
-  useEffect(() => {
-    fetchCompanies();
-  }, [statusFilter]);
+  const companies = data?.data || [];
+  const meta = data?.meta;
 
-  const handleUpdateStatus = async (id: string, newStatus: string) => {
-    try {
-      await adminApi.updateCompanyStatus(id, newStatus);
-      toast.success(`Cập nhật trạng thái thành ${newStatus} thành công`);
-      fetchCompanies(); // Reload danh sách để cập nhật UI
-    } catch (error: any) {
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string, status: string }) => 
+      adminApi.updateCompanyStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-companies'] });
+      toast.success(`Cập nhật trạng thái thành ${variables.status} thành công`);
+    },
+    onError: (error: any) => {
       toast.error(error.response?.data?.message || "Cập nhật trạng thái thất bại");
     }
+  });
+
+  const handleUpdateStatus = (id: string, newStatus: string) => {
+    updateStatusMutation.mutate({ id, status: newStatus });
   };
 
-  // Hàm render Badge theo trạng thái (Khớp hoàn toàn với Enum DB của bạn)
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case 'VERIFIED':
@@ -87,7 +87,6 @@ export const AdminVerifyCompany = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-zinc-900 tracking-tight uppercase">Phê duyệt doanh nghiệp</h1>
@@ -101,13 +100,12 @@ export const AdminVerifyCompany = () => {
               placeholder="Tìm theo MST hoặc Tên..." 
               className="pl-10 w-[280px] bg-white rounded-xl border-zinc-200 focus-visible:ring-blue-600 h-10"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchCompanies()}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
-          <Button onClick={fetchCompanies} className="bg-blue-600 hover:bg-blue-700 rounded-xl px-6 font-bold shadow-lg shadow-blue-200">
-            TÌM KIẾM
-          </Button>
         </div>
       </div>
 
@@ -116,14 +114,16 @@ export const AdminVerifyCompany = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="text-lg font-bold text-zinc-800">Danh sách đăng ký</CardTitle>
-              <CardDescription>Tổng cộng {companies.length} doanh nghiệp trong danh sách</CardDescription>
+              <CardDescription>Trang {page} - Hiển thị dữ liệu từ hệ thống</CardDescription>
             </div>
-            {/* Bộ lọc trạng thái */}
             <div className="flex bg-zinc-100 p-1 rounded-xl gap-1">
               {['ALL', 'PENDING', 'VERIFIED', 'REJECTED', 'BLACKLIST'].map((s) => (
                 <button 
                   key={s}
-                  onClick={() => setStatusFilter(s)}
+                  onClick={() => {
+                    setStatusFilter(s);
+                    setPage(1);
+                  }}
                   className={`px-4 py-1.5 rounded-lg text-[11px] font-black uppercase transition-all ${
                     statusFilter === s 
                     ? "bg-white text-blue-600 shadow-sm" 
@@ -149,7 +149,7 @@ export const AdminVerifyCompany = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-20">
                     <Loader2 className="animate-spin mx-auto text-blue-600 mb-2" size={32} />
@@ -207,9 +207,6 @@ export const AdminVerifyCompany = () => {
                           <DropdownMenuLabel className="text-[10px] text-zinc-400 uppercase tracking-widest px-3 py-2">Thao tác cho phép</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           
-                          {/* LOGIC CHẶN LUỒNG (STATE MACHINE) */}
-                          
-                          {/* 1. Nếu đang PENDING -> Hiện Duyệt và Từ chối */}
                           {company.status === 'PENDING' && (
                             <>
                               <DropdownMenuItem 
@@ -228,7 +225,6 @@ export const AdminVerifyCompany = () => {
                             </>
                           )}
 
-                          {/* 2. Nếu đang VERIFIED -> Chỉ hiện nút BLACKLIST */}
                           {company.status === 'VERIFIED' && (
                             <DropdownMenuItem 
                               onClick={() => handleUpdateStatus(company.id, 'BLACKLIST')}
@@ -238,7 +234,6 @@ export const AdminVerifyCompany = () => {
                             </DropdownMenuItem>
                           )}
 
-                          {/* 3. Nếu đã REJECTED hoặc BLACKLIST -> Vô hiệu hóa thao tác */}
                           {(company.status === 'REJECTED' || company.status === 'BLACKLIST') && (
                             <div className="p-4 text-center">
                               <p className="text-[10px] text-zinc-400 italic font-medium leading-relaxed">
@@ -255,6 +250,15 @@ export const AdminVerifyCompany = () => {
               )}
             </TableBody>
           </Table>
+
+          {meta && (
+            <Pagination 
+              currentPage={page}
+              totalPages={meta.totalPages}
+              onPageChange={setPage}
+              className="border-t py-4"
+            />
+          )}
         </CardContent>
       </Card>
     </div>

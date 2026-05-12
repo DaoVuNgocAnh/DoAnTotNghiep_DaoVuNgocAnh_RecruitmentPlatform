@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Briefcase,
@@ -19,6 +20,7 @@ import { useEmployerInterviews } from '@/modules/interview/api/interview.api';
 import { useMyJobs } from '@/modules/job/api/job.api';
 import { useUser } from '@/modules/user/hooks/useUser';
 import { PremiumUpgradeModal } from '../components/PremiumUpgradeModal';
+import { formatSalary } from '@/lib/utils';
 
 const StatCard = ({
   title,
@@ -48,9 +50,15 @@ const StatCard = ({
 
 export const EmployerDashboard = () => {
   const { data: user } = useUser();
-  const { data: jobs = [], isLoading: jobsLoading } = useMyJobs();
-  const { data: applications = [], isLoading: appsLoading } = useEmployerApplications();
-  const { data: interviews = [], isLoading: interviewsLoading } = useEmployerInterviews();
+  const { data: jobsData, isLoading: jobsLoading } = useMyJobs();
+  const { data: applicationsData, isLoading: appsLoading } = useEmployerApplications();
+  const { data: interviewsData, isLoading: interviewsLoading } = useEmployerInterviews();
+
+  const [now, _setNow] = useState(() => Date.now());
+
+  const jobs = jobsData?.data || [];
+  const applications = applicationsData?.data || [];
+  const interviews = interviewsData?.data || [];
 
   const scopeLabel = user?.isOwner ? 'toàn công ty' : 'phạm vi được phân công';
   const roleLabel = user?.isOwner ? 'OWNER' : 'HR MEMBER';
@@ -59,13 +67,18 @@ export const EmployerDashboard = () => {
   const pendingApplications = applications.filter((app: any) =>
     ['PENDING', 'REVIEWING'].includes(app.status),
   ).length;
-  const upcomingInterviews = interviews.filter(
-    (interview) => new Date(interview.interviewDate).getTime() >= Date.now(),
-  ).length;
 
-  const recentJobs = [...jobs]
-    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  const upcomingInterviews = useMemo(() => {
+    return interviews.filter(
+      (interview: any) => new Date(interview.interviewDate).getTime() >= now,
+    ).length;
+  }, [interviews, now]);
+
+  const recentJobs = useMemo(() => {
+    return [...jobs]
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+  }, [jobs]);
 
   const isLoading = jobsLoading || appsLoading || interviewsLoading;
 
@@ -160,7 +173,7 @@ export const EmployerDashboard = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title={`Tin tuyển dụng (${scopeLabel})`} value={jobs.length} icon={Briefcase} tone="bg-green-50 text-[#00b14f]" />
+        <StatCard title={`Tin tuyển dụng (${scopeLabel})`} value={jobsData?.meta?.total || 0} icon={Briefcase} tone="bg-green-50 text-[#00b14f]" />
         <StatCard title="Tin đang hoạt động" value={activeJobs} icon={CheckCircle2} tone="bg-blue-50 text-blue-600" />
         <StatCard title="Ứng viên cần xử lý" value={pendingApplications} icon={Users} tone="bg-yellow-50 text-yellow-600" />
         <StatCard title="Lịch sắp tới" value={upcomingInterviews} icon={CalendarClock} tone="bg-purple-50 text-purple-600" />
@@ -190,7 +203,7 @@ export const EmployerDashboard = () => {
                     <div className="min-w-0">
                       <p className="truncate font-black text-slate-800">{job.title}</p>
                       <p className="mt-1 text-xs font-bold text-slate-400">
-                        {job.category?.name || 'Chưa phân loại'} · {job.salary}
+                        {job.category?.name || 'Chưa phân loại'} · {formatSalary(job.salaryMin, job.salaryMax, job.isSalaryNegotiable)}
                       </p>
                     </div>
                     <Badge className="ml-4 border-none bg-slate-100 font-black text-slate-600 hover:bg-slate-100">
@@ -220,7 +233,7 @@ export const EmployerDashboard = () => {
             <div className="flex items-center gap-3 rounded-2xl bg-blue-50 p-4 text-blue-700">
               <FileText size={20} />
               <div>
-                <p className="font-black">{applications.length} hồ sơ ứng tuyển</p>
+                <p className="font-black">{applicationsData?.meta?.total || 0} hồ sơ ứng tuyển</p>
                 <p className="text-xs font-medium">Đánh giá và hẹn phỏng vấn ứng viên phù hợp.</p>
               </div>
             </div>

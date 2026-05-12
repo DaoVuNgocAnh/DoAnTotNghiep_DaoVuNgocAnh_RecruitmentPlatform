@@ -12,25 +12,31 @@ import {
   ListChecks, 
   PlusCircle, 
   Loader2,
-  CalendarDays
+  CalendarDays,
+  Clock,
+  Info
 } from "lucide-react";
+import { LOCATIONS, JOB_TYPES } from "@/constants/job.constants";
 
 // UI COMPONENTS
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const jobSchema = z.object({
   title: z.string().min(5, "Tiêu đề quá ngắn"),
   categoryId: z.string().min(1, "Vui lòng chọn ngành nghề"),
-  salary: z.string().min(1, "Mức lương không được để trống"),
+  jobType: z.enum(["FULL_TIME", "PART_TIME", "INTERNSHIP", "REMOTE"]),
+  salaryMin: z.coerce.number().min(0).optional(),
+  salaryMax: z.coerce.number().min(0).optional(),
+  isSalaryNegotiable: z.boolean(),
   location: z.string().min(1, "Địa điểm không được để trống"),
   description: z.string().min(20, "Mô tả công việc cần chi tiết hơn"),
   requirement: z.string().min(20, "Yêu cầu công việc cần chi tiết hơn"),
-  // TRƯỜNG MỚI: Hạn nộp hồ sơ
   expiredDate: z.string().min(1, "Vui lòng chọn ngày hết hạn"),
 });
 
@@ -41,17 +47,22 @@ export const ManageJobsPage = () => {
   const { mutate: createJob, isPending } = useCreateJob();
 
   const form = useForm<JobFormValues>({
-    resolver: zodResolver(jobSchema),
+    resolver: zodResolver(jobSchema) as any,
     defaultValues: { 
       title: "", 
       categoryId: "", 
-      salary: "", 
+      jobType: "FULL_TIME", 
+      salaryMin: undefined,
+      salaryMax: undefined,
+      isSalaryNegotiable: false,
       location: "", 
       description: "", 
       requirement: "",
       expiredDate: "" 
     },
   });
+
+  const isNegotiable = form.watch("isSalaryNegotiable");
 
   const onSubmit = (values: JobFormValues) => {
     createJob(values, {
@@ -111,13 +122,20 @@ export const ManageJobsPage = () => {
                   </FormItem>
                 )} />
 
-                {/* Lương */}
-                <FormField control={form.control} name="salary" render={({ field }) => (
+                {/* Loại hình */}
+                <FormField control={form.control} name="jobType" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-black text-xs uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                      <DollarSign size={14} className="text-[#00b14f]" /> Mức lương
+                       <Clock size={14} className="text-[#00b14f]" /> Loại hình công việc
                     </FormLabel>
-                    <FormControl><Input placeholder="15 - 25 triệu / Thỏa thuận" className="h-12 rounded-xl focus-visible:ring-[#00b14f]" {...field} /></FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger className="h-12 rounded-xl focus:ring-[#00b14f]"><SelectValue placeholder="Chọn loại hình" /></SelectTrigger></FormControl>
+                      <SelectContent className="rounded-xl">
+                        {JOB_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value} className="font-medium py-3 cursor-pointer">{type.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -128,12 +146,60 @@ export const ManageJobsPage = () => {
                     <FormLabel className="font-black text-xs uppercase text-slate-500 tracking-widest flex items-center gap-2">
                       <MapPin size={14} className="text-[#00b14f]" /> Địa điểm làm việc
                     </FormLabel>
-                    <FormControl><Input placeholder="Quận 1, TP.HCM / Toàn quốc" className="h-12 rounded-xl focus-visible:ring-[#00b14f]" {...field} /></FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger className="h-12 rounded-xl focus:ring-[#00b14f]"><SelectValue placeholder="Chọn địa điểm" /></SelectTrigger></FormControl>
+                      <SelectContent className="rounded-xl">
+                        {LOCATIONS.filter(l => l !== "Tất cả địa điểm").map((loc) => (
+                          <SelectItem key={loc} value={loc} className="font-medium py-3 cursor-pointer">{loc}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )} />
 
-                {/* TRƯỜNG MỚI: HẠN NỘP HỒ SƠ */}
+                
+
+                {/* Cấu trúc lương để lọc */}
+                <div className="md:col-span-2 space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                   <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-black uppercase text-slate-900 flex items-center gap-2">
+                         <DollarSign size={16} className="text-[#00b14f]" /> Cấu trúc lương (Dùng để ứng viên lọc)
+                      </h4>
+                      <FormField control={form.control} name="isSalaryNegotiable" render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0">
+                          <FormControl>
+                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                          <FormLabel className="text-sm font-bold text-slate-600 cursor-pointer">Lương thỏa thuận</FormLabel>
+                        </FormItem>
+                      )} />
+                   </div>
+
+                   {!isNegotiable && (
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <FormField control={form.control} name="salaryMin" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Lương tối thiểu (VNĐ)</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ví dụ: 10000000" className="h-12 rounded-xl" {...field} value={field.value ?? ""} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="salaryMax" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Lương tối đa (VNĐ)</FormLabel>
+                            <FormControl><Input type="number" placeholder="Ví dụ: 20000000" className="h-12 rounded-xl" {...field} value={field.value ?? ""} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                     </div>
+                   )}
+                   <p className="text-[11px] text-slate-400 italic flex items-center gap-1">
+                      <Info size={12} /> Cung cấp mức lương chính xác giúp tăng 40% tỉ lệ ứng tuyển.
+                   </p>
+                </div>
+
+                {/* Hạn nộp */}
                 <FormField control={form.control} name="expiredDate" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-black text-xs uppercase text-slate-500 tracking-widest flex items-center gap-2">
@@ -147,6 +213,7 @@ export const ManageJobsPage = () => {
                 )} />
               </div>
 
+              {/* ... description and requirement textarea fields ... */}
               <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem>
                   <FormLabel className="font-black text-xs uppercase text-slate-500 tracking-widest flex items-center gap-2">

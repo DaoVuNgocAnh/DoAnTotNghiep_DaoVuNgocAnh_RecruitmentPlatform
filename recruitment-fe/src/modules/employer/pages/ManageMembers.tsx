@@ -32,15 +32,19 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 
+import { Pagination } from '@/components/shared/Pagination';
+
 export const ManageMembers = () => {
-  const [requests, setRequests] = useState([]);
+  const [requestsData, setRequestsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const res = await companyApi.getJoinRequests();
-      setRequests(res.data);
+      const res = await companyApi.getJoinRequests({ page, limit });
+      setRequestsData(res.data);
     } catch (error) {
       toast.error('Không thể lấy danh sách yêu cầu');
     } finally {
@@ -50,7 +54,9 @@ export const ManageMembers = () => {
 
   useEffect(() => {
     fetchRequests();
-  }, []);
+  }, [page]);
+
+  const requests = requestsData?.data || [];
 
   const handleAction = async (
     requestId: string,
@@ -91,7 +97,7 @@ export const ManageMembers = () => {
         <div className="bg-white px-4 py-2 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
           <Users className="text-[#00b14f]" size={20} />
           <span className="text-sm font-bold text-slate-700">
-            {requests.length} Yêu cầu mới
+            {requestsData?.meta?.total || 0} Yêu cầu mới
           </span>
         </div>
       </div>
@@ -222,6 +228,16 @@ export const ManageMembers = () => {
               )}
             </TableBody>
           </Table>
+
+          {requestsData && (
+            <div className="p-4 border-t border-slate-100">
+              <Pagination
+                currentPage={page}
+                totalPages={requestsData.meta.totalPages}
+                onPageChange={setPage}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

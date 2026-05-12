@@ -39,6 +39,7 @@ import SavedJobsPage from '@/modules/saved-items/pages/SavedJobsPage';
 import SavedCandidatesPage from '@/modules/saved-items/pages/SavedCandidatesPage';
 import { CompaniesPage } from '@/modules/company/pages/CompaniesPage';
 import { CompanyDetailPage } from '@/modules/company/pages/CompanyDetailPage';
+import { JobSearchPage } from '@/modules/job/pages/JobSearchPage';
 import { AdminSystemHistory } from '@/modules/admin/pages/AdminSystemHistory';
 import { AdminFeedbackPage } from '@/modules/admin/pages/AdminFeedbackPage';
 import { AdminPremiumRequests } from '@/modules/admin/pages/AdminPremiumRequests';
@@ -136,6 +137,7 @@ export const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { path: '', element: <RootRedirect /> },
+      { path: 'jobs', element: <JobSearchPage /> },
       { path: 'jobs/:id', element: <JobDetailPage /> },
       { path: 'companies', element: <CompaniesPage /> },
       { path: 'companies/:id', element: <CompanyDetailPage /> },

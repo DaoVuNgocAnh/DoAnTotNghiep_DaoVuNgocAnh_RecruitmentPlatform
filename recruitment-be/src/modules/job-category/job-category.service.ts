@@ -1,15 +1,42 @@
 ﻿import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { JobCategoryDto } from './dto/job-category.dto';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class JobCategoryService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.jobCategory.findMany({
-      where: { isDeleted: false },
-    });
+  async findAll(
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 100 } = pagination; // Default 100 for categories
+    const skip = (page - 1) * limit;
+
+    const where = { isDeleted: false };
+
+    const [total, categories] = await this.prisma.$transaction([
+      this.prisma.jobCategory.count({ where }),
+      this.prisma.jobCategory.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: categories,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async create(dto: JobCategoryDto) {

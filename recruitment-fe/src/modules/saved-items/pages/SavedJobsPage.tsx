@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSavedItems as useActualSavedItems } from "../hooks/useSavedItems";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, MapPin, DollarSign, Trash2, ArrowRight, Building2, HeartOff, Loader2 } from "lucide-react";
@@ -6,9 +7,14 @@ import { vi } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { useToggleSave } from "../hooks/useSavedItems";
 import { Link } from "react-router-dom";
+import { Pagination } from "@/components/shared/Pagination";
+import { formatSalary } from "@/lib/utils";
 
 const SavedJobsPage = () => {
-  const { data: savedItems, isLoading } = useActualSavedItems("JOB");
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const { data: savedItemsData, isLoading } = useActualSavedItems("JOB", { page, limit });
+  const savedItems = savedItemsData?.data || [];
   const toggleSave = useToggleSave();
 
   return (
@@ -20,7 +26,7 @@ const SavedJobsPage = () => {
         </div>
         <div className="bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm">
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Đang lưu trữ</p>
-           <p className="text-xl font-black text-rose-500 text-center">{savedItems?.length || 0} Tin</p>
+           <p className="text-xl font-black text-rose-500 text-center">{savedItemsData?.meta?.total || 0} Tin</p>
         </div>
       </div>
 
@@ -80,7 +86,7 @@ const SavedJobsPage = () => {
 
                       <div className="flex flex-wrap gap-x-6 gap-y-3 mt-6">
                         <div className="flex items-center gap-2 text-primary font-black text-sm uppercase tracking-tighter">
-                          <DollarSign size={16} /> {job.salary}
+                          <DollarSign size={16} /> {formatSalary(job.salaryMin, job.salaryMax, job.isSalaryNegotiable)}
                         </div>
                         <div className="flex items-center gap-2 text-slate-500 font-bold text-xs uppercase tracking-widest">
                           <MapPin size={14} className="text-blue-400" /> {job.location}
@@ -103,6 +109,16 @@ const SavedJobsPage = () => {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {savedItemsData && (
+        <div className="mt-8 flex justify-center">
+          <Pagination
+            currentPage={page}
+            totalPages={savedItemsData.meta.totalPages}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>

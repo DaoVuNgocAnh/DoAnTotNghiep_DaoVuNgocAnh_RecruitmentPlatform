@@ -1,7 +1,8 @@
-import { useAllJobs, useTrendingJobs } from "../../job/api/job.api";
+import { useTrendingJobs } from "../../job/api/job.api";
 import { JobCard } from "@/components/shared/JobCard";
-import { Loader2, Info, ChevronRight, Flame, Sparkles } from "lucide-react";
-import { useState, useMemo } from "react";
+import { ChevronRight, Flame, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Hero } from "../components/Hero";
 import { StatsSection } from "../components/StatsSection";
 import { CategorySection } from "../components/CategorySection";
@@ -10,31 +11,36 @@ import { Newsletter } from "../components/Newsletter";
 import { Button } from "@/components/ui/button";
 
 export const HomePage = () => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const { data: jobs, isLoading } = useAllJobs({ search: searchQuery });
+  const [location, setLocation] = useState("Tất cả địa điểm");
+
   const { data: trendingJobs } = useTrendingJobs();
 
-  // Tạo một Set chứa ID của các tin trending để kiểm tra nhanh
-  const trendingIds = useMemo(() => 
-    new Set(trendingJobs?.map(j => j.id) || []), 
-    [trendingJobs]
-  );
-
   const handleSearch = () => {
-    setSearchQuery(search);
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (location !== "Tất cả địa điểm") params.set("location", location);
+    
+    navigate(`/jobs?${params.toString()}`);
   };
 
   return (
     <div className="bg-[#f4f7f6] min-h-screen">
       {/* Hero Section */}
-      <Hero search={search} setSearch={setSearch} onSearch={handleSearch} />
+      <Hero 
+        search={search} 
+        setSearch={setSearch} 
+        location={location}
+        setLocation={setLocation}
+        onSearch={handleSearch} 
+      />
 
       {/* Stats Section */}
       <StatsSection />
 
       {/* Trending Jobs Section (Scoring Algorithm) */}
-      {!searchQuery && trendingJobs && trendingJobs.length > 0 && (
+      {trendingJobs && trendingJobs.length > 0 && (
         <div className="bg-slate-950 py-24 relative overflow-hidden">
            <div className="absolute top-0 right-0 p-24 opacity-10 pointer-events-none">
               <Flame size={300} className="text-primary animate-pulse" />
@@ -62,6 +68,16 @@ export const HomePage = () => {
                   <JobCard key={job.id} job={job} isTrending={true} />
                 ))}
               </div>
+
+              <div className="mt-16 text-center">
+                 <Button 
+                   onClick={() => navigate('/jobs?sortBy=viewCount')}
+                   variant="outline" 
+                   className="rounded-full border-primary text-primary hover:bg-primary hover:text-white font-black uppercase tracking-widest px-12 h-14"
+                 >
+                    Xem tất cả việc làm xu hướng
+                 </Button>
+              </div>
            </div>
         </div>
       )}
@@ -72,47 +88,40 @@ export const HomePage = () => {
       {/* Featured Companies */}
       <FeaturedCompanies />
 
-      {/* Latest Jobs Section */}
+      {/* Latest Jobs Redirect Section */}
       <div className="container mx-auto px-4 py-24">
-        <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-6">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-4">
-               <div className="w-12 h-12 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center text-primary -rotate-3">
-                  <Sparkles size={24} />
-               </div>
-              Việc làm <span className="text-primary">Mới nhất</span>
-            </h2>
-            <p className="text-slate-500 font-medium mt-3 ml-2 italic">Khám phá các cơ hội vừa mới đăng tải trên hệ thống</p>
-          </div>
-          <Button variant="outline" className="rounded-full border-primary/20 text-primary font-black uppercase tracking-widest px-10 h-12 hover:bg-primary hover:text-white transition-all group shadow-sm">
-            Xem tất cả <ChevronRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
+        <div className="bg-white rounded-[3rem] p-12 md:p-20 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-12 overflow-hidden relative">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+           <div className="relative z-10 max-w-2xl">
+              <h2 className="text-3xl md:text-5xl font-black text-slate-900 uppercase tracking-tight mb-6">
+                Bạn đang tìm kiếm <br />
+                <span className="text-primary italic">Cơ hội mới?</span>
+              </h2>
+              <p className="text-slate-500 text-lg font-medium mb-10">
+                Hệ thống của chúng tôi cập nhật hàng trăm tin tuyển dụng mới mỗi ngày từ các doanh nghiệp hàng đầu Việt Nam. Đừng bỏ lỡ cơ hội bứt phá sự nghiệp.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Button 
+                  onClick={() => navigate('/jobs')}
+                  className="rounded-full bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest px-10 h-14 shadow-lg shadow-primary/20"
+                >
+                  Khám phá ngay <ChevronRight size={18} className="ml-2" />
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/jobs?sortBy=createdAt')}
+                  className="rounded-full border-slate-200 text-slate-600 font-black uppercase tracking-widest px-10 h-14"
+                >
+                  Việc làm mới nhất
+                </Button>
+              </div>
+           </div>
+           <div className="relative z-10 flex-shrink-0">
+              <div className="w-48 h-48 md:w-64 md:h-64 bg-slate-50 rounded-[3rem] flex items-center justify-center -rotate-6 border border-slate-100 shadow-inner">
+                 <Sparkles size={80} className="text-primary/20" />
+              </div>
+           </div>
         </div>
-
-        {isLoading ? (
-          <div className="flex flex-col items-center py-20 gap-4">
-            <Loader2 className="animate-spin text-primary" size={64} />
-            <p className="font-bold text-slate-400 animate-pulse uppercase tracking-[0.3em] text-xs">Sàng lọc cơ hội tốt nhất...</p>
-          </div>
-        ) : !jobs || jobs.length === 0 ? (
-          <div className="text-center py-32 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
-             <div className="bg-slate-50 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
-                <Info className="text-slate-200" size={48} />
-             </div>
-             <p className="text-slate-500 font-black uppercase tracking-widest text-lg">Hệ thống chưa tìm thấy công việc phù hợp.</p>
-             <p className="text-slate-400 font-medium mt-2 italic px-4">Hãy thử tìm kiếm với các từ khóa khác hoặc quay lại sau.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {jobs.slice(0, 12).map((job) => (
-              <JobCard 
-                key={job.id} 
-                job={job} 
-                isTrending={trendingIds.has(job.id)} 
-              />
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Newsletter Section */}
@@ -120,3 +129,4 @@ export const HomePage = () => {
     </div>
   );
 };
+

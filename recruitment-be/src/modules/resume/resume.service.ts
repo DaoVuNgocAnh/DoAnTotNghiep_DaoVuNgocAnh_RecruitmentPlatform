@@ -7,6 +7,10 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { CreateResumeDto } from './dto/resume.dto';
 import * as path from 'path';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class ResumeService {
@@ -69,11 +73,34 @@ export class ResumeService {
     });
   }
 
-  async findMyResumes(userId: string) {
-    return this.prisma.resume.findMany({
-      where: { candidateId: userId, isDeleted: false },
-      orderBy: { uploadedAt: 'desc' },
-    });
+  async findMyResumes(
+    userId: string,
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const where = { candidateId: userId, isDeleted: false };
+
+    const [total, resumes] = await this.prisma.$transaction([
+      this.prisma.resume.count({ where }),
+      this.prisma.resume.findMany({
+        where,
+        orderBy: { uploadedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: resumes,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async setDefault(userId: string, resumeId: string) {

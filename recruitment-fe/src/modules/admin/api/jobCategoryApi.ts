@@ -1,4 +1,5 @@
 ﻿import axiosClient from "@/api/axiosClient";
+import type { PaginatedResponse } from "@/types/pagination";
 
 export interface JobCategory {
   id: string;
@@ -14,7 +15,8 @@ export interface JobCategoryDto {
 }
 
 export const jobCategoryApi = {
-  getAll: () => axiosClient.get<JobCategory[]>('/job-categories'),
+  getAll: (params?: { page?: number; limit?: number }) => 
+    axiosClient.get<PaginatedResponse<JobCategory>>('/job-categories', { params }),
   
   create: (dto: JobCategoryDto) => 
     axiosClient.post<JobCategory>('/job-categories', dto),

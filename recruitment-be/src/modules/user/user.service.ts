@@ -8,6 +8,10 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { UserDto } from './dto/user.dto';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { Role, UserStatus } from '@prisma/client';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class UserService {
@@ -48,7 +52,7 @@ export class UserService {
       throw new NotFoundException('Không tìm thấy ứng viên');
 
     // 3. Xử lý logic bảo mật: Chỉ trả về thông tin public + hồ sơ đã nộp cho công ty này
-    const { password, ...result } = user;
+    const { password: _password, ...result } = user;
 
     // Chuyển đổi applications thành list resumes rút gọn để FE dễ dùng
     const submittedResumes =
@@ -88,7 +92,7 @@ export class UserService {
 
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
 
-    const { password, joinRequests, company, ...result } = user;
+    const { password: _password, joinRequests, company, ...result } = user;
 
     return {
       ...result,
@@ -118,29 +122,65 @@ export class UserService {
     };
   }
 
-  async findAllForAdmin() {
-    return this.prisma.user.findMany({
-      where: { isDeleted: false },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        role: true,
-        status: true,
-        avatarUrl: true,
-        phone: true,
-        companyId: true,
-        createdAt: true,
-        company: {
-          select: {
-            id: true,
-            name: true,
-            status: true,
+  async findAllForAdmin(
+    query: PaginationQueryDto & {
+      role?: Role | 'ALL';
+      status?: UserStatus | 'ALL';
+      search?: string;
+    },
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10, role, status, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where: any = { isDeleted: false };
+
+    if (role && role !== 'ALL') where.role = role;
+    if (status && status !== 'ALL') where.status = status;
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { company: { name: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, users] = await this.prisma.$transaction([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          status: true,
+          avatarUrl: true,
+          phone: true,
+          companyId: true,
+          createdAt: true,
+          company: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+            },
           },
         },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async updateStatusByAdmin(userId: string, status: UserStatus) {

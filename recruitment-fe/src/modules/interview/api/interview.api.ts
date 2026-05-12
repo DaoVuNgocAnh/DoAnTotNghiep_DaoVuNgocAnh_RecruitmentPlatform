@@ -1,4 +1,5 @@
 import apiClient from "@/api/axiosClient";
+import type { PaginatedResponse } from "@/types/pagination";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const InterviewStatus = {
@@ -47,9 +48,11 @@ export interface CreateInterviewDto {
 export const interviewApi = {
   create: (dto: CreateInterviewDto) => apiClient.post("/interviews", dto),
   
-  getEmployerInterviews: () => apiClient.get<Interview[]>("/interviews/employer"),
+  getEmployerInterviews: (params?: { page?: number; limit?: number }) => 
+    apiClient.get<PaginatedResponse<Interview>>("/interviews/employer", { params }),
   
-  getMyInterviews: () => apiClient.get<Interview[]>("/interviews/my-interviews"),
+  getMyInterviews: (params?: { page?: number; limit?: number }) => 
+    apiClient.get<PaginatedResponse<Interview>>("/interviews/my-interviews", { params }),
   
   updateStatus: (id: string, status: InterviewStatus) => 
     apiClient.patch(`/interviews/${id}/status`, { status }),
@@ -57,14 +60,14 @@ export const interviewApi = {
 
 // --- HOOKS ---
 
-export const useEmployerInterviews = () => useQuery({
-  queryKey: ['interviews', 'employer'],
-  queryFn: () => interviewApi.getEmployerInterviews().then(res => res.data),
+export const useEmployerInterviews = (params?: { page?: number; limit?: number }) => useQuery({
+  queryKey: ['interviews', 'employer', params?.page, params?.limit],
+  queryFn: () => interviewApi.getEmployerInterviews(params).then(res => res.data),
 });
 
-export const useMyInterviews = () => useQuery({
-  queryKey: ['interviews', 'candidate'],
-  queryFn: () => interviewApi.getMyInterviews().then(res => res.data),
+export const useMyInterviews = (params?: { page?: number; limit?: number }) => useQuery({
+  queryKey: ['interviews', 'candidate', params?.page, params?.limit],
+  queryFn: () => interviewApi.getMyInterviews(params).then(res => res.data),
 });
 
 export const useCreateInterview = () => {

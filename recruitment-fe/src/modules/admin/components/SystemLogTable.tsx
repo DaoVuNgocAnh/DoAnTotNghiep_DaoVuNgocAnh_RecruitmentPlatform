@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/shared/Pagination';
 
 interface SystemLogTableProps {
   filters: {
@@ -37,7 +37,7 @@ export const SystemLogTable = ({ filters }: SystemLogTableProps) => {
 
   if (isLoading) return <div className="p-4">Loading logs...</div>;
 
-  const totalPages = Math.ceil((data?.total || 0) / limit);
+  const meta = data?.meta;
 
   const parseAction = (action: string) => {
     // Handle "METHOD:URL" or "METHOD URL"
@@ -83,27 +83,14 @@ export const SystemLogTable = ({ filters }: SystemLogTableProps) => {
           </TableBody>
         </Table>
         
-        <div className="flex items-center justify-between space-x-2 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-gray-600">
-            Page {page} of {totalPages || 1}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
-          >
-            Next
-          </Button>
-        </div>
+        {meta && (
+          <Pagination 
+            currentPage={page} 
+            totalPages={meta.totalPages} 
+            onPageChange={setPage}
+            className="mt-6"
+          />
+        )}
       </CardContent>
     </Card>
   );

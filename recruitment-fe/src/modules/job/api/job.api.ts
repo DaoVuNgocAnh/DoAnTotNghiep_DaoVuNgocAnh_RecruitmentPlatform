@@ -23,7 +23,10 @@ export interface Job {
   title: string;
   description: string;
   requirement: string;
-  salary: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  isSalaryNegotiable: boolean;
+  jobType: 'FULL_TIME' | 'PART_TIME' | 'INTERNSHIP' | 'REMOTE';
   location: string;
   status: 'PENDING' | 'ACTIVE' | 'CLOSED' | 'REJECTED';
   viewCount: number;
@@ -32,35 +35,79 @@ export interface Job {
   companyId: string;
   categoryId: string;
   category: JobCategory;
-  company: { name: string; logoUrl?: string; isPremium?: boolean; };
+  company: { id: string; name: string; logoUrl?: string; isPremium?: boolean; };
   assignees?: JobAssignee[];
   createdAt: string;
 }
 
+export interface CreateJobDto {
+  categoryId: string;
+  title: string;
+  description: string;
+  requirement: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  isSalaryNegotiable?: boolean;
+  jobType?: 'FULL_TIME' | 'PART_TIME' | 'INTERNSHIP' | 'REMOTE';
+  location: string;
+  expiredDate?: string;
+}
+
+export interface UpdateJobDto extends Partial<CreateJobDto> {
+  status?: 'PENDING' | 'ACTIVE' | 'CLOSED' | 'REJECTED';
+}
+
+import type { PaginatedResponse } from "@/types/pagination";
+
 export const jobApi = {
-  getCategories: () => apiClient.get<JobCategory[]>("/job-categories"),
-  createJob: (data: any) => apiClient.post("/jobs", data),
-  getAllJobs: (params?: { categoryId?: string; search?: string }) => 
-    apiClient.get<Job[]>("/jobs", { params }),
+  getCategories: () => apiClient.get<PaginatedResponse<JobCategory>>("/job-categories"),
+  createJob: (data: CreateJobDto) => apiClient.post<Job>("/jobs", data),
+  updateJob: (id: string, data: UpdateJobDto) => apiClient.patch<Job>(`/jobs/${id}`, data),
+  getAllJobs: (params?: { 
+    categoryId?: string; 
+    search?: string; 
+    location?: string; 
+    jobType?: string;
+    salaryMin?: number;
+    salaryMax?: number;
+    isSalaryNegotiable?: boolean;
+    sortBy?: string; 
+    page?: number; 
+    limit?: number 
+  }) => 
+    apiClient.get<PaginatedResponse<Job>>("/jobs", { params }),
   getJobById: (id: string) => apiClient.get<Job>(`/jobs/${id}`),
 
   // ADMIN APIs
-  getAdminJobs: (status?: string) => apiClient.get<Job[]>("/jobs/admin/all", { params: { status } }),
+  getAdminJobs: (params?: { status?: string; page?: number; limit?: number }) => 
+    apiClient.get<PaginatedResponse<Job>>("/jobs/admin/all", { params }),
   updateJobStatusAdmin: (id: string, status: string) => apiClient.patch(`/jobs/${id}/status/admin`, { status }),
   getTrendingJobs: () => apiClient.get<Job[]>("/jobs/trending"),
 
   // EMPLOYER APIs
-  getMyJobs: () => apiClient.get<Job[]>("/jobs/my-jobs"),
+  getMyJobs: (params?: { page?: number; limit?: number }) => 
+    apiClient.get<PaginatedResponse<Job>>("/jobs/my-jobs", { params }),
   closeJob: (id: string) => apiClient.patch(`/jobs/${id}/close`),
 };
 
 // --- HOOKS ---
 export const useJobCategories = () => useQuery({
   queryKey: ['job-categories'],
-  queryFn: () => jobApi.getCategories().then((res) => res.data),
+  queryFn: () => jobApi.getCategories().then((res) => res.data.data),
 });
 
-export const useAllJobs = (params?: { categoryId?: string; search?: string }) => useQuery({
+export const useAllJobs = (params?: { 
+  categoryId?: string; 
+  search?: string; 
+  location?: string; 
+  jobType?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  isSalaryNegotiable?: boolean;
+  sortBy?: string; 
+  page?: number; 
+  limit?: number 
+}) => useQuery({
   queryKey: ['jobs', params],
   queryFn: () => jobApi.getAllJobs(params).then((res) => res.data),
 });
@@ -71,14 +118,14 @@ export const useJobDetail = (id: string) => useQuery({
   enabled: !!id,
 });
 
-export const useMyJobs = () => useQuery({
-  queryKey: ['my-jobs'],
-  queryFn: () => jobApi.getMyJobs().then((res) => res.data),
+export const useMyJobs = (params?: { page?: number; limit?: number }) => useQuery({
+  queryKey: ['my-jobs', params],
+  queryFn: () => jobApi.getMyJobs(params).then((res) => res.data),
 });
 
-export const useAdminJobs = (status?: string) => useQuery({
-  queryKey: ['admin-jobs', status],
-  queryFn: () => jobApi.getAdminJobs(status).then((res) => res.data),
+export const useAdminJobs = (params?: { status?: string; page?: number; limit?: number }) => useQuery({
+  queryKey: ['admin-jobs', params],
+  queryFn: () => jobApi.getAdminJobs(params).then((res) => res.data),
 });
 
 export const useTrendingJobs = () => useQuery({

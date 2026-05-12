@@ -6,6 +6,7 @@ import {
   FeedbackQueryDto,
   UpdateFeedbackStatusDto,
 } from './dto/feedback.dto';
+import { PaginatedResponse } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class FeedbackService {
@@ -23,26 +24,44 @@ export class FeedbackService {
     });
   }
 
-  async findAll(query: FeedbackQueryDto) {
+  async findAll(query: FeedbackQueryDto): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10, status, type } = query;
+    const skip = (page - 1) * limit;
+
     const where: Prisma.FeedbackWhereInput = {
-      status: query.status || undefined,
-      type: query.type || undefined,
+      status: status || undefined,
+      type: type || undefined,
     };
 
-    return this.prisma.feedback.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
+    const [total, feedback] = await this.prisma.$transaction([
+      this.prisma.feedback.count({ where }),
+      this.prisma.feedback.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              role: true,
+            },
           },
         },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: feedback,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async updateStatus(id: string, dto: UpdateFeedbackStatusDto) {

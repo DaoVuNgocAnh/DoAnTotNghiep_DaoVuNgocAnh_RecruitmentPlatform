@@ -1,15 +1,19 @@
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
+﻿import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { JobStatus, Role } from '@prisma/client';
+import { JobStatus, Prisma, Role } from '@prisma/client';
 import { Cache } from 'cache-manager';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { NotificationService } from '../notification/notification.service';
-import { JobDto } from './dto/job.dto';
+import { GetJobsQueryDto, JobDto } from './dto/job.dto';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class JobService {
@@ -26,7 +30,10 @@ export class JobService {
           title: dto.title,
           description: dto.description,
           requirement: dto.requirement,
-          salary: dto.salary,
+          salaryMin: dto.salaryMin,
+          salaryMax: dto.salaryMax,
+          isSalaryNegotiable: dto.isSalaryNegotiable || false,
+          jobType: dto.jobType || 'FULL_TIME',
           location: dto.location,
           categoryId: dto.categoryId,
           companyId,
@@ -62,31 +69,118 @@ export class JobService {
     return job;
   }
 
-  async findAll(query: any) {
+  async findAll(query: GetJobsQueryDto): Promise<PaginatedResponse<any>> {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const cacheKey = `jobs_query_${JSON.stringify(query)}`;
-    const cachedData = await this.cacheManager.get(cacheKey);
+    const cachedData =
+      await this.cacheManager.get<PaginatedResponse<any>>(cacheKey);
     if (cachedData) return cachedData;
 
     const now = new Date();
-    const jobs = await this.prisma.job.findMany({
-      where: {
-        isDeleted: false,
-        status: JobStatus.ACTIVE,
-        OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
-        categoryId: query.categoryId || undefined,
-        title: query.search
-          ? { contains: query.search, mode: 'insensitive' }
-          : undefined,
-      },
-      include: {
-        company: { select: { name: true, logoUrl: true, isPremium: true } },
-        category: true,
-      },
-      orderBy: [{ company: { isPremium: 'desc' } }, { createdAt: 'desc' }],
-    });
+    
+    // Xây dựng điều kiện lọc
+    const where: Prisma.JobWhereInput = {
+      isDeleted: false,
+      status: JobStatus.ACTIVE,
+      // Đảm bảo tin còn hạn
+      AND: [
+        {
+          OR: [
+            { expiredDate: null },
+            { expiredDate: { gt: now } },
+          ],
+        },
+      ],
+    };
 
-    await this.cacheManager.set(cacheKey, jobs, 300);
-    return jobs;
+    if (query.categoryId) {
+      (where.AND as any[]).push({ categoryId: query.categoryId });
+    }
+
+    if (query.jobType) {
+      (where.AND as any[]).push({ jobType: query.jobType });
+    }
+
+    if (query.location && query.location !== 'Tất cả địa điểm') {
+      (where.AND as any[]).push({
+        location: { contains: query.location, mode: 'insensitive' },
+      });
+    }
+
+    // Xử lý lọc lương chuyên sâu
+    if (query.isSalaryNegotiable === true) {
+      // 1. Chỉ lấy các tin thỏa thuận
+      (where.AND as any[]).push({ isSalaryNegotiable: true });
+    } else if (query.salaryMin !== undefined || query.salaryMax !== undefined) {
+      // 2. Lấy các tin có khoảng lương giao thoa và KHÔNG phải là thỏa thuận
+      (where.AND as any[]).push({ isSalaryNegotiable: false });
+      
+      const overlapConditions: any = { AND: [] };
+      if (query.salaryMin !== undefined) {
+        overlapConditions.AND.push({
+          OR: [
+            { salaryMax: { gte: query.salaryMin } },
+            { salaryMax: null }
+          ]
+        });
+      }
+      if (query.salaryMax !== undefined) {
+        overlapConditions.AND.push({
+          OR: [
+            { salaryMin: { lte: query.salaryMax } },
+            { salaryMin: null }
+          ]
+        });
+      }
+      (where.AND as any[]).push(overlapConditions);
+    }
+
+    if (query.search) {
+      (where.AND as any[]).push({
+        OR: [
+          { title: { contains: query.search, mode: 'insensitive' } },
+          { company: { name: { contains: query.search, mode: 'insensitive' } } },
+          { description: { contains: query.search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    // Xử lý sắp xếp
+    let orderBy: any = [{ company: { isPremium: 'desc' } }, { createdAt: 'desc' }];
+    
+    if (query.sortBy === 'viewCount') {
+      orderBy = [{ viewCount: 'desc' }, { createdAt: 'desc' }];
+    }
+
+    const [total, jobs] = await this.prisma.$transaction([
+      this.prisma.job.count({ where }),
+      this.prisma.job.findMany({
+        where,
+        include: {
+          company: { select: { id: true, name: true, logoUrl: true, isPremium: true } },
+          category: true,
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const result = {
+      data: jobs,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+
+    await this.cacheManager.set(cacheKey, result, 300);
+    return result;
   }
 
   async getTrendingJobs(limit: number = 10) {
@@ -94,7 +188,6 @@ export class JobService {
       SELECT 
         j.id,
         j.title,
-        j.salary,
         j.location,
         j.view_count as "viewCount",
         j.created_at as "createdAt",
@@ -124,8 +217,10 @@ export class JobService {
     return trendingJobs.map((job) => ({
       id: job.id,
       title: job.title,
-      salary: job.salary,
       location: job.location,
+      salaryMin: job.salaryMin,
+      salaryMax: job.salaryMax,
+      isSalaryNegotiable: job.isSalaryNegotiable,
       status: job.status,
       viewCount: job.viewCount,
       createdAt: job.createdAt,
@@ -164,12 +259,35 @@ export class JobService {
     return job;
   }
 
-  async findAllForAdmin(status?: JobStatus) {
-    return this.prisma.job.findMany({
-      where: { status: status || undefined, isDeleted: false },
-      include: { company: true, category: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAllForAdmin(
+    pagination: PaginationQueryDto,
+    status?: JobStatus,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const where = { status: status || undefined, isDeleted: false };
+
+    const [total, jobs] = await this.prisma.$transaction([
+      this.prisma.job.count({ where }),
+      this.prisma.job.findMany({
+        where,
+        include: { company: true, category: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: jobs,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async updateStatusByAdmin(id: string, status: JobStatus) {
@@ -211,32 +329,53 @@ export class JobService {
     companyId: string,
     userId: string,
     isOwner: boolean,
-  ) {
-    return this.prisma.job.findMany({
-      where: {
-        companyId,
-        isDeleted: false,
-        OR: isOwner
-          ? undefined
-          : [{ createdById: userId }, { assignees: { some: { userId } } }],
-      },
-      include: {
-        category: true,
-        assignees: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                avatarUrl: true,
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      companyId,
+      isDeleted: false,
+      OR: isOwner
+        ? undefined
+        : [{ createdById: userId }, { assignees: { some: { userId } } }],
+    };
+
+    const [total, jobs] = await this.prisma.$transaction([
+      this.prisma.job.count({ where }),
+      this.prisma.job.findMany({
+        where,
+        include: {
+          category: true,
+          assignees: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                  avatarUrl: true,
+                },
               },
             },
           },
         },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: jobs,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   async closeJob(
@@ -288,6 +427,10 @@ export class JobService {
       data: {
         ...dto,
         expiredDate: dto.expiredDate ? new Date(dto.expiredDate) : undefined,
+        jobType: dto.jobType,
+        salaryMin: dto.salaryMin,
+        salaryMax: dto.salaryMax,
+        isSalaryNegotiable: dto.isSalaryNegotiable,
       },
     });
 

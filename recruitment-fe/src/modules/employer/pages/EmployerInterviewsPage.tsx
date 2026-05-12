@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useEmployerInterviews, InterviewStatus } from '@/modules/interview/api/interview.api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,9 +17,13 @@ import {
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { Pagination } from '@/components/shared/Pagination';
 
 export const EmployerInterviewsPage = () => {
-  const { data: interviews, isLoading } = useEmployerInterviews();
+  const [page, setPage] = useState(1);
+  const limit = 9; // 3 columns looks better with multiple of 3
+  const { data: interviewsData, isLoading } = useEmployerInterviews({ page, limit });
+  const interviews = interviewsData?.data || [];
 
   const getStatusInfo = (status: InterviewStatus) => {
     switch (status) {
@@ -128,6 +133,16 @@ export const EmployerInterviewsPage = () => {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {interviewsData && (
+        <div className="mt-8 flex justify-center">
+          <Pagination
+            currentPage={page}
+            totalPages={interviewsData.meta.totalPages}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>

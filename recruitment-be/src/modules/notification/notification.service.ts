@@ -3,6 +3,10 @@ import { PrismaService } from 'src/core/database/prisma.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationGateway } from './notification.gateway';
 import { Role } from '@prisma/client';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class NotificationService {
@@ -52,20 +56,43 @@ export class NotificationService {
     return notifications;
   }
 
-  async findAll(receiverId: string) {
-    return this.prisma.notification.findMany({
-      where: { receiverId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
+  async findAll(
+    receiverId: string,
+    pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<any>> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const where = { receiverId };
+
+    const [total, notifications] = await this.prisma.$transaction([
+      this.prisma.notification.count({ where }),
+      this.prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+            },
           },
         },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: notifications,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-    });
+    };
   }
 
   async countUnread(receiverId: string) {

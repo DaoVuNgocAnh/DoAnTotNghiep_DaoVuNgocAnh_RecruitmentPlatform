@@ -15,9 +15,12 @@ import { useToggleCompanyCandidate } from "@/modules/saved-items/hooks/useSavedI
 import { useUser } from "@/modules/user/hooks/useUser";
 import { applicationApi, useEmployerApplications } from "../../application/api/application.api";
 import { ScheduleInterviewModal } from "../../interview/components/ScheduleInterviewModal";
+import { Pagination } from "@/components/shared/Pagination";
 
 export const EmployerCandidatesPage = () => {
-  const { data: apps, isLoading } = useEmployerApplications();
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const { data: apps, isLoading } = useEmployerApplications({ page, limit });
   const { data: user } = useUser();
   const queryClient = useQueryClient();
   const toggleCompanyCandidate = useToggleCompanyCandidate();
@@ -25,9 +28,9 @@ export const EmployerCandidatesPage = () => {
   const [historyDialog, setHistoryDialog] = useState<{ title: string; histories: any[] } | null>(null);
 
   const groupedCandidates = useMemo(() => {
-    if (!apps) return [];
+    if (!apps?.data) return [];
 
-    const groups = apps.reduce((acc: any, app: any) => {
+    const groups = apps.data.reduce((acc: any, app: any) => {
       const candidateId = app.candidate.id;
       if (!acc[candidateId]) {
         acc[candidateId] = {
@@ -108,7 +111,7 @@ export const EmployerCandidatesPage = () => {
         <div className="bg-white px-6 py-2 rounded-2xl border shadow-sm flex items-center gap-3">
           <UserSearch className="text-[#00b14f]" size={20} />
           <span className="text-sm font-black text-slate-700 uppercase tracking-widest">
-            {groupedCandidates.length} ứng viên
+            {apps?.meta?.total || 0} ứng viên
           </span>
         </div>
       </div>
@@ -311,6 +314,16 @@ export const EmployerCandidatesPage = () => {
             )}
           </TableBody>
         </Table>
+
+        {apps && (
+          <div className="p-4 border-t border-slate-50">
+            <Pagination
+              currentPage={page}
+              totalPages={apps.meta.totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </div>
 
       {selectedApp && (

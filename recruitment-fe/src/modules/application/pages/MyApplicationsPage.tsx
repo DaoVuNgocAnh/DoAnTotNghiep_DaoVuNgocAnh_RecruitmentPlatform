@@ -5,9 +5,16 @@ import { Briefcase, Building2, Calendar, FileText, Loader2, Info, ArrowRight, Cl
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Pagination } from "@/components/shared/Pagination";
 
 export const MyApplicationsPage = () => {
-  const { data: applications, isLoading } = useMyApplications();
+  const [page, setPage] = useState(1);
+  const limit = 5;
+  const { data: applicationsData, isLoading } = useMyApplications({ page, limit });
+
+  const applications = applicationsData?.data || [];
+  const meta = applicationsData?.meta;
 
   const getStatusConfig = (status: string) => {
     const configs: any = {
@@ -50,11 +57,11 @@ export const MyApplicationsPage = () => {
         <div className="bg-white px-6 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
            <div className="text-center px-4 border-r border-slate-100">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tổng số</p>
-              <p className="text-xl font-black text-slate-900">{applications?.length || 0}</p>
+              <p className="text-xl font-black text-slate-900">{meta?.total || 0}</p>
            </div>
            <div className="text-center px-4">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tháng này</p>
-              <p className="text-xl font-black text-primary">{applications?.filter((a: any) => new Date(a.applyDate).getMonth() === new Date().getMonth()).length}</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hiển thị</p>
+              <p className="text-xl font-black text-primary">{applications.length}</p>
            </div>
         </div>
       </div>
@@ -135,6 +142,15 @@ export const MyApplicationsPage = () => {
             );
           })}
         </div>
+      )}
+
+      {meta && (
+        <Pagination 
+          currentPage={page} 
+          totalPages={meta.totalPages} 
+          onPageChange={setPage}
+          className="mt-12"
+        />
       )}
     </div>
   );

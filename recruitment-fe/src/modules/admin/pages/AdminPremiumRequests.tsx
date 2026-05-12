@@ -8,15 +8,24 @@ import { toast } from "sonner";
 import { Check, X, Phone, Mail, MessageSquare, Loader2, Info, Building2, User } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Pagination } from '@/components/shared/Pagination';
 
 export const AdminPremiumRequests = () => {
   const [currentStatus, setCurrentStatus] = useState<string>('PENDING');
+  const [page, setPage] = useState(1);
+  const limit = 10;
   const queryClient = useQueryClient();
 
-  const { data: requests, isLoading } = useQuery({
-    queryKey: ['admin-premium-requests', currentStatus],
-    queryFn: () => companyApi.getAdminPremiumRequests(currentStatus === 'ALL' ? undefined : currentStatus).then(res => res.data),
+  const { data: requestsData, isLoading } = useQuery({
+    queryKey: ['admin-premium-requests', currentStatus, page],
+    queryFn: () => companyApi.getAdminPremiumRequests({ 
+      status: currentStatus === 'ALL' ? undefined : currentStatus,
+      page,
+      limit
+    }).then(res => res.data),
   });
+
+  const requests = requestsData?.data || [];
 
   const handleAction = async (id: string, status: 'APPROVED' | 'REJECTED') => {
     const toastId = toast.loading("Đang xử lý yêu cầu...");
@@ -139,6 +148,16 @@ export const AdminPremiumRequests = () => {
             )}
           </TableBody>
         </Table>
+
+        {requestsData && (
+          <div className="p-4 border-t border-zinc-100">
+            <Pagination
+              currentPage={page}
+              totalPages={requestsData.meta.totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

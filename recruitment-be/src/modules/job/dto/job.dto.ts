@@ -7,8 +7,12 @@ import {
   IsBoolean,
   IsNumber,
   IsDateString,
+  IsInt,
+  Min,
 } from 'class-validator';
-import { JobStatus } from '@prisma/client';
+import { JobStatus, JobType } from '@prisma/client';
+import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
+import { Type, Transform } from 'class-transformer';
 
 export class JobDto {
   @IsOptional() @IsUUID() id?: string; // job_id
@@ -23,7 +27,11 @@ export class JobDto {
 
   @IsNotEmpty() @IsString() requirement!: string;
 
-  @IsNotEmpty() @IsString() salary!: string;
+  @IsOptional() @IsInt() @Min(0) @Type(() => Number) salaryMin?: number;
+  @IsOptional() @IsInt() @Min(0) @Type(() => Number) salaryMax?: number;
+  @IsOptional() @IsBoolean() isSalaryNegotiable?: boolean;
+
+  @IsOptional() @IsEnum(JobType) jobType?: JobType;
 
   @IsNotEmpty() @IsString() location!: string;
 
@@ -47,4 +55,47 @@ export class UpdateJobStatusAdminDto {
   @IsNotEmpty()
   @IsEnum(JobStatus)
   status: JobStatus;
+}
+
+export class GetJobsQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
+  @IsEnum(JobType)
+  jobType?: JobType;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  salaryMin?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  salaryMax?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isSalaryNegotiable?: boolean;
+
+  @IsOptional()
+  @IsString()
+  sortBy?: 'createdAt' | 'viewCount';
+}
+
+export class AdminJobQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsEnum(JobStatus)
+  status?: JobStatus;
 }

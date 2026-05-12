@@ -1,4 +1,3 @@
-// This is your Prisma schema file
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,7 +7,305 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- ENUMS ---
+model User {
+  id                    String               @id @default(uuid()) @db.Char(36)
+  email                 String               @unique
+  password              String
+  role                  Role                 @default(CANDIDATE)
+  fullName              String               @map("full_name")
+  phone                 String?
+  address               String?
+  avatarUrl             String?              @map("avatar_url")
+  status                UserStatus           @default(ACTIVE)
+  isDeleted             Boolean              @default(false) @map("is_deleted")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
+  companyId             String?              @map("company_id") @db.Char(36)
+  bio                   String?
+  dateOfBirth           DateTime             @default(dbgenerated("'2000-01-01 00:00:00'::timestamp without time zone")) @map("date_of_birth")
+  skills                String?
+  applicationHistories  ApplicationHistory[] @relation("ApplicationHistoryActor")
+  applications          Application[]
+  applicationActions    Application[]        @relation("ApplicationActionBy")
+  ownedCompany          Company?             @relation("CompanyOwner")
+  feedbacks             Feedback[]
+  interviews            Interview[]          @relation("EmployerInterviews")
+  assignedJobs          JobAssignee[]        @relation("JobAssigneeCreator")
+  jobAssignments        JobAssignee[]        @relation("JobAssigneeUser")
+  joinRequests          JoinRequest[]
+  receivedNotifications Notification[]       @relation("ReceivedNotifications")
+  sentNotifications     Notification[]       @relation("SentNotifications")
+  premiumRequests       PremiumRequest[]
+  resumes               Resume[]
+  savedItems            SavedItem[]
+  logs                  SystemLog[]
+  company               Company?             @relation("CompanyMembers", fields: [companyId], references: [id])
+
+  @@index([companyId, role, isDeleted, createdAt])
+  @@map("users")
+}
+
+model Company {
+  id              String           @id @default(uuid()) @db.Char(36)
+  name            String           @map("company_name")
+  taxCode         String           @unique @map("tax_code")
+  description     String
+  websiteUrl      String?          @map("website_url")
+  logoUrl         String?          @map("logo_url")
+  status          CompanyStatus    @default(PENDING)
+  isPremium       Boolean          @default(false) @map("is_premium")
+  isDeleted       Boolean          @default(false) @map("is_deleted")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  ownerId         String           @unique @map("owner_id") @db.Char(36)
+  createdById     String?          @map("created_by") @db.Char(36)
+  owner           User             @relation("CompanyOwner", fields: [ownerId], references: [id])
+  jobs            Job[]
+  joinRequests    JoinRequest[]
+  premiumRequests PremiumRequest[]
+  savedItems      SavedItem[]
+  members         User[]           @relation("CompanyMembers")
+
+  @@index([status, isDeleted, createdAt])
+  @@index([status, isDeleted, isPremium])
+  @@map("companies")
+}
+
+model JoinRequest {
+  id        String        @id @default(uuid()) @db.Char(36)
+  userId    String        @map("user_id") @db.Char(36)
+  companyId String        @map("company_id") @db.Char(36)
+  status    RequestStatus @default(PENDING)
+  message   String?
+  createdAt DateTime      @default(now()) @map("created_at")
+  company   Company       @relation(fields: [companyId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
+
+  @@unique([userId, companyId])
+  @@index([companyId, status, createdAt])
+  @@index([userId, status])
+  @@map("join_requests")
+}
+
+model JobCategory {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String   @map("category_name")
+  description String?
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  jobs        Job[]
+
+  @@map("job_categories")
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  INTERNSHIP
+  REMOTE
+}
+
+model Job {
+  id                String        @id @default(uuid()) @db.Char(36)
+  categoryId        String        @map("category_id") @db.Char(36)
+  companyId         String        @map("company_id") @db.Char(36)
+  title             String
+  description       String
+  requirement       String
+  salaryMin         Int?          @map("salary_min")
+  salaryMax         Int?          @map("salary_max")
+  isSalaryNegotiable Boolean       @default(false) @map("is_salary_negotiable")
+  jobType           JobType       @default(FULL_TIME) @map("job_type")
+  location          String
+  status            JobStatus     @default(PENDING)
+  isFeatured   Boolean       @default(false) @map("is_featured")
+  viewCount    Int           @default(0) @map("view_count")
+  isDeleted    Boolean       @default(false) @map("is_deleted")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  createdById  String?       @map("created_by") @db.Char(36)
+  expiredDate  DateTime?     @map("expired_date")
+  applications Application[]
+  assignees    JobAssignee[]
+  category     JobCategory   @relation(fields: [categoryId], references: [id])
+  company      Company       @relation(fields: [companyId], references: [id])
+
+  @@index([status, isDeleted, categoryId, createdAt])
+  @@index([companyId, isDeleted, createdAt])
+  @@index([status, isDeleted, createdAt])
+  @@index([isFeatured, createdAt])
+  @@map("jobs")
+}
+
+model JobAssignee {
+  id           String   @id @default(uuid()) @db.Char(36)
+  jobId        String   @map("job_id") @db.Char(36)
+  userId       String   @map("user_id") @db.Char(36)
+  assignedById String?  @map("assigned_by_id") @db.Char(36)
+  createdAt    DateTime @default(now()) @map("created_at")
+  assignedBy   User?    @relation("JobAssigneeCreator", fields: [assignedById], references: [id])
+  job          Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user         User     @relation("JobAssigneeUser", fields: [userId], references: [id])
+
+  @@unique([jobId, userId])
+  @@index([userId])
+  @@map("job_assignees")
+}
+
+model Resume {
+  id           String        @id @default(uuid()) @db.Char(36)
+  candidateId  String        @map("candidate_id") @db.Char(36)
+  resumeName   String        @map("resume_name")
+  fileUrl      String        @map("file_url")
+  isDefault    Boolean       @default(false) @map("is_default")
+  isDeleted    Boolean       @default(false) @map("is_deleted")
+  uploadedAt   DateTime      @default(now()) @map("uploaded_at")
+  applications Application[]
+  candidate    User          @relation(fields: [candidateId], references: [id])
+
+  @@map("resumes")
+}
+
+model Application {
+  id                 String               @id @default(uuid()) @db.Char(36)
+  jobId              String               @map("job_id") @db.Char(36)
+  candidateId        String               @map("candidate_id") @db.Char(36)
+  resumeId           String               @map("resume_id") @db.Char(36)
+  applyDate          DateTime             @default(now()) @map("apply_date")
+  status             ApplicationStatus    @default(PENDING)
+  employerNote       String?              @map("employer_note")
+  employerActionDate DateTime?            @map("employer_action_date")
+  isDeleted          Boolean              @default(false) @map("is_deleted")
+  employerActionById String?              @map("employer_action_by_id") @db.Char(36)
+  histories          ApplicationHistory[]
+  candidate          User                 @relation(fields: [candidateId], references: [id])
+  employerActionBy   User?                @relation("ApplicationActionBy", fields: [employerActionById], references: [id])
+  job                Job                  @relation(fields: [jobId], references: [id])
+  resume             Resume               @relation(fields: [resumeId], references: [id])
+  interviews         Interview[]
+
+  @@index([candidateId, isDeleted, applyDate])
+  @@index([jobId, isDeleted, applyDate])
+  @@index([status, isDeleted])
+  @@map("applications")
+}
+
+model ApplicationHistory {
+  id            String             @id @default(uuid()) @db.Char(36)
+  applicationId String             @map("application_id") @db.Char(36)
+  actorId       String             @map("actor_id") @db.Char(36)
+  oldStatus     ApplicationStatus? @map("old_status")
+  newStatus     ApplicationStatus  @map("new_status")
+  note          String?
+  createdAt     DateTime           @default(now()) @map("created_at")
+  actor         User               @relation("ApplicationHistoryActor", fields: [actorId], references: [id])
+  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@index([actorId])
+  @@map("application_histories")
+}
+
+model Interview {
+  id            String          @id @default(uuid()) @db.Char(36)
+  applicationId String          @map("application_id") @db.Char(36)
+  interviewDate DateTime        @map("interview_date")
+  location      String
+  status        InterviewStatus @default(PENDING)
+  employerId    String          @map("created_by_employer_id") @db.Char(36)
+  responseDate  DateTime?       @map("response_date")
+  isDeleted     Boolean         @default(false) @map("is_deleted")
+  application   Application     @relation(fields: [applicationId], references: [id])
+  employer      User            @relation("EmployerInterviews", fields: [employerId], references: [id])
+
+  @@map("interviews")
+}
+
+model SavedItem {
+  id         String         @id @default(uuid()) @db.Char(36)
+  userId     String         @map("user_id") @db.Char(36)
+  targetId   String         @map("target_id") @db.Char(36)
+  targetType TargetType     @map("target_type")
+  note       String?
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+  isDeleted  Boolean        @default(false) @map("is_deleted")
+  companyId  String?        @map("company_id") @db.Char(36)
+  scope      SavedItemScope @default(PERSONAL)
+  company    Company?       @relation(fields: [companyId], references: [id])
+  user       User           @relation(fields: [userId], references: [id])
+
+  @@index([companyId, targetType, scope])
+  @@index([userId, targetType, scope])
+  @@map("saved_items")
+}
+
+model Notification {
+  id         String   @id @default(uuid()) @db.Char(36)
+  title      String?
+  content    String?
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+  receiverId String   @map("receiver_id") @db.Char(36)
+  senderId   String?  @map("sender_id") @db.Char(36)
+  targetId   String?  @map("target_id") @db.Char(36)
+  targetType String?  @map("target_type")
+  type       String?
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  receiver   User     @relation("ReceivedNotifications", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User?    @relation("SentNotifications", fields: [senderId], references: [id])
+
+  @@index([receiverId, isRead])
+  @@index([receiverId, createdAt])
+  @@map("notifications")
+}
+
+model SystemLog {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String?  @map("user_id") @db.Char(36)
+  actionType  String   @map("action_type")
+  targetType  String?  @map("target_type")
+  targetId    String?  @map("target_id")
+  description String?
+  actionDate  DateTime @default(now()) @map("action_date")
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@map("system_logs")
+}
+
+model Feedback {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String?  @map("user_id") @db.Char(36)
+  type      String
+  title     String
+  content   String
+  pageUrl   String?  @map("page_url")
+  status    String   @default("NEW")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@map("feedbacks")
+}
+
+model PremiumRequest {
+  id           String               @id @default(uuid()) @db.Char(36)
+  companyId    String               @map("company_id") @db.Char(36)
+  userId       String               @map("user_id") @db.Char(36)
+  status       PremiumRequestStatus @default(PENDING)
+  contactPhone String               @map("contact_phone")
+  contactEmail String               @map("contact_email")
+  note         String?
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  company      Company              @relation(fields: [companyId], references: [id])
+  user         User                 @relation(fields: [userId], references: [id])
+
+  @@map("premium_requests")
+}
 
 enum Role {
   ADMIN
@@ -22,16 +319,16 @@ enum UserStatus {
 }
 
 enum CompanyStatus {
-  PENDING    // Chờ Admin hệ thống duyệt mã số thuế
-  VERIFIED   // Đã duyệt, được hoạt động
-  REJECTED   // Bị từ chối duyệt
-  BLACKLIST  // Vi phạm quy định
+  PENDING
+  VERIFIED
+  REJECTED
+  BLACKLIST
 }
 
 enum RequestStatus {
-  PENDING    // Chờ chủ công ty duyệt HR
-  ACCEPTED   // Đã vào công ty
-  REJECTED   // Bị từ chối
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 enum JobStatus {
@@ -49,11 +346,11 @@ enum PremiumRequestStatus {
 
 enum ApplicationStatus {
   PENDING
-  REVIEWING
   INTERVIEW
   REJECTED
   ACCEPTED
   WITHDRAWN
+  REVIEWING
 }
 
 enum InterviewStatus {
@@ -70,333 +367,4 @@ enum TargetType {
 enum SavedItemScope {
   PERSONAL
   COMPANY
-}
-
-// --- MODELS ---
-
-model User {
-  id         String     @id @default(uuid()) @db.Char(36)
-  email      String     @unique
-  password   String
-  role       Role       @default(CANDIDATE)
-  fullName   String     @map("full_name")
-  phone      String?
-  address    String?    @db.Text
-  dateOfBirth DateTime   @default("2000-01-01T00:00:00Z") @map("date_of_birth")
-  bio        String?    @db.Text
-  skills     String?    @db.Text
-  avatarUrl  String?    @db.Text @map("avatar_url")
-  status     UserStatus @default(ACTIVE)
-  isDeleted  Boolean    @default(false) @map("is_deleted")
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
-
-  // Quan hệ nhân sự: 1 HR thuộc 1 Công ty
-  companyId  String?    @map("company_id") @db.Char(36)
-  company    Company?   @relation("CompanyMembers", fields: [companyId], references: [id])
-
-  // Quan hệ sở hữu: 1 User có thể sở hữu 1 Công ty (Chủ doanh nghiệp)
-  ownedCompany Company? @relation("CompanyOwner")
-
-  // Quan hệ khác
-  resumes        Resume[]
-  applications   Application[]
-  interviews     Interview[]    @relation("EmployerInterviews")
-  joinRequests   JoinRequest[]
-  
-  // Quan hệ thông báo
-  receivedNotifications Notification[] @relation("ReceivedNotifications")
-  sentNotifications     Notification[] @relation("SentNotifications")
-  
-  logs           SystemLog[]
-  savedItems     SavedItem[]
-  jobAssignments JobAssignee[]       @relation("JobAssigneeUser")
-  assignedJobs   JobAssignee[]       @relation("JobAssigneeCreator")
-  applicationActions Application[]   @relation("ApplicationActionBy")
-  applicationHistories ApplicationHistory[] @relation("ApplicationHistoryActor")
-  feedbacks      Feedback[]
-  premiumRequests PremiumRequest[]
-
-  @@index([companyId, role, isDeleted, createdAt])
-  @@map("users")
-}
-
-model Company {
-  id          String        @id @default(uuid()) @db.Char(36)
-  name        String        @map("company_name")
-  taxCode     String        @unique @map("tax_code") // Mã số thuế duy nhất
-  description String        @db.Text
-  websiteUrl  String?       @map("website_url")
-  logoUrl     String?       @map("logo_url")
-  status      CompanyStatus @default(PENDING)
-  isPremium   Boolean       @default(false) @map("is_premium")
-  isDeleted   Boolean       @default(false) @map("is_deleted")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-
-  // Ai là chủ sở hữu (Người tạo)
-  ownerId     String        @unique @map("owner_id") @db.Char(36)
-  owner       User          @relation("CompanyOwner", fields: [ownerId], references: [id])
-
-  // Danh sách HR thuộc công ty
-  members     User[]        @relation("CompanyMembers")
-  
-  // Các yêu cầu xin gia nhập từ HR khác
-  joinRequests JoinRequest[]
-  
-  jobs        Job[]
-  savedItems  SavedItem[]
-  
-  // Admin hệ thống tạo/duyệt
-  createdById String?       @map("created_by") @db.Char(36)
-  premiumRequests PremiumRequest[]
-
-  @@index([status, isDeleted, createdAt])
-  @@index([status, isDeleted, isPremium])
-  @@map("companies")
-}
-
-model JoinRequest {
-  id        String        @id @default(uuid()) @db.Char(36)
-  userId    String        @map("user_id") @db.Char(36)
-  companyId String        @map("company_id") @db.Char(36)
-  status    RequestStatus @default(PENDING)
-  message   String?       @db.Text
-  createdAt DateTime      @default(now()) @map("created_at")
-
-  user      User    @relation(fields: [userId], references: [id])
-  company   Company @relation(fields: [companyId], references: [id])
-
-  @@unique([userId, companyId]) // Một người chỉ gửi 1 yêu cầu tới 1 công ty
-  @@index([companyId, status, createdAt])
-  @@index([userId, status])
-  @@map("join_requests")
-}
-
-model JobCategory {
-  id          String   @id @default(uuid()) @db.Char(36)
-  name        String   @map("category_name")
-  description String?  @db.Text
-  isDeleted   Boolean  @default(false) @map("is_deleted")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  jobs        Job[]
-
-  @@map("job_categories")
-}
-
-model Job {
-  id          String     @id @default(uuid()) @db.Char(36)
-  categoryId  String     @map("category_id") @db.Char(36)
-  companyId   String     @map("company_id") @db.Char(36)
-  title       String
-  description String     @db.Text
-  requirement String     @db.Text
-  salary      String     @db.VarChar(100)
-  location    String
-  status      JobStatus  @default(PENDING)
-  isFeatured  Boolean    @default(false) @map("is_featured")
-  viewCount   Int        @default(0) @map("view_count")
-  expiredDate DateTime?  @map("expired_date")
-  isDeleted   Boolean    @default(false) @map("is_deleted")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
-
-  // Người tạo job (Có thể là Owner hoặc HR member)
-  createdById String?    @map("created_by") @db.Char(36)
-
-  category    JobCategory @relation(fields: [categoryId], references: [id])
-  company     Company     @relation(fields: [companyId], references: [id])
-  applications Application[]
-  assignees    JobAssignee[]
-
-  @@index([status, isDeleted, categoryId, createdAt])
-  @@index([companyId, isDeleted, createdAt])
-  @@index([status, isDeleted, createdAt])
-  @@index([isFeatured, createdAt])
-  @@map("jobs")
-}
-
-model JobAssignee {
-  id           String   @id @default(uuid()) @db.Char(36)
-  jobId        String   @map("job_id") @db.Char(36)
-  userId       String   @map("user_id") @db.Char(36)
-  assignedById String?  @map("assigned_by_id") @db.Char(36)
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  job          Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  user         User     @relation("JobAssigneeUser", fields: [userId], references: [id])
-  assignedBy   User?    @relation("JobAssigneeCreator", fields: [assignedById], references: [id])
-
-  @@unique([jobId, userId])
-  @@index([userId])
-  @@map("job_assignees")
-}
-
-model Resume {
-  id          String   @id @default(uuid()) @db.Char(36)
-  candidateId String   @map("candidate_id") @db.Char(36)
-  resumeName  String   @map("resume_name")
-  fileUrl     String   @db.Text @map("file_url")
-  isDefault   Boolean  @default(false) @map("is_default")
-  isDeleted   Boolean  @default(false) @map("is_deleted")
-  uploadedAt  DateTime @default(now()) @map("uploaded_at")
-
-  candidate   User     @relation(fields: [candidateId], references: [id])
-  applications Application[]
-
-  @@map("resumes")
-}
-
-model Application {
-  id                 String            @id @default(uuid()) @db.Char(36)
-  jobId              String            @map("job_id") @db.Char(36)
-  candidateId        String            @map("candidate_id") @db.Char(36)
-  resumeId           String            @map("resume_id") @db.Char(36)
-  applyDate          DateTime          @default(now()) @map("apply_date")
-  status             ApplicationStatus @default(PENDING)
-  employerNote       String?           @db.Text @map("employer_note")
-  employerActionDate DateTime?         @map("employer_action_date")
-  employerActionById String?           @map("employer_action_by_id") @db.Char(36)
-  isDeleted          Boolean           @default(false) @map("is_deleted")
-
-  job         Job       @relation(fields: [jobId], references: [id])
-  candidate   User      @relation(fields: [candidateId], references: [id])
-  resume      Resume    @relation(fields: [resumeId], references: [id])
-  interviews  Interview[]
-  employerActionBy User? @relation("ApplicationActionBy", fields: [employerActionById], references: [id])
-  histories  ApplicationHistory[]
-
-  @@index([candidateId, isDeleted, applyDate])
-  @@index([jobId, isDeleted, applyDate])
-  @@index([status, isDeleted])
-  @@map("applications")
-}
-
-model ApplicationHistory {
-  id            String             @id @default(uuid()) @db.Char(36)
-  applicationId String             @map("application_id") @db.Char(36)
-  actorId       String             @map("actor_id") @db.Char(36)
-  oldStatus     ApplicationStatus? @map("old_status")
-  newStatus     ApplicationStatus  @map("new_status")
-  note          String?            @db.Text
-  createdAt     DateTime           @default(now()) @map("created_at")
-
-  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  actor         User               @relation("ApplicationHistoryActor", fields: [actorId], references: [id])
-
-  @@index([applicationId])
-  @@index([actorId])
-  @@map("application_histories")
-}
-
-model Interview {
-  id            String          @id @default(uuid()) @db.Char(36)
-  applicationId String          @map("application_id") @db.Char(36)
-  interviewDate DateTime        @map("interview_date")
-  location      String          @db.Text
-  status        InterviewStatus @default(PENDING)
-  employerId    String          @map("created_by_employer_id") @db.Char(36)
-  responseDate  DateTime?       @map("response_date")
-  isDeleted     Boolean         @default(false) @map("is_deleted")
-
-  application   Application @relation(fields: [applicationId], references: [id])
-  employer      User        @relation("EmployerInterviews", fields: [employerId], references: [id])
-
-  @@map("interviews")
-}
-
-model SavedItem {
-  id         String     @id @default(uuid()) @db.Char(36)
-  userId     String     @map("user_id") @db.Char(36)
-  companyId  String?    @map("company_id") @db.Char(36)
-  targetId   String     @map("target_id") @db.Char(36)
-  targetType TargetType @map("target_type")
-  scope      SavedItemScope @default(PERSONAL)
-  note       String?    @db.Text
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
-  isDeleted  Boolean    @default(false) @map("is_deleted")
-
-  user       User       @relation(fields: [userId], references: [id])
-  company    Company?   @relation(fields: [companyId], references: [id])
-
-  @@index([companyId, targetType, scope])
-  @@index([userId, targetType, scope])
-  @@map("saved_items")
-}
-
-model Notification {
-  id          String   @id @default(uuid()) @db.Char(36)
-  receiverId  String   @map("receiver_id") @db.Char(36)
-  senderId    String?  @map("sender_id") @db.Char(36)
-  
-  type        String?  // Loại thông báo (VD: APP_SUBMITTED, INTERVIEW_SCHEDULED)
-  title       String?
-  content     String?  @db.Text
-  
-  targetType  String?  @map("target_type") // VD: APPLICATION, INTERVIEW, JOB
-  targetId    String?  @map("target_id") @db.Char(36)
-  
-  isRead      Boolean  @default(false) @map("is_read")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Quan hệ
-  receiver    User     @relation("ReceivedNotifications", fields: [receiverId], references: [id], onDelete: Cascade)
-  sender      User?    @relation("SentNotifications", fields: [senderId], references: [id])
-
-  @@index([receiverId, isRead])
-  @@index([receiverId, createdAt])
-  @@map("notifications")
-}
-
-model SystemLog {
-  id          String   @id @default(uuid()) @db.Char(36)
-  userId      String?  @map("user_id") @db.Char(36)
-  actionType  String   @map("action_type")
-  targetType  String?  @map("target_type")
-  targetId    String?  @map("target_id")
-  description String?  @db.Text
-  actionDate  DateTime @default(now()) @map("action_date")
-
-  user        User?    @relation(fields: [userId], references: [id])
-
-  @@map("system_logs")
-}
-
-model Feedback {
-  id        String   @id @default(uuid()) @db.Char(36)
-  userId    String?  @map("user_id") @db.Char(36)
-  type      String
-  title     String
-  content   String   @db.Text
-  pageUrl   String?  @map("page_url") @db.Text
-  status    String   @default("NEW")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([status, createdAt])
-  @@index([userId, createdAt])
-  @@map("feedbacks")
-}
-
-model PremiumRequest {
-  id           String               @id @default(uuid()) @db.Char(36)
-  companyId    String               @map("company_id") @db.Char(36)
-  userId       String               @map("user_id") @db.Char(36)
-  status       PremiumRequestStatus @default(PENDING)
-  contactPhone String               @map("contact_phone")
-  contactEmail String               @map("contact_email")
-  note         String?              @db.Text
-  createdAt    DateTime             @default(now()) @map("created_at")
-  updatedAt    DateTime             @updatedAt @map("updated_at")
-
-  company      Company              @relation(fields: [companyId], references: [id])
-  user         User                 @relation(fields: [userId], references: [id])
-
-  @@map("premium_requests")
 }

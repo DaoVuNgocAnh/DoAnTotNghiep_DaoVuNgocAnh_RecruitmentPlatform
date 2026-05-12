@@ -39,9 +39,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Pagination } from '@/components/shared/Pagination';
 
 export const MyResumesPage = () => {
-  const { data: resumes, isLoading } = useResumes();
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const { data: resumesData, isLoading } = useResumes({ page, limit });
+  const resumes = resumesData?.data || [];
   const uploadMutation = useUploadResume();
   const deleteMutation = useDeleteResume();
   const setDefaultMutation = useSetDefaultResume();
@@ -217,6 +221,16 @@ export const MyResumesPage = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {resumesData && (
+        <div className="mt-8 flex justify-center">
+          <Pagination
+            currentPage={page}
+            totalPages={resumesData.meta.totalPages}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

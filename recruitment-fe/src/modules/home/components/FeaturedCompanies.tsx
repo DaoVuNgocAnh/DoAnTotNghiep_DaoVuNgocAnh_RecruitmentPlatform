@@ -20,7 +20,7 @@ export const FeaturedCompanies = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          {companies?.slice(0, 6).map((company: Company) => (
+          {companies?.data?.slice(0, 6).map((company: Company) => (
             <Link key={company.id} to={`/companies/${company.id}`} className="group">
               <Card className="border-slate-100 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all rounded-2xl overflow-hidden active:scale-[0.95]">
                 <CardContent className="p-6 flex flex-col items-center text-center">

@@ -1,9 +1,10 @@
 import axiosClient from "@/api/axiosClient";
 import type { Notification } from "../types/notification.type";
+import type { PaginatedResponse } from "@/types/pagination";
 
 export const notificationApi = {
-  getAll: async (): Promise<Notification[]> => {
-    const response = await axiosClient.get("/notifications");
+  getAll: async (params?: { page?: number; limit?: number }): Promise<PaginatedResponse<Notification>> => {
+    const response = await axiosClient.get("/notifications", { params });
     return response.data;
   },
 

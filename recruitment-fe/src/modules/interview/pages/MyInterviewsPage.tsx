@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMyInterviews, useUpdateInterviewStatus, InterviewStatus } from '../api/interview.api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,9 +19,13 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Pagination } from '@/components/shared/Pagination';
 
 export const MyInterviewsPage = () => {
-  const { data: interviews, isLoading } = useMyInterviews();
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const { data: interviewsData, isLoading } = useMyInterviews({ page, limit });
+  const interviews = interviewsData?.data || [];
   const updateStatusMutation = useUpdateInterviewStatus();
 
   const handleUpdateStatus = (id: string, status: InterviewStatus) => {
@@ -152,6 +157,16 @@ export const MyInterviewsPage = () => {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {interviewsData && (
+        <div className="mt-8 flex justify-center">
+          <Pagination
+            currentPage={page}
+            totalPages={interviewsData.meta.totalPages}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>

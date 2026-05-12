@@ -1,4 +1,5 @@
 import axiosClient from '@/api/axiosClient';
+import type { PaginatedResponse } from '@/types/pagination';
 
 export interface SystemLog {
   id: string;
@@ -18,7 +19,7 @@ export const getSystemLogs = async (params: {
   actionType?: string; 
   targetType?: string; 
   userEmail?: string; 
-}) => {
+}): Promise<PaginatedResponse<SystemLog>> => {
   const { data } = await axiosClient.get(`/system-logs`, {
     params,
   });

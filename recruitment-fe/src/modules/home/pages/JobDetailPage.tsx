@@ -7,6 +7,7 @@ import { Clock, Building2, ChevronLeft, ShieldCheck, Loader2, Share2, Info, Brie
 import { ApplyModal } from "../components/ApplyModal";
 import { useUser } from "@/modules/user/hooks/useUser";
 import { SaveButton } from "@/modules/saved-items/components/SaveButton";
+import { formatSalary } from "@/lib/utils";
 
 export const JobDetailPage = () => {
   const { id } = useParams();
@@ -84,9 +85,8 @@ export const JobDetailPage = () => {
                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Mức lương</p>
-                     <p className="text-lg font-black text-primary">{job.salary}</p>
-                  </div>
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
+                     <p className="text-lg font-black text-primary">{formatSalary(job.salaryMin, job.salaryMax, job.isSalaryNegotiable)}</p>
+                  </div>                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Hình thức</p>
                      <p className="text-sm font-bold text-slate-700 uppercase">Toàn thời gian</p>
                   </div>

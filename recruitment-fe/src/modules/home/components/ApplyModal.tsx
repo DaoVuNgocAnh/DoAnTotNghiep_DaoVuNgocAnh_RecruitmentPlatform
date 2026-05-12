@@ -18,10 +18,11 @@ export const ApplyModal = ({ jobId, jobTitle }: { jobId: string, jobTitle: strin
   const { isAuthenticated } = useAuthStore();
   const [selectedResume, setSelectedResume] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const { data: resumes, isLoading } = useResumes(isAuthenticated && open);
+  const { data: resumesData, isLoading } = useResumes(undefined, isAuthenticated && open);
   const applyMutation = useApplyJob();
 
-  const defaultResume = resumes?.find(r => r.isDefault);
+  const resumes = resumesData?.data || [];
+  const defaultResume = resumes.find(r => r.isDefault);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen && !isAuthenticated) {
@@ -65,7 +66,7 @@ export const ApplyModal = ({ jobId, jobTitle }: { jobId: string, jobTitle: strin
           
           {isLoading ? (
             <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#00b14f]" /></div>
-          ) : !resumes || resumes.length === 0 ? (
+          ) : !resumesData || resumes.length === 0 ? (
             <div className="text-center py-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
                <AlertCircle className="mx-auto text-slate-300 mb-2" />
                <p className="text-xs font-bold text-slate-500">Bạn chưa có CV nào trên hệ thống</p>
@@ -73,7 +74,7 @@ export const ApplyModal = ({ jobId, jobTitle }: { jobId: string, jobTitle: strin
             </div>
           ) : (
             <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-              {resumes.map(resume => (
+              {resumes.map((resume: any) => (
                 <div 
                   key={resume.id}
                   onClick={() => setSelectedResume(resume.id)}
@@ -103,7 +104,7 @@ export const ApplyModal = ({ jobId, jobTitle }: { jobId: string, jobTitle: strin
         </div>
 
         <Button 
-          disabled={applyMutation.isPending || !resumes || resumes.length === 0} 
+          disabled={applyMutation.isPending || !resumesData || resumes.length === 0} 
           onClick={handleApply}
           className="w-full h-14 bg-[#00b14f] hover:bg-[#009643] font-black rounded-2xl text-lg shadow-lg shadow-green-100 uppercase"
         >

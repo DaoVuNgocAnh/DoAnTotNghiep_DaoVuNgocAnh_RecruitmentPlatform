@@ -6,12 +6,12 @@ export const useNotifications = () => {
 
   const notificationsQuery = useQuery({
     queryKey: ["notifications"],
-    queryFn: notificationApi.getAll,
+    queryFn: () => notificationApi.getAll(),
   });
 
   const unreadCountQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
-    queryFn: notificationApi.getUnreadCount,
+    queryFn: () => notificationApi.getUnreadCount(),
     refetchInterval: 30000, // Poll every 30s
   });
 
@@ -37,7 +37,7 @@ export const useNotifications = () => {
   });
 
   return {
-    notifications: notificationsQuery.data || [],
+    notifications: notificationsQuery.data?.data || [],
     isLoading: notificationsQuery.isLoading,
     unreadCount: unreadCountQuery.data || 0,
     markAsRead: markAsReadMutation.mutate,
