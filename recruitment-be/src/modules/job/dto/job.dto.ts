@@ -33,6 +33,8 @@ export class JobDto {
 
   @IsOptional() @IsEnum(JobType) jobType?: JobType;
 
+  @IsOptional() @IsString() requiredExperience?: string;
+
   @IsNotEmpty() @IsString() location!: string;
 
   @IsOptional() @IsEnum(JobStatus) status?: JobStatus;
@@ -65,6 +67,10 @@ export class GetJobsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
   categoryId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  companyId?: string;
 
   @IsOptional()
   @IsString()

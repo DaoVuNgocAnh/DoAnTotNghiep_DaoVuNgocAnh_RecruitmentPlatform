@@ -82,17 +82,13 @@ const AuthedRedirect = ({ children }: { children: React.ReactNode }) => {
  * Admin/Employer vào trang chủ sẽ bị đẩy vào Dashboard. Candidate/Khách thì ở lại xem Job.
  */
 const RootRedirect = () => {
-  const { data: user, isLoading } = useUser();
+  const { isLoading } = useUser();
   const { isAuthenticated } = useAuthStore();
 
   if (!isAuthenticated) return <HomePage />;
   if (isLoading) return <GuardLoader message="Đang tải dữ liệu hệ thống..." />;
 
-  if (user?.role === Role.ADMIN)
-    return <Navigate to="/admin/dashboard" replace />;
-  if (user?.role === Role.EMPLOYER)
-    return <Navigate to="/employer/dashboard" replace />;
-
+  // Admin/Employer vẫn cho xem trang chủ thay vì đá vào Dashboard
   return <HomePage />;
 };
 
@@ -145,7 +141,7 @@ export const router = createBrowserRouter([
         path: 'profile',
         element: (
           <ProtectedRoute
-            allowedRoles={[Role.CANDIDATE, Role.EMPLOYER, Role.ADMIN]}
+            allowedRoles={[Role.CANDIDATE]}
           >
             <ProfilePage />
           </ProtectedRoute>
@@ -197,6 +193,7 @@ export const router = createBrowserRouter([
     children: [
       { path: 'dashboard', element: <EmployerDashboard /> },
       { path: 'company', element: <CompanyProfilePage /> },
+      { path: 'profile', element: <ProfilePage /> },
       { path: 'jobs', element: <EmployerManageJobs /> },
       { path: 'jobs/create', element: <ManageJobsPage /> },
       {
@@ -236,6 +233,7 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: <AdminDashboard /> },
       { path: 'companies', element: <AdminVerifyCompany /> },
       { path: 'jobs', element: <AdminVerifyJobs /> },
+      { path: 'profile', element: <ProfilePage /> },
       { path: 'users', element: <AdminUserList /> },
       { path: 'job-categories', element: <AdminJobCategory /> },
       { path: 'system-history', element: <AdminSystemHistory   /> },

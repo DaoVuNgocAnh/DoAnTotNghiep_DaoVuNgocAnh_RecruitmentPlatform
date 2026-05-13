@@ -24,6 +24,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { SavedItemsModule } from './modules/savedItems/saved-items.module';
 import { SystemLogModule } from './modules/system-log/system-log.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
+import { NewsletterModule } from './modules/newsletter/newsletter.module';
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
     SavedItemsModule,
     SystemLogModule,
     FeedbackModule,
+    NewsletterModule,
   ],
   controllers: [],
   providers: [],

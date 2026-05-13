@@ -5,6 +5,7 @@ export interface JobCategory {
   id: string;
   name: string;
   description?: string;
+  _count?: { jobs: number };
 }
 
 export interface JobAssignee {
@@ -23,6 +24,7 @@ export interface Job {
   title: string;
   description: string;
   requirement: string;
+  requiredExperience?: string;
   salaryMin?: number;
   salaryMax?: number;
   isSalaryNegotiable: boolean;
@@ -45,6 +47,7 @@ export interface CreateJobDto {
   title: string;
   description: string;
   requirement: string;
+  requiredExperience?: string;
   salaryMin?: number;
   salaryMax?: number;
   isSalaryNegotiable?: boolean;
@@ -65,6 +68,7 @@ export const jobApi = {
   updateJob: (id: string, data: UpdateJobDto) => apiClient.patch<Job>(`/jobs/${id}`, data),
   getAllJobs: (params?: { 
     categoryId?: string; 
+    companyId?: string;
     search?: string; 
     location?: string; 
     jobType?: string;
@@ -98,6 +102,7 @@ export const useJobCategories = () => useQuery({
 
 export const useAllJobs = (params?: { 
   categoryId?: string; 
+  companyId?: string;
   search?: string; 
   location?: string; 
   jobType?: string;
@@ -131,6 +136,11 @@ export const useAdminJobs = (params?: { status?: string; page?: number; limit?: 
 export const useTrendingJobs = () => useQuery({
   queryKey: ['jobs-trending'],
   queryFn: () => jobApi.getTrendingJobs().then((res) => res.data),
+});
+
+export const useLatestJobs = (limit: number = 6) => useQuery({
+  queryKey: ['jobs-latest', limit],
+  queryFn: () => jobApi.getAllJobs({ sortBy: 'createdAt', limit, page: 1 }).then((res) => res.data),
 });
 
 export const useCreateJob = () => {

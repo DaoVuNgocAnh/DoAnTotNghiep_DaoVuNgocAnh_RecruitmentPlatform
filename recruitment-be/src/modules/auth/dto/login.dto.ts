@@ -7,7 +7,6 @@ export class LoginDto {
   @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
   password!: string;
 
-  // Thêm dòng này để Backend chấp nhận trường rememberMe
   @IsOptional()
   @IsBoolean()
   rememberMe?: boolean;

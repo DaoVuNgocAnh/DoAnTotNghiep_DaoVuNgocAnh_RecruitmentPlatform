@@ -4,6 +4,7 @@ import { useUser } from '@/modules/user/hooks/useUser'; // SỬ DỤNG HOOK MỚ
 import { Headphones, Search, ShieldCheck, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils'; 
 import NotificationDropdown from '@/modules/notification/components/NotificationDropdown';
+import { ScrollToTop } from '@/components/shared/ScrollToTop';
 
 // UI COMPONENTS
 import { Button } from '@/components/ui/button';
@@ -28,12 +29,14 @@ export default function EmployerLayout() {
     if (path.includes('jobs')) return 'Quản lý tin tuyển dụng';
     if (path.includes('candidates')) return 'Danh sách ứng viên';
     if (path.includes('company')) return 'Hồ sơ doanh nghiệp';
+    if (path.includes('profile')) return 'Hồ sơ cá nhân';
     if (path.includes('members')) return 'Quản lý nhân sự';
     return 'Hệ thống Quản trị';
   };
 
   return (
     <div className="flex min-h-screen bg-[#f4f7f6]">
+      <ScrollToTop />
       <EmployerSidebar />
 
       <main className="flex-1 flex flex-col min-w-0">

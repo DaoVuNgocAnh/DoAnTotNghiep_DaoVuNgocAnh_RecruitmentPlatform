@@ -6,6 +6,8 @@ export interface Company {
   id: string;
   name: string;
   logoUrl?: string;
+  coverUrl?: string;
+  location?: string;
   taxCode: string;
   description: string;
   websiteUrl?: string;
@@ -25,6 +27,7 @@ export interface CreateCompanyDto {
   description: string;
   websiteUrl?: string;
   logoUrl?: string;
+  location?: string;
 }
 
 export const companyApi = {
@@ -33,6 +36,29 @@ export const companyApi = {
     
   getCompanyById: (id: string) => 
     axiosClient.get<Company>(`/companies/${id}/public`),
+
+  updateMyCompany: (data: Partial<Company>) =>
+    axiosClient.patch<Company>("/companies/my-company", data),
+
+  uploadCompanyLogo: (file: File) => {
+    const formData = new FormData();
+    formData.append("logo", file);
+    return axiosClient.patch<Company>("/companies/my-company/logo", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
+  uploadCompanyCover: (file: File) => {
+    const formData = new FormData();
+    formData.append("cover", file);
+    return axiosClient.patch<Company>("/companies/my-company/cover", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
 };
 
 export const useCompanies = (params?: { search?: string; status?: string; page?: number; limit?: number }) => useQuery({

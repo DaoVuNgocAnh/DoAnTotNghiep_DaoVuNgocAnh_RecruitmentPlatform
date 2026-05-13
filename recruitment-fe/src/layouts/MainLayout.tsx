@@ -3,6 +3,7 @@ import { Header } from './common/Header';
 import { Footer } from './common/Footer';
 import { AppBreadcrumb } from '@/components/shared/AppBreadcrumb';
 import { FloatingActionMenu } from '@/components/shared/FloatingActionMenu';
+import { ScrollToTop } from '@/components/shared/ScrollToTop';
 
 export default function MainLayout() {
   const { pathname } = useLocation();
@@ -10,6 +11,7 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <ScrollToTop />
       <Header />
       <main className="flex-1">
         {showBreadcrumb && (

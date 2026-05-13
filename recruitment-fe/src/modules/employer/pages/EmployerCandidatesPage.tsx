@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, Check, ExternalLink, History, Loader2, Mail, Phone, UserSearch, X } from "lucide-react";
+import { CalendarClock, Check, ExternalLink, History, Loader2, Mail, MessageSquareText, Phone, UserSearch, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { SaveButton } from "@/modules/saved-items/components/SaveButton";
@@ -16,6 +16,7 @@ import { useUser } from "@/modules/user/hooks/useUser";
 import { applicationApi, useEmployerApplications } from "../../application/api/application.api";
 import { ScheduleInterviewModal } from "../../interview/components/ScheduleInterviewModal";
 import { Pagination } from "@/components/shared/Pagination";
+import { Textarea } from "@/components/ui/textarea";
 
 export const EmployerCandidatesPage = () => {
   const [page, setPage] = useState(1);
@@ -26,6 +27,10 @@ export const EmployerCandidatesPage = () => {
   const toggleCompanyCandidate = useToggleCompanyCandidate();
   const [selectedApp, setSelectedApp] = useState<{ id: string; name: string } | null>(null);
   const [historyDialog, setHistoryDialog] = useState<{ title: string; histories: any[] } | null>(null);
+  
+  // New state for status update with note
+  const [statusUpdate, setStatusUpdate] = useState<{ id: string; status: string; name: string } | null>(null);
+  const [employerNote, setEmployerNote] = useState("");
 
   const groupedCandidates = useMemo(() => {
     if (!apps?.data) return [];
@@ -44,6 +49,7 @@ export const EmployerCandidatesPage = () => {
         jobTitle: app.job.title,
         status: app.status,
         resume: app.resume,
+        candidateNote: app.candidateNote,
         employerActionBy: app.employerActionBy,
         employerActionDate: app.employerActionDate,
         histories: app.histories || [],
@@ -55,12 +61,19 @@ export const EmployerCandidatesPage = () => {
     return Object.values(groups);
   }, [apps]);
 
-  const handleUpdateStatus = async (id: string, status: string) => {
+  const handleUpdateStatus = async () => {
+    if (!statusUpdate) return;
+    
     const toastId = toast.loading("Đang cập nhật trạng thái...");
     try {
-      await applicationApi.updateStatus(id, { status });
+      await applicationApi.updateStatus(statusUpdate.id, { 
+        status: statusUpdate.status, 
+        employerNote 
+      });
       toast.success("Cập nhật trạng thái thành công", { id: toastId });
       queryClient.invalidateQueries({ queryKey: ["employer-applications"] });
+      setStatusUpdate(null);
+      setEmployerNote("");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Thao tác thất bại", { id: toastId });
     }
@@ -207,12 +220,41 @@ export const EmployerCandidatesPage = () => {
                   <TableCell className="p-0 align-top">
                     <div className="flex flex-col divide-y divide-slate-50">
                       {group.appliedJobs.map((job: any) => (
-                        <div key={job.applicationId} className="h-20 flex items-center justify-center px-4">
+                        <div key={job.applicationId} className="h-20 flex items-center justify-center px-4 gap-2">
                           <Button variant="ghost" size="sm" asChild className="h-8 text-blue-600 hover:text-blue-700 font-black text-[10px] uppercase gap-1.5 px-3 hover:bg-blue-50 rounded-lg">
                             <a href={job.resume.fileUrl} target="_blank" rel="noreferrer">
                               <ExternalLink size={14} /> CV
                             </a>
                           </Button>
+                          {job.candidateNote && (
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 text-amber-600 hover:text-amber-700 font-black text-[10px] uppercase gap-1.5 px-3 hover:bg-amber-50 rounded-lg">
+                                  <MessageSquareText size={14} /> Thư
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="rounded-3xl max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle className="text-lg font-black uppercase text-slate-900 tracking-tight">Thư giới thiệu từ ứng viên</DialogTitle>
+                                </DialogHeader>
+                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                  <p className="text-sm font-medium text-slate-600 leading-relaxed italic whitespace-pre-wrap">
+                                    "{job.candidateNote}"
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-3 mt-2">
+                                  <Avatar className="h-8 w-8 rounded-lg">
+                                    <AvatarImage src={group.candidate.avatarUrl} />
+                                    <AvatarFallback>{group.candidate.fullName.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="text-[10px] font-black text-slate-900 uppercase">{group.candidate.fullName}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Ứng viên</p>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -278,7 +320,7 @@ export const EmployerCandidatesPage = () => {
                                 size="icon"
                                 variant="ghost"
                                 className="text-red-500 hover:bg-red-50 rounded-xl h-8 w-8"
-                                onClick={() => handleUpdateStatus(job.applicationId, "REJECTED")}
+                                onClick={() => setStatusUpdate({ id: job.applicationId, status: "REJECTED", name: group.candidate.fullName })}
                               >
                                 <X size={16} />
                               </Button>
@@ -296,7 +338,7 @@ export const EmployerCandidatesPage = () => {
                               size="sm"
                               variant="outline"
                               className="rounded-xl border-green-100 text-green-600 hover:bg-green-50 font-black text-[9px] uppercase h-7 px-2"
-                              onClick={() => handleUpdateStatus(job.applicationId, "ACCEPTED")}
+                              onClick={() => setStatusUpdate({ id: job.applicationId, status: "ACCEPTED", name: group.candidate.fullName })}
                             >
                               <Check size={14} className="mr-1" /> Nhận việc
                             </Button>
@@ -334,6 +376,61 @@ export const EmployerCandidatesPage = () => {
           candidateName={selectedApp.name}
         />
       )}
+
+      {/* Dialog for updating status with note */}
+      <Dialog open={!!statusUpdate} onOpenChange={(open) => !open && setStatusUpdate(null)}>
+        <DialogContent className="rounded-[2rem] max-w-md border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase text-[#001529]">
+              {statusUpdate?.status === "REJECTED" ? "Từ chối hồ sơ" : "Tiếp nhận ứng viên"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+             <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <Avatar className="h-10 w-10 rounded-xl">
+                   <AvatarFallback className="bg-[#00b14f] text-white font-black uppercase">
+                      {statusUpdate?.name.charAt(0)}
+                   </AvatarFallback>
+                </Avatar>
+                <div>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ứng viên</p>
+                   <p className="text-sm font-black text-slate-700 uppercase">{statusUpdate?.name}</p>
+                </div>
+             </div>
+
+             <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lý do / Ghi chú cho ứng viên:</p>
+                <Textarea 
+                   placeholder={statusUpdate?.status === "REJECTED" ? "Nhập lý do từ chối (ví dụ: Kỹ năng chưa phù hợp...)" : "Nhập lời chào mừng hoặc ghi chú tiếp nhận..."}
+                   className="rounded-2xl border-slate-100 focus:border-[#00b14f] min-h-[120px] text-sm font-medium"
+                   value={employerNote}
+                   onChange={(e) => setEmployerNote(e.target.value)}
+                />
+                <p className="text-[9px] text-slate-400 italic font-medium">Ghi chú này sẽ được gửi đến ứng viên để họ hiểu rõ hơn về quyết định của bạn.</p>
+             </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+             <Button 
+                variant="ghost" 
+                className="rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400"
+                onClick={() => setStatusUpdate(null)}
+             >
+                Hủy bỏ
+             </Button>
+             <Button 
+                className={cn(
+                   "rounded-xl font-black text-[10px] uppercase tracking-widest px-6 shadow-lg",
+                   statusUpdate?.status === "REJECTED" ? "bg-rose-500 hover:bg-rose-600 shadow-rose-100" : "bg-[#00b14f] hover:bg-[#009643] shadow-green-100"
+                )}
+                onClick={handleUpdateStatus}
+             >
+                Xác nhận
+             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!historyDialog} onOpenChange={() => setHistoryDialog(null)}>
         <DialogContent className="max-w-xl rounded-3xl">

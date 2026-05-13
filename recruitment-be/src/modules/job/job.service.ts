@@ -34,6 +34,7 @@ export class JobService {
           salaryMax: dto.salaryMax,
           isSalaryNegotiable: dto.isSalaryNegotiable || false,
           jobType: dto.jobType || 'FULL_TIME',
+          requiredExperience: dto.requiredExperience,
           location: dto.location,
           categoryId: dto.categoryId,
           companyId,
@@ -98,6 +99,10 @@ export class JobService {
 
     if (query.categoryId) {
       (where.AND as any[]).push({ categoryId: query.categoryId });
+    }
+
+    if (query.companyId) {
+      (where.AND as any[]).push({ companyId: query.companyId });
     }
 
     if (query.jobType) {

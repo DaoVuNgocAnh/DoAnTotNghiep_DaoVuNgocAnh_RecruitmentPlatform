@@ -18,11 +18,15 @@ import {
   FileText,
   Heart,
   Search,
+  MapPin,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useState, useEffect, useRef } from 'react';
 import NotificationDropdown from '@/modules/notification/components/NotificationDropdown';
+import { jobApi, type Job } from '@/modules/job/api/job.api';
 
 export const Header = () => {
   const { logout, isAuthenticated } = useAuthStore();
@@ -30,6 +34,53 @@ export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const [headerSearch, setHeaderSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<Job[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (headerSearch.trim().length >= 2) {
+        setIsSearching(true);
+        try {
+          const res = await jobApi.getAllJobs({ search: headerSearch, limit: 5 });
+          setSearchResults(res.data.data);
+          setShowDropdown(true);
+        } catch (error) {
+          console.error("Search error:", error);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+        setShowDropdown(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [headerSearch]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleHeaderSearch = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && headerSearch.trim()) {
+      navigate(`/jobs?search=${encodeURIComponent(headerSearch.trim())}`);
+      setHeaderSearch("");
+      setShowDropdown(false);
+    }
+  };
 
   const handleLogout = () => {
     queryClient.clear();
@@ -39,7 +90,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="glass-header shadow-sm">
+    <header className="glass-header shadow-sm z-50">
       <div className="container mx-auto h-20 flex items-center justify-between px-4 lg:px-8">
         <div className="flex items-center gap-12">
           <Link to="/" className="flex items-center gap-2 group">
@@ -77,12 +128,65 @@ export const Header = () => {
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="hidden md:flex items-center bg-slate-100 rounded-full px-4 py-2 w-64 group focus-within:ring-2 ring-primary/20 transition-all border border-transparent focus-within:bg-white focus-within:border-slate-200">
-             <Search size={16} className="text-slate-400 group-focus-within:text-primary transition-colors" />
-             <input 
-                placeholder="Tìm việc ngay..." 
-                className="bg-transparent border-none outline-none text-xs font-medium px-3 w-full text-slate-700 placeholder:text-slate-400"
-             />
+          <div className="relative" ref={dropdownRef}>
+            <div className="hidden md:flex items-center bg-slate-100 rounded-full px-4 py-2 w-72 group focus-within:ring-2 ring-primary/20 transition-all border border-transparent focus-within:bg-white focus-within:border-slate-200">
+               <Search size={16} className="text-slate-400 group-focus-within:text-primary transition-colors" />
+               <input 
+                  placeholder="Tìm việc ngay..." 
+                  className="bg-transparent border-none outline-none text-xs font-bold px-3 w-full text-slate-700 placeholder:text-slate-400"
+                  value={headerSearch}
+                  onChange={(e) => setHeaderSearch(e.target.value)}
+                  onKeyDown={handleHeaderSearch}
+                  onFocus={() => headerSearch.length >= 2 && setShowDropdown(true)}
+               />
+               {isSearching && <Loader2 size={14} className="animate-spin text-primary" />}
+            </div>
+
+            {/* Quick Search Dropdown */}
+            {showDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in duration-200 py-2">
+                <div className="px-4 py-2 border-b border-slate-50">
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kết quả tìm kiếm nhanh</p>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto">
+                   {searchResults.length > 0 ? (
+                      searchResults.map(job => (
+                        <div 
+                          key={job.id} 
+                          onClick={() => {
+                            navigate(`/jobs/${job.id}`);
+                            setShowDropdown(false);
+                            setHeaderSearch("");
+                          }}
+                          className="px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50 last:border-none group"
+                        >
+                           <h5 className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">{job.title}</h5>
+                           <div className="flex items-center gap-3 mt-1 text-[10px] font-medium text-slate-400">
+                              <span className="flex items-center gap-1"><Building2 size={10} /> {job.company.name}</span>
+                              <span className="flex items-center gap-1"><MapPin size={10} /> {job.location}</span>
+                           </div>
+                        </div>
+                      ))
+                   ) : (
+                      <div className="px-4 py-8 text-center">
+                         <Search size={24} className="mx-auto text-slate-100 mb-2" />
+                         <p className="text-xs font-bold text-slate-400">Không tìm thấy công việc phù hợp</p>
+                      </div>
+                   )}
+                </div>
+                {searchResults.length > 0 && (
+                   <div 
+                    onClick={() => {
+                      navigate(`/jobs?search=${encodeURIComponent(headerSearch)}`);
+                      setShowDropdown(false);
+                    }}
+                    className="p-3 bg-slate-50 text-center cursor-pointer hover:bg-primary/5 transition-colors"
+                   >
+                      <p className="text-[10px] font-black text-primary uppercase tracking-widest">Xem tất cả kết quả</p>
+                   </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
@@ -116,7 +220,14 @@ export const Header = () => {
                         <p className="text-sm font-bold text-slate-700 mt-1 truncate">{user.email}</p>
                     </div>
 
-                    <DropdownMenuItem onClick={() => navigate('/profile')} className="gap-3 p-3 cursor-pointer rounded-xl font-bold text-slate-600">
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        if (user.role === 'EMPLOYER') navigate('/employer/profile');
+                        else if (user.role === 'ADMIN') navigate('/admin/profile');
+                        else navigate('/profile');
+                      }} 
+                      className="gap-3 p-3 cursor-pointer rounded-xl font-bold text-slate-600"
+                    >
                       <UserIcon size={18} /> Hồ sơ cá nhân
                     </DropdownMenuItem>
 

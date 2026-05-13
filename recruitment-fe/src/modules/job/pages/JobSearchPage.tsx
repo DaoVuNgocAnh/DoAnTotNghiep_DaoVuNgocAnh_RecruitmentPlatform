@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAllJobs, useJobCategories, useTrendingJobs, type Job } from "../api/job.api";
 import { JobCard } from "@/components/shared/JobCard";
@@ -44,6 +44,11 @@ export const JobSearchPage = () => {
   // Local state cho form tìm kiếm
   const [localSearch, setLocalSearch] = useState(search);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Đồng bộ localSearch khi URL thay đổi (VD: tìm kiếm từ Header)
+  useEffect(() => {
+    setLocalSearch(search);
+  }, [search]);
 
   const { data: categories } = useJobCategories();
   const { data: trendingJobs } = useTrendingJobs();

@@ -92,7 +92,7 @@ export const JobDetailPage = () => {
                   </div>
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Kinh nghiệm</p>
-                     <p className="text-sm font-bold text-slate-700 uppercase">1 - 3 năm</p>
+                     <p className="text-sm font-bold text-slate-700 uppercase">{job.requiredExperience || "Không yêu cầu"}</p>
                   </div>
                </div>
 

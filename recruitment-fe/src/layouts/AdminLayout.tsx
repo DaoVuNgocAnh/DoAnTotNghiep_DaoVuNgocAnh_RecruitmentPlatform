@@ -3,6 +3,7 @@ import { AdminSidebar } from './common/AdminSidebar';
 import { useUser } from '@/modules/user/hooks/useUser'; // SỬ DỤNG HOOK MỚI
 import { Search, ShieldCheck, Loader2 } from 'lucide-react';
 import NotificationDropdown from '@/modules/notification/components/NotificationDropdown';
+import { ScrollToTop } from '@/components/shared/ScrollToTop';
 
 // UI COMPONENTS
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ export default function AdminLayout() {
     if (path.includes('dashboard')) return 'Bảng điều khiển hệ thống';
     if (path.includes('companies')) return 'Phê duyệt doanh nghiệp';
     if (path.includes('users')) return 'Quản lý người dùng';
+    if (path.includes('profile')) return 'Hồ sơ cá nhân';
     if (path.includes('job-categories')) return 'Quản lý ngành nghề';
     if (path.includes('system-history')) return 'Nhật ký hệ thống';
     return 'Hệ thống quản trị';
@@ -26,6 +28,7 @@ export default function AdminLayout() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
+      <ScrollToTop />
       {/* Sidebar Admin mới */}
       <AdminSidebar />
 

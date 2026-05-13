@@ -80,7 +80,7 @@ export const EmployerSidebar = () => {
           },
         ]
       : []),
-    { title: 'Hồ sơ cá nhân', icon: <UserIcon size={20} />, path: '/profile' },
+    { title: 'Hồ sơ cá nhân', icon: <UserIcon size={20} />, path: '/employer/profile' },
   ];
 
   return (

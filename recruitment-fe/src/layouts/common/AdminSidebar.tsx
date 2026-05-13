@@ -63,7 +63,7 @@ const menuItems = [
     icon: <MessageSquareText size={20} />,
     path: '/admin/feedback',
   },
-  { title: 'Hồ sơ cá nhân', icon: <UserIcon size={20} />, path: '/profile' },
+  { title: 'Hồ sơ cá nhân', icon: <UserIcon size={20} />, path: '/admin/profile' },
 ];
 
 export const AdminSidebar = () => {

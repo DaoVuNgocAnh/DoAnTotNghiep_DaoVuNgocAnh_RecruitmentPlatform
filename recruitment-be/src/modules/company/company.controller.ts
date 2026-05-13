@@ -9,8 +9,13 @@ import {
   Request,
   Param,
   Delete,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { CompanyService } from './company.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -29,6 +34,7 @@ import {
   AdminCompanyQueryDto,
   GetCompaniesQueryDto,
 } from './dto/company-query.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Companies')
 @Controller('companies')
@@ -62,6 +68,81 @@ export class CompanyController {
   @Post()
   create(@Request() req, @Body() dto: CompanyDto) {
     return this.companyService.create(req.user.userId, dto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật thông tin công ty (Chủ sở hữu)' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYER)
+  @Patch('my-company')
+  update(@Request() req, @Body() dto: Partial<CompanyDto>) {
+    return this.companyService.update(req.user.userId, dto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật Logo công ty (Chủ sở hữu)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        logo: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYER)
+  @Patch('my-company/logo')
+  @UseInterceptors(FileInterceptor('logo'))
+  updateLogo(
+    @Request() req,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }), // 2MB
+          new FileTypeValidator({ fileType: '.(jpg|jpeg|png)' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.companyService.updateLogo(req.user.userId, file);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật Ảnh bìa công ty (Chủ sở hữu)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        cover: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYER)
+  @Patch('my-company/cover')
+  @UseInterceptors(FileInterceptor('cover'))
+  updateCover(
+    @Request() req,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 3 * 1024 * 1024 }), // 3MB for cover
+          new FileTypeValidator({ fileType: '.(jpg|jpeg|png)' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.companyService.updateCover(req.user.userId, file);
   }
 
   @ApiOperation({ summary: 'Tìm kiếm công ty theo mã số thuế' })

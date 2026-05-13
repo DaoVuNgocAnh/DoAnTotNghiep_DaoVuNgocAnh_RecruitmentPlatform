@@ -15,6 +15,10 @@ export class CreateApplicationDto {
   @IsNotEmpty({ message: 'Vui lòng chọn CV để ứng tuyển' })
   @IsUUID()
   resumeId!: string;
+
+  @IsOptional()
+  @IsString()
+  candidateNote?: string;
 }
 
 export class UpdateApplicationStatusDto {

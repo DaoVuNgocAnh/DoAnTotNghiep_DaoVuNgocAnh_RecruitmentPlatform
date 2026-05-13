@@ -44,6 +44,7 @@ export class ApplicationService {
         jobId: dto.jobId,
         candidateId,
         resumeId: dto.resumeId,
+        candidateNote: dto.candidateNote,
         status: ApplicationStatus.PENDING,
       },
       include: {

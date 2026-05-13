@@ -32,6 +32,14 @@ export class CompanyDto {
   logoUrl?: string;
 
   @IsOptional()
+  @IsString()
+  coverUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
   @IsEnum(CompanyStatus)
   status?: CompanyStatus;
 

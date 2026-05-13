@@ -22,6 +22,15 @@ export class JobCategoryService {
       this.prisma.jobCategory.count({ where }),
       this.prisma.jobCategory.findMany({
         where,
+        include: {
+          _count: {
+            select: {
+              jobs: {
+                where: { status: 'ACTIVE', isDeleted: false },
+              },
+            },
+          },
+        },
         orderBy: { name: 'asc' },
         skip,
         take: limit,

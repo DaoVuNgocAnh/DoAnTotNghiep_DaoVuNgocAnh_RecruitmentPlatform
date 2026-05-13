@@ -118,6 +118,18 @@ export const MyApplicationsPage = () => {
                                 <FileText size={12} /> Xem CV đã nộp
                              </a>
                           </div>
+
+                          {app.employerNote && (
+                            <div className="mt-6 p-4 rounded-2xl bg-amber-50/50 border border-amber-100/50 flex gap-3 items-start animate-in slide-in-from-top-2 duration-500">
+                               <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                                  <Info size={16} />
+                               </div>
+                               <div>
+                                  <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Ghi chú từ nhà tuyển dụng:</p>
+                                  <p className="text-sm font-medium text-slate-600 italic leading-relaxed">"{app.employerNote}"</p>
+                               </div>
+                            </div>
+                          )}
                        </div>
                     </div>
 

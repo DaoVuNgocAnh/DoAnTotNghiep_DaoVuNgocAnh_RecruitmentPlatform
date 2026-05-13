@@ -52,6 +52,8 @@ model Company {
   description     String
   websiteUrl      String?          @map("website_url")
   logoUrl         String?          @map("logo_url")
+  coverUrl        String?          @map("cover_url")
+  location        String?
   status          CompanyStatus    @default(PENDING)
   isPremium       Boolean          @default(false) @map("is_premium")
   isDeleted       Boolean          @default(false) @map("is_deleted")
@@ -117,6 +119,7 @@ model Job {
   salaryMax         Int?          @map("salary_max")
   isSalaryNegotiable Boolean       @default(false) @map("is_salary_negotiable")
   jobType           JobType       @default(FULL_TIME) @map("job_type")
+  requiredExperience String?      @map("required_experience")
   location          String
   status            JobStatus     @default(PENDING)
   isFeatured   Boolean       @default(false) @map("is_featured")
@@ -175,6 +178,7 @@ model Application {
   applyDate          DateTime             @default(now()) @map("apply_date")
   status             ApplicationStatus    @default(PENDING)
   employerNote       String?              @map("employer_note")
+  candidateNote      String?              @map("candidate_note") @db.Text
   employerActionDate DateTime?            @map("employer_action_date")
   isDeleted          Boolean              @default(false) @map("is_deleted")
   employerActionById String?              @map("employer_action_by_id") @db.Char(36)
@@ -367,4 +371,11 @@ enum TargetType {
 enum SavedItemScope {
   PERSONAL
   COMPANY
+}
+model NewsletterSubscription {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("newsletter_subscriptions")
 }

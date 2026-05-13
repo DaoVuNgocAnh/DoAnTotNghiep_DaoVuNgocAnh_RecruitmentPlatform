@@ -31,6 +31,7 @@ const jobSchema = z.object({
   title: z.string().min(5, "Tiêu đề quá ngắn"),
   categoryId: z.string().min(1, "Vui lòng chọn ngành nghề"),
   jobType: z.enum(["FULL_TIME", "PART_TIME", "INTERNSHIP", "REMOTE"]),
+  requiredExperience: z.string().min(1, "Vui lòng nhập yêu cầu kinh nghiệm"),
   salaryMin: z.coerce.number().min(0).optional(),
   salaryMax: z.coerce.number().min(0).optional(),
   isSalaryNegotiable: z.boolean(),
@@ -52,6 +53,7 @@ export const ManageJobsPage = () => {
       title: "", 
       categoryId: "", 
       jobType: "FULL_TIME", 
+      requiredExperience: "",
       salaryMin: undefined,
       salaryMax: undefined,
       isSalaryNegotiable: false,
@@ -208,6 +210,17 @@ export const ManageJobsPage = () => {
                     <FormControl>
                       <Input type="date" className="h-12 rounded-xl focus-visible:ring-[#00b14f]" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                {/* Kinh nghiệm */}
+                <FormField control={form.control} name="requiredExperience" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-black text-xs uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                       <PlusCircle size={14} className="text-[#00b14f]" /> Kinh nghiệm yêu cầu
+                    </FormLabel>
+                    <FormControl><Input placeholder="Ví dụ: 1 - 2 năm, Không yêu cầu..." className="h-12 rounded-xl focus-visible:ring-[#00b14f]" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

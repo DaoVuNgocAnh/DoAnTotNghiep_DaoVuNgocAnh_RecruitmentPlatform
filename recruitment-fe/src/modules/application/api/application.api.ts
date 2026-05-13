@@ -25,6 +25,7 @@ export interface Application {
   applyDate: string;
   status: 'PENDING' | 'INTERVIEW' | 'REJECTED' | 'ACCEPTED' | 'WITHDRAWN' | 'REVIEWING';
   employerNote?: string;
+  candidateNote?: string;
   job: {
     title: string;
     company: {
@@ -45,7 +46,7 @@ export interface Application {
 }
 
 export const applicationApi = {
-  applyJob: (data: { jobId: string; resumeId: string }) => apiClient.post<Application>("/applications", data),
+  applyJob: (data: { jobId: string; resumeId: string; candidateNote?: string }) => apiClient.post<Application>("/applications", data),
   getMyApplications: (params?: { page?: number; limit?: number }) => 
     apiClient.get<PaginatedResponse<Application>>("/applications/my-applications", { params }),
   getEmployerApplications: (params?: { page?: number; limit?: number }) => 

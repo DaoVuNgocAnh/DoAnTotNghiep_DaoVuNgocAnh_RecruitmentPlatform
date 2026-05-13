@@ -22,12 +22,14 @@ import {
   AdminCompanyQueryDto,
   GetCompaniesQueryDto,
 } from './dto/company-query.dto';
+import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 
 @Injectable()
 export class CompanyService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async findAllPublic(
@@ -553,5 +555,59 @@ export class CompanyService {
     }
 
     return request;
+  }
+
+  async update(ownerId: string, dto: Partial<CompanyDto>) {
+    const company = await this.prisma.company.findUnique({
+      where: { ownerId },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Khong tim thay cong ty cua ban');
+    }
+
+    return this.prisma.company.update({
+      where: { id: company.id },
+      data: {
+        name: dto.name,
+        description: dto.description,
+        websiteUrl: dto.websiteUrl,
+        location: dto.location,
+      },
+    });
+  }
+
+  async updateLogo(ownerId: string, file: Express.Multer.File) {
+    const company = await this.prisma.company.findUnique({
+      where: { ownerId },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Khong tim thay cong ty cua ban');
+    }
+
+    const upload = await this.cloudinaryService.uploadFile(file);
+    
+    return this.prisma.company.update({
+      where: { id: company.id },
+      data: { logoUrl: upload.secure_url },
+    });
+  }
+
+  async updateCover(ownerId: string, file: Express.Multer.File) {
+    const company = await this.prisma.company.findUnique({
+      where: { ownerId },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Khong tim thay cong ty cua ban');
+    }
+
+    const upload = await this.cloudinaryService.uploadFile(file);
+
+    return this.prisma.company.update({
+      where: { id: company.id },
+      data: { coverUrl: upload.secure_url },
+    });
   }
 }
