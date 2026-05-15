@@ -334,14 +334,24 @@ export const EmployerCandidatesPage = () => {
                               </Button>
                             </>
                           ) : job.status === "INTERVIEW" ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="rounded-xl border-green-100 text-green-600 hover:bg-green-50 font-black text-[9px] uppercase h-7 px-2"
-                              onClick={() => setStatusUpdate({ id: job.applicationId, status: "ACCEPTED", name: group.candidate.fullName })}
-                            >
-                              <Check size={14} className="mr-1" /> Nhận việc
-                            </Button>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-xl border-red-100 text-red-500 hover:bg-red-50 font-black text-[9px] uppercase h-7 px-2"
+                                onClick={() => setStatusUpdate({ id: job.applicationId, status: "REJECTED", name: group.candidate.fullName })}
+                              >
+                                <X size={14} className="mr-1" /> Từ chối
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-xl border-green-100 text-green-600 hover:bg-green-50 font-black text-[9px] uppercase h-7 px-2"
+                                onClick={() => setStatusUpdate({ id: job.applicationId, status: "ACCEPTED", name: group.candidate.fullName })}
+                              >
+                                <Check size={14} className="mr-1" /> Nhận việc
+                              </Button>
+                            </>
                           ) : (
                             <span className="text-[9px] font-black text-slate-300 uppercase italic tracking-widest px-2">
                               Đã xong

@@ -142,11 +142,20 @@ export const MyApplicationsPage = () => {
                           </Badge>
                        </div>
                        
-                       <Link to={`/jobs/${app.jobId}`} className="lg:w-full">
-                          <Button variant="ghost" className="w-full rounded-2xl h-12 gap-2 font-black text-[10px] uppercase tracking-widest text-slate-400 group-hover:text-primary transition-all">
-                             Chi tiết việc <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                          </Button>
-                       </Link>
+                       <div className="flex flex-col gap-3 w-full sm:w-auto lg:w-full">
+                          {app.status === 'INTERVIEW' && (
+                            <Link to="/interviews" className="w-full">
+                                <Button className="w-full rounded-2xl h-12 gap-2 font-black text-[10px] uppercase tracking-widest bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/20 transition-all">
+                                  <Calendar size={14} /> Lịch phỏng vấn
+                                </Button>
+                            </Link>
+                          )}
+                          <Link to={`/jobs/${app.jobId}`} className="w-full">
+                              <Button variant="ghost" className="w-full rounded-2xl h-12 gap-2 font-black text-[10px] uppercase tracking-widest text-slate-400 hover:bg-white group-hover:text-primary transition-all">
+                                 Chi tiết việc <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                              </Button>
+                          </Link>
+                       </div>
                     </div>
                   </div>
                 </CardContent>

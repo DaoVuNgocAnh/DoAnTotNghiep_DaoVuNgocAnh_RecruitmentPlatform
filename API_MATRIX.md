@@ -39,6 +39,7 @@ Bảng dưới đây tổng hợp tất cả các API đang có trong hệ thố
 | `/companies/premium-request` | POST | Employer | Mua gói Premium |
 | `/companies/admin/premium-requests` | GET | Admin | Xem danh sách yêu cầu Premium |
 | `/companies/premium-request/:id/handle` | PATCH | Admin | Xử lý yêu cầu Premium |
+| `/companies/admin/stats` | GET | Admin | Lấy thống kê hệ thống (Dashboard) |
 
 ## 4. Job Module (`/jobs`)
 | Endpoint | Method | Role | Mô tả |
@@ -75,7 +76,7 @@ Bảng dưới đây tổng hợp tất cả các API đang có trong hệ thố
 | `/applications` | POST | Candidate | Nộp hồ sơ ứng tuyển |
 | `/applications/my-applications` | GET | Candidate | Xem hồ sơ đã nộp |
 | `/applications/employer` | GET | Employer | Xem danh sách ứng viên nộp vào công ty |
-| `/applications/:id/status`| PATCH | Employer | Chuyển trạng thái hồ sơ (Duyệt/Loại) |
+| `/applications/:id/status`| PATCH | Employer | Chuyển trạng thái hồ sơ (Duyệt/Loại/Phỏng vấn/Đang xem xét) |
 
 ## 8. Interview Module (`/interviews`)
 | Endpoint | Method | Role | Mô tả |
@@ -113,7 +114,13 @@ Bảng dưới đây tổng hợp tất cả các API đang có trong hệ thố
 | `/feedback` | GET | Admin | Xem danh sách phản hồi |
 | `/feedback/:id/status` | PATCH | Admin | Cập nhật trạng thái phản hồi |
 
-## 12. System Log Module (`/system-logs`)
+## 12. Newsletter Module (`/newsletter`)
+| Endpoint | Method | Role | Mô tả |
+|----------|--------|------|-------|
+| `/newsletter/subscribe` | POST | Public | Đăng ký nhận bản tin việc làm hàng tuần |
+| `/newsletter/trigger-test` | GET | Public | Trigger gửi mail test (Dev only) |
+
+## 13. System Log Module (`/system-logs`)
 | Endpoint | Method | Role | Mô tả |
 |----------|--------|------|-------|
 | `/system-logs` | GET | Admin | Xem lịch sử hoạt động hệ thống |
