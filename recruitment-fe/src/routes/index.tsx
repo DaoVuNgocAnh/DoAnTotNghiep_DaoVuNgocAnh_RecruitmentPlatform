@@ -29,6 +29,7 @@ import { AdminVerifyJobs } from '@/modules/admin/pages/AdminVerifyJobs';
 import { AdminDashboard } from '@/modules/admin/pages/AdminDashboard';
 import { AdminJobCategory } from '@/modules/admin/pages/AdminJobCategory';
 import { EmployerManageJobs } from '@/modules/employer/pages/EmployerManageJobs';
+import { AnalyticsDashboard } from '@/modules/employer/pages/AnalyticsDashboard';
 import { MyResumesPage } from '@/modules/resume/pages/MyResumesPage';
 import { MyApplicationsPage } from '@/modules/application/pages/MyApplicationsPage';
 import { CandidateDetailPage } from '@/modules/employer/pages/candidate/CandidateDetailPage';
@@ -192,6 +193,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: 'dashboard', element: <EmployerDashboard /> },
+      { path: 'analytics', element: <AnalyticsDashboard /> },
       { path: 'company', element: <CompanyProfilePage /> },
       { path: 'profile', element: <ProfilePage /> },
       { path: 'jobs', element: <EmployerManageJobs /> },

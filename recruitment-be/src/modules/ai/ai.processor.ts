@@ -50,7 +50,7 @@ export class AiProcessor extends WorkerHost {
       // 1. Trích xuất text (Hỗ trợ cả PDF và DOCX)
       const ext = path.extname(fileUrl).toLowerCase();
       let text = '';
-      
+
       if (ext === '.pdf') {
         text = await this.aiService.extractTextFromPdf(fileUrl);
       } else if (ext === '.docx' || ext === '.doc') {
@@ -78,8 +78,11 @@ export class AiProcessor extends WorkerHost {
       this.logger.log(`AI Analysis completed for Resume ${resumeId}`);
       return analysis;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Error in AiProcessor for Resume ${resumeId}: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Error in AiProcessor for Resume ${resumeId}: ${errorMessage}`,
+      );
       throw error;
     }
   }
@@ -105,7 +108,9 @@ export class AiProcessor extends WorkerHost {
         jobData.requirement,
       );
 
-      this.logger.log(`AI extracted skills for Job ${jobId}: ${analysis.skills.join(', ')}`);
+      this.logger.log(
+        `AI extracted skills for Job ${jobId}: ${analysis.skills.join(', ')}`,
+      );
 
       await this.prisma.job.update({
         where: { id: jobId },
@@ -117,8 +122,11 @@ export class AiProcessor extends WorkerHost {
       this.logger.log(`AI Analysis completed and saved for Job ${jobId}`);
       return analysis;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Error in AiProcessor for Job ${jobId}: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Error in AiProcessor for Job ${jobId}: ${errorMessage}`,
+      );
       throw error;
     }
   }

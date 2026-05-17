@@ -21,10 +21,12 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
+import { Audit } from 'src/common/decorators/audit.decorator';
 
 @ApiTags('Applications')
 @ApiBearerAuth()
 @Controller('applications')
+@Audit('APPLICATION')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ApplicationController {
   constructor(private readonly service: ApplicationService) {}
@@ -43,7 +45,10 @@ export class ApplicationController {
     return this.service.findByCandidate(req.user.userId, pagination);
   }
 
-  @ApiOperation({ summary: 'Lấy danh sách hồ sơ ứng tuyển vào công ty (Dành cho Nhà tuyển dụng)' })
+  @ApiOperation({
+    summary:
+      'Lấy danh sách hồ sơ ứng tuyển vào công ty (Dành cho Nhà tuyển dụng)',
+  })
   @Get('employer')
   @Roles(Role.EMPLOYER)
   getEmployerApps(@Request() req, @Query() pagination: PaginationQueryDto) {
@@ -57,7 +62,9 @@ export class ApplicationController {
     );
   }
 
-  @ApiOperation({ summary: 'Cập nhật trạng thái hồ sơ ứng tuyển (Dành cho Nhà tuyển dụng)' })
+  @ApiOperation({
+    summary: 'Cập nhật trạng thái hồ sơ ứng tuyển (Dành cho Nhà tuyển dụng)',
+  })
   @Patch(':id/status')
   @Roles(Role.EMPLOYER)
   updateStatus(

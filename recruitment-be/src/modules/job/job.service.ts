@@ -61,7 +61,9 @@ export class JobService {
       });
 
       // Đẩy vào hàng đợi AI ngay trong transaction (hoặc ngay sau đó)
-      this.logger.log(`Pushing Job ID ${createdJob.id} to AI_QUEUE for analysis...`);
+      this.logger.log(
+        `Pushing Job ID ${createdJob.id} to AI_QUEUE for analysis...`,
+      );
       await this.aiQueue.add('analyze-job', {
         jobId: createdJob.id,
         type: 'job',
@@ -79,7 +81,6 @@ export class JobService {
       targetId: job.id,
     });
 
-    await this.cacheManager.del('jobs_all');
     return job;
   }
 
@@ -94,7 +95,7 @@ export class JobService {
     if (cachedData) return cachedData;
 
     const now = new Date();
-    
+
     // Xây dựng điều kiện lọc
     const where: Prisma.JobWhereInput = {
       isDeleted: false,
@@ -102,10 +103,7 @@ export class JobService {
       // Đảm bảo tin còn hạn
       AND: [
         {
-          OR: [
-            { expiredDate: null },
-            { expiredDate: { gt: now } },
-          ],
+          OR: [{ expiredDate: null }, { expiredDate: { gt: now } }],
         },
       ],
     };
@@ -135,22 +133,16 @@ export class JobService {
     } else if (query.salaryMin !== undefined || query.salaryMax !== undefined) {
       // 2. Lấy các tin có khoảng lương giao thoa và KHÔNG phải là thỏa thuận
       (where.AND as any[]).push({ isSalaryNegotiable: false });
-      
+
       const overlapConditions: any = { AND: [] };
       if (query.salaryMin !== undefined) {
         overlapConditions.AND.push({
-          OR: [
-            { salaryMax: { gte: query.salaryMin } },
-            { salaryMax: null }
-          ]
+          OR: [{ salaryMax: { gte: query.salaryMin } }, { salaryMax: null }],
         });
       }
       if (query.salaryMax !== undefined) {
         overlapConditions.AND.push({
-          OR: [
-            { salaryMin: { lte: query.salaryMax } },
-            { salaryMin: null }
-          ]
+          OR: [{ salaryMin: { lte: query.salaryMax } }, { salaryMin: null }],
         });
       }
       (where.AND as any[]).push(overlapConditions);
@@ -160,15 +152,20 @@ export class JobService {
       (where.AND as any[]).push({
         OR: [
           { title: { contains: query.search, mode: 'insensitive' } },
-          { company: { name: { contains: query.search, mode: 'insensitive' } } },
+          {
+            company: { name: { contains: query.search, mode: 'insensitive' } },
+          },
           { description: { contains: query.search, mode: 'insensitive' } },
         ],
       });
     }
 
     // Xử lý sắp xếp
-    let orderBy: any = [{ company: { isPremium: 'desc' } }, { createdAt: 'desc' }];
-    
+    let orderBy: any = [
+      { company: { isPremium: 'desc' } },
+      { createdAt: 'desc' },
+    ];
+
     if (query.sortBy === 'viewCount') {
       orderBy = [{ viewCount: 'desc' }, { createdAt: 'desc' }];
     }
@@ -178,7 +175,9 @@ export class JobService {
       this.prisma.job.findMany({
         where,
         include: {
-          company: { select: { id: true, name: true, logoUrl: true, isPremium: true } },
+          company: {
+            select: { id: true, name: true, logoUrl: true, isPremium: true },
+          },
           category: true,
         },
         orderBy,
@@ -297,7 +296,9 @@ export class JobService {
         .map((s) => s.trim().toLowerCase())
         .filter(Boolean);
       candidateJobTitle = resume.parsedJobTitle?.toLowerCase() || '';
-      this.logger.log(`Matching using Resume: ${resume.resumeName} (ID: ${resume.id})`);
+      this.logger.log(
+        `Matching using Resume: ${resume.resumeName} (ID: ${resume.id})`,
+      );
     } else {
       // Fallback: Lấy kỹ năng từ profile user
       const user = await this.prisma.user.findUnique({
@@ -309,7 +310,9 @@ export class JobService {
           .map((s) => s.trim().toLowerCase())
           .filter(Boolean);
       }
-      this.logger.log(`Matching using User Profile Skills (No AI Resume found)`);
+      this.logger.log(
+        `Matching using User Profile Skills (No AI Resume found)`,
+      );
     }
 
     this.logger.debug(`Candidate Skills: [${candidateSkills.join(', ')}]`);
@@ -324,10 +327,7 @@ export class JobService {
       where: {
         status: JobStatus.ACTIVE,
         isDeleted: false,
-        OR: [
-          { expiredDate: null },
-          { expiredDate: { gt: new Date() } },
-        ],
+        OR: [{ expiredDate: null }, { expiredDate: { gt: new Date() } }],
       },
       include: {
         company: {
@@ -346,7 +346,7 @@ export class JobService {
             .map((s) => s.trim().toLowerCase())
             .filter(Boolean)
         : [];
-      
+
       const jobTitle = job.title.toLowerCase();
 
       // Tiêu chí 1: Khớp Job Title (Trọng số cao: 50đ)
@@ -354,7 +354,9 @@ export class JobService {
         score += 50;
       } else if (candidateJobTitle) {
         // Khớp từng từ trong job title (vd: "Frontend" trong "Frontend Developer")
-        const titleWords = candidateJobTitle.split(/\s+/).filter(w => w.length > 2);
+        const titleWords = candidateJobTitle
+          .split(/\s+/)
+          .filter((w) => w.length > 2);
         for (const word of titleWords) {
           if (jobTitle.includes(word)) score += 15;
         }
@@ -365,9 +367,12 @@ export class JobService {
         // Kiểm tra trong parsedSkills của Job (đã qua AI)
         if (jobParsedSkills.includes(skill)) {
           score += 15;
-        } 
+        }
         // Kiểm tra trong title/requirement (phòng trường hợp AI chưa parse kịp)
-        else if (jobTitle.includes(skill) || job.requirement.toLowerCase().includes(skill)) {
+        else if (
+          jobTitle.includes(skill) ||
+          job.requirement.toLowerCase().includes(skill)
+        ) {
           score += 5;
         }
       }
@@ -405,8 +410,13 @@ export class JobService {
       orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
       take: limit,
     });
-    return fallbackJobs.map((job) => ({ ...job, isAiMatched: false, score: 0 }));
-  }  async findAllForAdmin(
+    return fallbackJobs.map((job) => ({
+      ...job,
+      isAiMatched: false,
+      score: 0,
+    }));
+  }
+  async findAllForAdmin(
     pagination: PaginationQueryDto,
     status?: JobStatus,
   ): Promise<PaginatedResponse<any>> {
@@ -467,8 +477,6 @@ export class JobService {
       });
     }
 
-    await this.cacheManager.del(`job_detail_${id}`);
-    await this.cacheManager.del('jobs_all');
     return job;
   }
 
@@ -544,7 +552,6 @@ export class JobService {
       where: { id },
       data: { status: JobStatus.CLOSED },
     });
-    await this.cacheManager.del(`job_detail_${id}`);
     return updatedJob;
   }
 
@@ -589,7 +596,6 @@ export class JobService {
       });
     }
 
-    await this.cacheManager.del(`job_detail_${id}`);
     return updated;
   }
 

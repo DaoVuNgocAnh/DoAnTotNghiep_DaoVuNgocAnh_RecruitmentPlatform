@@ -37,7 +37,9 @@ export class SavedItemsController {
     return this.savedItemsService.updateNote(req.user.userId, id, note);
   }
 
-  @ApiOperation({ summary: 'Cập nhật ghi chú ứng viên trong Talent Pool của công ty' })
+  @ApiOperation({
+    summary: 'Cập nhật ghi chú ứng viên trong Talent Pool của công ty',
+  })
   @Patch('company/candidates/:id/note')
   updateCompanyNote(
     @Req() req,
@@ -69,7 +71,9 @@ export class SavedItemsController {
     );
   }
 
-  @ApiOperation({ summary: 'Lấy danh sách ứng viên trong Talent Pool của công ty' })
+  @ApiOperation({
+    summary: 'Lấy danh sách ứng viên trong Talent Pool của công ty',
+  })
   @Get('company/candidates')
   findCompanyCandidates(@Req() req, @Query() pagination: PaginationQueryDto) {
     if (!req.user.companyId)
@@ -81,7 +85,9 @@ export class SavedItemsController {
     );
   }
 
-  @ApiOperation({ summary: 'Kiểm tra xem ứng viên đã có trong Talent Pool của công ty chưa' })
+  @ApiOperation({
+    summary: 'Kiểm tra xem ứng viên đã có trong Talent Pool của công ty chưa',
+  })
   @Get('company/candidates/check/:targetId')
   checkCompanyCandidate(@Req() req, @Param('targetId') targetId: string) {
     if (!req.user.companyId)

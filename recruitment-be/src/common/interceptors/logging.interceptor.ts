@@ -4,34 +4,39 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { SystemLogService } from '../../modules/system-log/system-log.service';
+import {
+  AUDIT_METADATA_KEY,
+  AuditOptions,
+} from '../decorators/audit.decorator';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  constructor(private readonly logService: SystemLogService) {}
+  constructor(
+    private readonly logService: SystemLogService,
+    private readonly reflector: Reflector,
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-    const { method, url, user, body, params } = request;
+    const { method, url, user, params } = request;
+
+    // Lấy metadata từ decorator @Audit
+    const auditOptions = this.reflector.getAllAndOverride<AuditOptions>(
+      AUDIT_METADATA_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     return next.handle().pipe(
       tap((responseData) => {
-        if (method === 'GET') return;
+        // Chỉ log các phương pháp thay đổi dữ liệu và phải có @Audit decorator
+        if (method === 'GET' || !auditOptions) return;
 
-        // 1. Xác định targetType từ URL
-        let targetType = '';
-        if (url.includes('/jobs')) targetType = 'JOB';
-        else if (url.includes('/companies')) targetType = 'COMPANY';
-        else if (url.includes('/users')) targetType = 'USER';
-        else if (url.includes('/auth')) targetType = 'AUTH';
-        else if (url.includes('/applications')) targetType = 'APPLICATION';
-        else if (url.includes('/resumes')) targetType = 'RESUME';
-        else if (url.includes('/interviews')) targetType = 'INTERVIEW';
-        else if (url.includes('/notifications')) targetType = 'NOTIFICATION';
-        else if (url.includes('/saved-items')) targetType = 'SAVED_ITEM';
-        else if (url.includes('/job-categories')) targetType = 'JOB_CATEGORY';
+        // 1. Xác định targetType từ metadata
+        const targetType = auditOptions.entity;
 
         // 2. Xác định targetId từ params hoặc responseData
         const targetId = params?.id || responseData?.id || null;
@@ -39,13 +44,15 @@ export class LoggingInterceptor implements NestInterceptor {
         // 3. Xác định userId từ request user hoặc login response
         const userId = user?.userId || responseData?.user?.id || null;
 
+        const actionDescription = auditOptions.action || `${method}:${url}`;
+
         this.logService
           .createLog({
             userId: userId || null,
-            actionType: `${method}:${url}`,
+            actionType: actionDescription,
             targetType,
             targetId,
-            description: `User ${user?.email || responseData?.user?.email || 'Guest'} performed ${method} on ${url}`,
+            description: `User ${user?.email || responseData?.user?.email || 'Guest'} performed ${actionDescription}`,
           })
           .catch((err) => console.error('Failed to log:', err));
       }),

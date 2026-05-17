@@ -1,34 +1,9 @@
 ﻿import axiosClient from "@/api/axiosClient";
 import type { PaginatedResponse } from "@/types/pagination";
 import { useQuery } from "@tanstack/react-query";
+import type { Company, CreateCompanyDto } from "@/types/company.type";
 
-export interface Company {
-  id: string;
-  name: string;
-  logoUrl?: string;
-  coverUrl?: string;
-  location?: string;
-  taxCode: string;
-  description: string;
-  websiteUrl?: string;
-  status: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'BLACKLIST';
-  isPremium: boolean;
-  ownerId: string;
-  createdAt: string;
-  _count?: {
-    jobs: number;
-  };
-  jobs?: any[];
-}
-
-export interface CreateCompanyDto {
-  name: string;
-  taxCode: string;
-  description: string;
-  websiteUrl?: string;
-  logoUrl?: string;
-  location?: string;
-}
+export type { Company, CreateCompanyDto };
 
 export const companyApi = {
   getCompanies: (params?: { search?: string; status?: string; page?: number; limit?: number }) => 

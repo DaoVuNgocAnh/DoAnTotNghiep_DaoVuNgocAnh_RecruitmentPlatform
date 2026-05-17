@@ -1,12 +1,22 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { SystemLogService } from './modules/system-log/system-log.service';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { CacheClearInterceptor } from './common/interceptors/cache-clear.interceptor';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ConfigService } from '@nestjs/config';
+import { RedisIoAdapter } from './common/adapters/redis-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Cấu hình Redis Adapter cho Socket.io
+  const configService = app.get(ConfigService);
+  const redisIoAdapter = new RedisIoAdapter(app, configService);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   // Kích hoạt Validation toàn cục
   app.useGlobalPipes(
@@ -19,14 +29,22 @@ async function bootstrap() {
 
   // Đăng ký Interceptor toàn cục
   const systemLogService = app.get(SystemLogService);
-  app.useGlobalInterceptors(new LoggingInterceptor(systemLogService));
+  const reflector = app.get(Reflector);
+  const cacheManager = app.get(CACHE_MANAGER);
+
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(systemLogService, reflector),
+    new CacheClearInterceptor(reflector, cacheManager),
+  );
 
   app.enableCors();
 
   // Setup Swagger API Documentation
   const config = new DocumentBuilder()
     .setTitle('Recruitment Platform API')
-    .setDescription('The comprehensive API documentation for the Recruitment Platform')
+    .setDescription(
+      'The comprehensive API documentation for the Recruitment Platform',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();

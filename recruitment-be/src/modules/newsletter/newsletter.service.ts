@@ -45,7 +45,9 @@ export class NewsletterService {
     });
 
     if (newJobs.length === 0) {
-      this.logger.log('Không có việc làm mới trong tuần qua. Bỏ qua gửi bản tin.');
+      this.logger.log(
+        'Không có việc làm mới trong tuần qua. Bỏ qua gửi bản tin.',
+      );
       return;
     }
 

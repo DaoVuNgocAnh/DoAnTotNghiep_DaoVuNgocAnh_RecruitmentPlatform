@@ -1,14 +1,7 @@
 import apiClient from "@/api/axiosClient";
 import type { PaginatedResponse } from "@/types/pagination";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-export interface Resume {
-  id: string;
-  resumeName: string;
-  fileUrl: string;
-  isDefault: boolean;
-  uploadedAt: string;
-}
+import type { Resume } from "@/types/resume.type";
 
 export const resumeApi = {
   getMyResumes: (params?: { page?: number; limit?: number }) => 

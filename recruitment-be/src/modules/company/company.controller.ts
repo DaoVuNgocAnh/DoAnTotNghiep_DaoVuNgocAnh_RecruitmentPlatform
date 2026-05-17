@@ -15,7 +15,13 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { CompanyService } from './company.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -35,9 +41,11 @@ import {
   GetCompaniesQueryDto,
 } from './dto/company-query.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Audit } from 'src/common/decorators/audit.decorator';
 
 @ApiTags('Companies')
 @Controller('companies')
+@Audit('COMPANY')
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
@@ -183,7 +191,9 @@ export class CompanyController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Phân công thành viên phụ trách tin tuyển dụng (Chủ sở hữu)' })
+  @ApiOperation({
+    summary: 'Phân công thành viên phụ trách tin tuyển dụng (Chủ sở hữu)',
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
   @Post('jobs/:jobId/assignees')
@@ -294,5 +304,14 @@ export class CompanyController {
     @Body('status') status: PremiumRequestStatus,
   ) {
     return this.companyService.handlePremiumRequest(id, status);
+  }
+
+  @ApiOperation({ summary: 'Lấy dữ liệu thống kê cho nhà tuyển dụng' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.EMPLOYER)
+  @Get('analytics')
+  getAnalytics(@Request() req) {
+    return this.companyService.getCompanyAnalytics(req.user.userId);
   }
 }

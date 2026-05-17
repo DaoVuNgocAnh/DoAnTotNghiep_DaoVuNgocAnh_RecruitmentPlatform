@@ -433,16 +433,28 @@ export class CompanyService {
     return {
       users: {
         total: totalUsers,
-        byRole: userByRole.reduce((acc, curr) => ({ ...acc, [curr.role]: curr._count }), {}),
-        byStatus: userStatus.reduce((acc, curr) => ({ ...acc, [curr.status]: curr._count }), {}),
+        byRole: userByRole.reduce(
+          (acc, curr) => ({ ...acc, [curr.role]: curr._count }),
+          {},
+        ),
+        byStatus: userStatus.reduce(
+          (acc, curr) => ({ ...acc, [curr.status]: curr._count }),
+          {},
+        ),
       },
       companies: {
         total: totalCompanies,
-        byStatus: companyStatus.reduce((acc, curr) => ({ ...acc, [curr.status]: curr._count }), {}),
+        byStatus: companyStatus.reduce(
+          (acc, curr) => ({ ...acc, [curr.status]: curr._count }),
+          {},
+        ),
       },
       jobs: {
         total: totalJobs,
-        byStatus: jobStatus.reduce((acc, curr) => ({ ...acc, [curr.status]: curr._count }), {}),
+        byStatus: jobStatus.reduce(
+          (acc, curr) => ({ ...acc, [curr.status]: curr._count }),
+          {},
+        ),
       },
     };
   }
@@ -587,7 +599,7 @@ export class CompanyService {
     }
 
     const upload = await this.cloudinaryService.uploadFile(file);
-    
+
     return this.prisma.company.update({
       where: { id: company.id },
       data: { logoUrl: upload.secure_url },
@@ -609,5 +621,70 @@ export class CompanyService {
       where: { id: company.id },
       data: { coverUrl: upload.secure_url },
     });
+  }
+
+  // ==========================================
+  // COMPANY ANALYTICS
+  // ==========================================
+
+  async getCompanyAnalytics(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user || !user.companyId)
+      throw new ForbiddenException('Ban khong thuoc cong ty nao');
+
+    const companyId = user.companyId;
+
+    // 1. Phễu ứng tuyển (Funnel)
+    const funnel = await this.prisma.application.groupBy({
+      by: ['status'],
+      where: {
+        job: { companyId },
+        isDeleted: false,
+      },
+      _count: true,
+    });
+
+    // 2. Thống kê theo tháng (Trend - 6 tháng gần nhất)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const trendsRaw: any[] = await this.prisma.$queryRaw`
+      SELECT 
+        to_char(apply_date, 'YYYY-MM') as month,
+        count(*) as count
+      FROM applications a
+      JOIN jobs j ON a.job_id = j.id
+      WHERE j.company_id = ${companyId}
+        AND a.apply_date >= ${sixMonthsAgo}
+        AND a.is_deleted = false
+      GROUP BY month
+      ORDER BY month ASC
+    `;
+
+    // 3. Tổng số tin tuyển dụng
+    const jobStats = await this.prisma.job.groupBy({
+      by: ['status'],
+      where: { companyId, isDeleted: false },
+      _count: true,
+    });
+
+    return {
+      funnel: funnel.reduce(
+        (acc, curr) => ({ ...acc, [curr.status]: curr._count }),
+        {},
+      ),
+      trends: trendsRaw.map((t) => ({
+        month: t.month,
+        count: Number(t.count),
+      })),
+      jobs: jobStats.reduce(
+        (acc, curr) => ({ ...acc, [curr.status]: curr._count }),
+        {},
+      ),
+    };
   }
 }

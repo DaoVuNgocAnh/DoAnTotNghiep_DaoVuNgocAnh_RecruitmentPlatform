@@ -35,7 +35,9 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Test quyền của Employer (Chỉ dành cho môi trường dev/test)' })
+  @ApiOperation({
+    summary: 'Test quyền của Employer (Chỉ dành cho môi trường dev/test)',
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
   @Get('test-employer')

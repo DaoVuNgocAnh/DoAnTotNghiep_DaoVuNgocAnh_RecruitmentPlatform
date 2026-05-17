@@ -1,5 +1,5 @@
 import axiosClient from "@/api/axiosClient";
-import type { Notification } from "../types/notification.type";
+import type { Notification } from "@/types/notification.type";
 import type { PaginatedResponse } from "@/types/pagination";
 
 export const notificationApi = {

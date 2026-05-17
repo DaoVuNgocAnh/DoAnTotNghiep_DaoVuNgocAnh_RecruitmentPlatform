@@ -44,6 +44,8 @@ export const MyInterviewsPage = () => {
         return { label: 'BẠN ĐÃ XÁC NHẬN', color: 'bg-green-50 text-green-600 ring-green-500/20', icon: CheckCircle2 };
       case InterviewStatus.DECLINED:
         return { label: 'BẠN ĐÃ TỪ CHỐI', color: 'bg-red-50 text-red-600 ring-red-500/20', icon: XCircle };
+      default:
+        return { label: status, color: 'bg-slate-50 text-slate-600', icon: Clock };
     }
   };
 

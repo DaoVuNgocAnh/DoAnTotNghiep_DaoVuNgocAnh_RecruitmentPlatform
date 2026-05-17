@@ -14,7 +14,7 @@ export class AiService {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (apiKey) {
       this.genAI = new GoogleGenerativeAI(apiKey);
-      this.listAvailableModels(); // Gọi để debug khi khởi tạo
+      void this.listAvailableModels(); // Đánh dấu void để linter bỏ qua floating promise
     } else {
       this.logger.error('GEMINI_API_KEY is not configured');
     }
@@ -23,13 +23,18 @@ export class AiService {
   async listAvailableModels() {
     try {
       const apiKey = this.configService.get('GEMINI_API_KEY');
-      const response = await axios.get(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-      const modelNames = response.data.models.map((m: any) => m.name.replace('models/', ''));
+      const response = await axios.get(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      );
+      const modelNames = response.data.models.map((m: any) =>
+        m.name.replace('models/', ''),
+      );
       this.logger.log('--- DANH SÁCH MODEL KHẢ DỤNG CHO KEY CỦA BẠN ---');
       this.logger.log(modelNames.join(', '));
       this.logger.log('------------------------------------------------');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Không thể lấy danh sách model: ' + errorMessage);
     }
   }
@@ -39,13 +44,14 @@ export class AiService {
       this.logger.log(`Extracting text from PDF: ${url}`);
       const response = await axios.get(url, { responseType: 'arraybuffer' });
       const buffer = Buffer.from(response.data);
-      
+
       const parser = new PDFParse({ data: buffer });
       const result = await parser.getText();
-      
+
       return result.text || '';
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error extracting text from PDF: ${errorMessage}`);
       return '';
     }
@@ -56,19 +62,24 @@ export class AiService {
       this.logger.log(`Extracting text from DOCX: ${url}`);
       const response = await axios.get(url, { responseType: 'arraybuffer' });
       const buffer = Buffer.from(response.data);
-      
+
       const result = await mammoth.extractRawText({ buffer });
       return result.value || '';
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error extracting text from DOCX: ${errorMessage}`);
       return '';
     }
   }
 
-  async analyzeResumeWithGemini(text: string): Promise<{ skills: string[]; jobTitle: string }> {
+  async analyzeResumeWithGemini(
+    text: string,
+  ): Promise<{ skills: string[]; jobTitle: string }> {
     if (!this.genAI) {
-      throw new Error('Gemini AI is not initialized. Check your GEMINI_API_KEY in .env');
+      throw new Error(
+        'Gemini AI is not initialized. Check your GEMINI_API_KEY in .env',
+      );
     }
 
     if (!text || text.trim().length === 0) {
@@ -77,7 +88,9 @@ export class AiService {
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+      const model = this.genAI.getGenerativeModel({
+        model: 'gemini-3-flash-preview',
+      });
 
       const prompt = `
         Bạn là một chuyên gia tuyển dụng. Hãy phân tích nội dung CV dưới đây và trích xuất thông tin.
@@ -91,26 +104,36 @@ export class AiService {
       `;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       let responseText = response.text();
-      
-      responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      
+
+      responseText = responseText
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+
       return JSON.parse(responseText);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error analyzing resume with Gemini: ${errorMessage}`);
       return { skills: [], jobTitle: 'N/A' };
     }
   }
 
-  async analyzeJobWithGemini(title: string, description: string, requirement: string): Promise<{ skills: string[] }> {
+  async analyzeJobWithGemini(
+    title: string,
+    description: string,
+    requirement: string,
+  ): Promise<{ skills: string[] }> {
     if (!this.genAI) {
       throw new Error('Gemini AI is not initialized');
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+      const model = this.genAI.getGenerativeModel({
+        model: 'gemini-3-flash-preview',
+      });
 
       const prompt = `
         Bạn là một chuyên gia tuyển dụng. Hãy phân tích nội dung tuyển dụng dưới đây và trích xuất danh sách các kỹ năng kỹ thuật, công nghệ yêu cầu.
@@ -126,13 +149,17 @@ export class AiService {
       `;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       let responseText = response.text();
-      responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      
+      responseText = responseText
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+
       return JSON.parse(responseText);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error analyzing job with Gemini: ${errorMessage}`);
       return { skills: [] };
     }

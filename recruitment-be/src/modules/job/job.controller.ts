@@ -23,9 +23,12 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role, JobStatus } from '@prisma/client';
 import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
+import { Audit } from 'src/common/decorators/audit.decorator';
+import { CacheClear } from 'src/common/decorators/cache-clear.decorator';
 
 @ApiTags('Jobs')
 @Controller('jobs')
+@Audit('JOB')
 export class JobController {
   constructor(private readonly jobService: JobService) {}
 
@@ -53,7 +56,9 @@ export class JobController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Lấy danh sách việc làm gợi ý dựa trên AI/CV (Candidate)' })
+  @ApiOperation({
+    summary: 'Lấy danh sách việc làm gợi ý dựa trên AI/CV (Candidate)',
+  })
   @Get('recommended')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CANDIDATE)
@@ -62,10 +67,13 @@ export class JobController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cập nhật trạng thái tin tuyển dụng (Admin phê duyệt/từ chối)' })
+  @ApiOperation({
+    summary: 'Cập nhật trạng thái tin tuyển dụng (Admin phê duyệt/từ chối)',
+  })
   @Patch(':id/status/admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @CacheClear('job_detail_{id}', 'jobs_all', 'jobs_query_*')
   async updateStatusAdmin(
     @Param('id') id: string,
     @Body() dto: UpdateJobStatusAdminDto,
@@ -77,7 +85,9 @@ export class JobController {
 
   // ROUTE EMPLOYER: Quản lý tin cá nhân
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Lấy danh sách tin tuyển dụng của công ty (Employer)' })
+  @ApiOperation({
+    summary: 'Lấy danh sách tin tuyển dụng của công ty (Employer)',
+  })
   @Get('my-jobs')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
@@ -97,6 +107,7 @@ export class JobController {
   @Patch(':id/close')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
+  @CacheClear('job_detail_{id}', 'jobs_all', 'jobs_query_*')
   async closeJob(@Param('id') id: string, @Request() req) {
     if (!req.user.companyId)
       throw new ForbiddenException('Bạn phải thuộc về một công ty');
@@ -119,6 +130,7 @@ export class JobController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER)
+  @CacheClear('jobs_all', 'jobs_query_*')
   async create(@Request() req, @Body() dto: JobDto) {
     if (!req.user.companyId)
       throw new ForbiddenException('Bạn phải thuộc về một công ty');
@@ -128,6 +140,7 @@ export class JobController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EMPLOYER, Role.ADMIN)
+  @CacheClear('job_detail_{id}', 'jobs_all', 'jobs_query_*')
   async update(@Param('id') id: string, @Request() req, @Body() dto: JobDto) {
     return this.jobService.update(
       id,

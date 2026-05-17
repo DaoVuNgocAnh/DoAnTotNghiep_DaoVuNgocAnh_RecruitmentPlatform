@@ -1,38 +1,8 @@
 import axiosClient from "@/api/axiosClient";
 import type { PaginatedResponse } from "@/types/pagination";
+import type { AdminUser, AdminStats } from "@/types/admin.type";
 
-export interface AdminUser {
-  id: string;
-  fullName: string;
-  email: string;
-  role: 'ADMIN' | 'EMPLOYER' | 'CANDIDATE';
-  status: 'ACTIVE' | 'LOCKED';
-  avatarUrl?: string | null;
-  phone?: string | null;
-  companyId?: string | null;
-  createdAt: string;
-  company?: {
-    id: string;
-    name: string;
-    status: string;
-  } | null;
-}
-
-export interface AdminStats {
-  users: {
-    total: number;
-    byRole: Record<string, number>;
-    byStatus: Record<string, number>;
-  };
-  companies: {
-    total: number;
-    byStatus: Record<string, number>;
-  };
-  jobs: {
-    total: number;
-    byStatus: Record<string, number>;
-  };
-}
+export type { AdminUser, AdminStats };
 
 export const adminApi = {
   getStats: () => axiosClient.get<AdminStats>("/companies/admin/stats"),

@@ -43,7 +43,9 @@ export class InterviewController {
     );
   }
 
-  @ApiOperation({ summary: 'Lấy danh sách lịch phỏng vấn của công ty (Nhà tuyển dụng)' })
+  @ApiOperation({
+    summary: 'Lấy danh sách lịch phỏng vấn của công ty (Nhà tuyển dụng)',
+  })
   @Get('employer')
   @Roles(Role.EMPLOYER)
   getEmployerInterviews(
@@ -70,7 +72,9 @@ export class InterviewController {
     return this.service.findByCandidate(req.user.userId, pagination);
   }
 
-  @ApiOperation({ summary: 'Cập nhật trạng thái chấp nhận/từ chối phỏng vấn (Ứng viên)' })
+  @ApiOperation({
+    summary: 'Cập nhật trạng thái chấp nhận/từ chối phỏng vấn (Ứng viên)',
+  })
   @Patch(':id/status')
   @Roles(Role.CANDIDATE)
   updateStatus(

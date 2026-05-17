@@ -14,7 +14,13 @@ import {
   FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -22,14 +28,18 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserDto } from './dto/user.dto';
 import { Role, UserStatus } from '@prisma/client';
 import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
+import { Audit } from 'src/common/decorators/audit.decorator';
 
 @ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
+@Audit('USER')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @ApiOperation({ summary: 'Lấy thông tin cá nhân (Profile) của người dùng hiện tại' })
+  @ApiOperation({
+    summary: 'Lấy thông tin cá nhân (Profile) của người dùng hiện tại',
+  })
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getMe(@Request() req) {
@@ -41,7 +51,12 @@ export class UserController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   findAllForAdmin(
-    @Query() query: PaginationQueryDto & { role?: Role | 'ALL'; status?: UserStatus | 'ALL'; search?: string },
+    @Query()
+    query: PaginationQueryDto & {
+      role?: Role | 'ALL';
+      status?: UserStatus | 'ALL';
+      search?: string;
+    },
   ) {
     return this.userService.findAllForAdmin(query);
   }
@@ -71,7 +86,9 @@ export class UserController {
     return this.userService.updateProfile(req.user.userId, data);
   }
 
-  @ApiOperation({ summary: 'Upload Avatar người dùng (Tối đa 2MB, định dạng jpg/png)' })
+  @ApiOperation({
+    summary: 'Upload Avatar người dùng (Tối đa 2MB, định dạng jpg/png)',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {

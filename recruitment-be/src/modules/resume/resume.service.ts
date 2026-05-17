@@ -56,12 +56,12 @@ export class ResumeService {
       return {
         success: true,
         data: updated,
-        analysis
+        analysis,
       };
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }

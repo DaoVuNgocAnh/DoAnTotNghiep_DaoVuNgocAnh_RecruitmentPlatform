@@ -16,7 +16,13 @@ import {
   Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { ResumeService } from './resume.service';
 import { CreateResumeDto } from './dto/resume.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -32,7 +38,9 @@ import { PaginationQueryDto } from 'src/common/dto/pagination.dto';
 export class ResumeController {
   constructor(private readonly resumeService: ResumeService) {}
 
-  @ApiOperation({ summary: 'Upload CV (Dành cho Ứng viên - Tối đa 10MB PDF/DOCX)' })
+  @ApiOperation({
+    summary: 'Upload CV (Dành cho Ứng viên - Tối đa 10MB PDF/DOCX)',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -42,7 +50,7 @@ export class ResumeController {
           type: 'string',
           format: 'binary',
         },
-        name: { type: 'string' }
+        name: { type: 'string' },
       },
     },
   })

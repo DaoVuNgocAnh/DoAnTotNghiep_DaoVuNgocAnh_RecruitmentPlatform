@@ -1,5 +1,6 @@
 import axiosClient from '@/api/axiosClient';
 import type { PaginatedResponse } from '@/types/pagination';
+import { useQuery } from '@tanstack/react-query';
 
 export const companyApi = {
   searchByTaxCode: (taxCode: string) =>
@@ -42,4 +43,11 @@ export const companyApi = {
 
   handlePremiumRequest: (id: string, status: 'APPROVED' | 'REJECTED') =>
     axiosClient.patch(`/companies/premium-request/${id}/handle`, { status }),
+
+  getAnalytics: () => axiosClient.get('/companies/analytics').then(res => res.data),
 };
+
+export const useCompanyAnalytics = () => useQuery({
+  queryKey: ['company-analytics'],
+  queryFn: companyApi.getAnalytics,
+});

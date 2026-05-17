@@ -60,16 +60,20 @@ export class MailService {
   }
 
   async sendWeeklyJobDigest(email: string, jobs: any[]) {
-    const jobItems = jobs.map(job => `
+    const jobItems = jobs
+      .map(
+        (job) => `
       <div style="margin-bottom: 20px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
         <h3 style="margin: 0 0 8px 0; color: #0f172a;">${job.title}</h3>
         <p style="margin: 0 0 12px 0; color: #00b14f; font-weight: 600;">${job.company.name}</p>
         <div style="font-size: 14px; color: #64748b;">
-          <span>📍 ${job.location}</span> • <span>💰 ${job.isSalaryNegotiable ? 'Thỏa thuận' : (job.salaryMax ? `${job.salaryMin} - ${job.salaryMax} tr` : 'Thỏa thuận')}</span>
+          <span>📍 ${job.location}</span> • <span>💰 ${job.isSalaryNegotiable ? 'Thỏa thuận' : job.salaryMax ? `${job.salaryMin} - ${job.salaryMax} tr` : 'Thỏa thuận'}</span>
         </div>
         <a href="http://localhost:5173/jobs/${job.id}" style="display: inline-block; margin-top: 16px; color: #00b14f; font-weight: 700; text-decoration: none;">Xem chi tiết →</a>
       </div>
-    `).join('');
+    `,
+      )
+      .join('');
 
     const html = `
       <div style="background-color: #f8fafc; padding: 40px; font-family: sans-serif;">

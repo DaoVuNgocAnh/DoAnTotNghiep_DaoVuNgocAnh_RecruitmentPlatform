@@ -19,8 +19,6 @@ export class NotificationGateway
   @WebSocketServer()
   server: Server;
 
-  private userSockets = new Map<string, string[]>();
-
   constructor(private readonly jwtService: JwtService) {}
 
   async handleConnection(client: Socket) {
@@ -34,15 +32,14 @@ export class NotificationGateway
       }
 
       const payload = await this.jwtService.verifyAsync(token);
-      const userId = payload.userId; // Thay sub bằng userId để khớp với JWT payload
+      const userId = payload.userId;
 
       client.data.userId = userId;
 
-      const sockets = this.userSockets.get(userId) || [];
-      sockets.push(client.id);
-      this.userSockets.set(userId, sockets);
+      // Gia nhập room riêng của user để nhận thông báo (hỗ trợ nhiều tab/nhiều instance)
+      await client.join(`user:${userId}`);
 
-      console.log(`User ${userId} connected with socket ${client.id}`);
+      console.log(`User ${userId} connected and joined room user:${userId}`);
     } catch (e) {
       client.disconnect();
     }
@@ -51,23 +48,12 @@ export class NotificationGateway
   handleDisconnect(client: Socket) {
     const userId = client.data.userId;
     if (userId) {
-      const sockets = this.userSockets.get(userId) || [];
-      const updatedSockets = sockets.filter((id) => id !== client.id);
-      if (updatedSockets.length === 0) {
-        this.userSockets.delete(userId);
-      } else {
-        this.userSockets.set(userId, updatedSockets);
-      }
-      console.log(`User ${userId} disconnected socket ${client.id}`);
+      console.log(`User ${userId} disconnected from socket ${client.id}`);
     }
   }
 
   sendNotificationToUser(userId: string, notification: any) {
-    const sockets = this.userSockets.get(userId);
-    if (sockets) {
-      sockets.forEach((socketId) => {
-        this.server.to(socketId).emit('newNotification', notification);
-      });
-    }
+    // Gửi đến toàn bộ các socket đang ở trong room của user đó
+    this.server.to(`user:${userId}`).emit('newNotification', notification);
   }
 }
