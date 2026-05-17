@@ -25,6 +25,7 @@ import { SavedItemsModule } from './modules/savedItems/saved-items.module';
 import { SystemLogModule } from './modules/system-log/system-log.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -93,6 +94,7 @@ import { NewsletterModule } from './modules/newsletter/newsletter.module';
     SystemLogModule,
     FeedbackModule,
     NewsletterModule,
+    AiModule,
   ],
   controllers: [],
   providers: [],

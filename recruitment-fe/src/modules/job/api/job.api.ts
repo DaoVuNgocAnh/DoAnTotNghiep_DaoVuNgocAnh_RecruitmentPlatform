@@ -92,12 +92,18 @@ export const jobApi = {
   getMyJobs: (params?: { page?: number; limit?: number }) => 
     apiClient.get<PaginatedResponse<Job>>("/jobs/my-jobs", { params }),
   closeJob: (id: string) => apiClient.patch(`/jobs/${id}/close`),
+  getRecommendedJobs: () => apiClient.get<Job[]>("/jobs/recommended"),
 };
 
 // --- HOOKS ---
 export const useJobCategories = () => useQuery({
   queryKey: ['job-categories'],
   queryFn: () => jobApi.getCategories().then((res) => res.data.data),
+});
+
+export const useRecommendedJobs = () => useQuery({
+  queryKey: ['jobs-recommended'],
+  queryFn: () => jobApi.getRecommendedJobs().then((res) => res.data),
 });
 
 export const useAllJobs = (params?: { 
@@ -142,6 +148,13 @@ export const useLatestJobs = (limit: number = 6) => useQuery({
   queryKey: ['jobs-latest', limit],
   queryFn: () => jobApi.getAllJobs({ sortBy: 'createdAt', limit, page: 1 }).then((res) => res.data),
 });
+
+export const useRecommendedJobsCandidate = () => {
+  return useQuery({
+    queryKey: ['jobs-recommended'],
+    queryFn: () => jobApi.getRecommendedJobs().then(res => res.data),
+  });
+};
 
 export const useCreateJob = () => {
   const queryClient = useQueryClient();

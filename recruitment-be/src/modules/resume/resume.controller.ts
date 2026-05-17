@@ -84,4 +84,11 @@ export class ResumeController {
   delete(@Request() req, @Param('id') id: string) {
     return this.resumeService.delete(req.user.userId, id);
   }
+
+  @ApiOperation({ summary: 'Trigger AI Analysis (Debug)' })
+  @Post(':id/analyze')
+  @Roles(Role.CANDIDATE)
+  triggerAi(@Request() req, @Param('id') id: string) {
+    return this.resumeService.analyzeWithAi(req.user.userId, id);
+  }
 }

@@ -9,6 +9,7 @@ import { CategorySection } from "../components/CategorySection";
 import { FeaturedCompanies } from "../components/FeaturedCompanies";
 import { FeatureShowcase } from "../components/FeatureShowcase";
 import { Newsletter } from "../components/Newsletter";
+import { RecommendedJobs } from "@/modules/job/components/RecommendedJobs";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/modules/user/hooks/useUser";
 
@@ -43,6 +44,9 @@ export const HomePage = () => {
 
       {/* Stats Section */}
       <StatsSection />
+
+      {/* AI Recommended Jobs (Personalized) */}
+      <RecommendedJobs />
 
       {/* Feature Showcase (Signature SmartCV) */}
       <FeatureShowcase />

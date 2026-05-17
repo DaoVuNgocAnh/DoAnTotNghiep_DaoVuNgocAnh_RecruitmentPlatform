@@ -3,10 +3,13 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { CreateResumeDto } from './dto/resume.dto';
 import * as path from 'path';
+import { AiService } from '../ai/ai.service';
 import {
   PaginatedResponse,
   PaginationQueryDto,
@@ -17,7 +20,51 @@ export class ResumeService {
   constructor(
     private prisma: PrismaService,
     private cloudinary: CloudinaryService,
+    private aiService: AiService,
+    @InjectQueue('AI_QUEUE') private aiQueue: Queue,
   ) {}
+
+  async analyzeWithAi(userId: string, resumeId: string) {
+    const resume = await this.prisma.resume.findUnique({
+      where: { id: resumeId },
+    });
+
+    if (!resume || resume.candidateId !== userId) {
+      throw new NotFoundException('Không tìm thấy CV');
+    }
+
+    try {
+      // Gọi trực tiếp AiService để debug
+      const text = await this.aiService.extractTextFromPdf(resume.fileUrl);
+      const analysis = await this.aiService.analyzeResumeWithGemini(text);
+
+      const updated = await this.prisma.resume.update({
+        where: { id: resumeId },
+        data: {
+          parsedSkills: analysis.skills.join(', '),
+          parsedJobTitle: analysis.jobTitle,
+        },
+      });
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          skills: analysis.skills.join(', '),
+        },
+      });
+
+      return {
+        success: true,
+        data: updated,
+        analysis
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
 
   async create(
     userId: string,
@@ -63,7 +110,7 @@ export class ResumeService {
     const shouldBeDefault = count === 0 ? true : dto.isDefault;
 
     // 5. Lưu vào Database
-    return this.prisma.resume.create({
+    const resume = await this.prisma.resume.create({
       data: {
         resumeName: dto.resumeName,
         fileUrl: uploadRes.secure_url,
@@ -71,6 +118,17 @@ export class ResumeService {
         candidateId: userId,
       },
     });
+
+    // 6. Đẩy vào hàng đợi AI xử lý (Hỗ trợ PDF và DOCX)
+    if (ext === '.pdf' || ext === '.docx' || ext === '.doc') {
+      await this.aiQueue.add('analyze-resume', {
+        resumeId: resume.id,
+        fileUrl: resume.fileUrl,
+        type: 'resume',
+      });
+    }
+
+    return resume;
   }
 
   async findMyResumes(

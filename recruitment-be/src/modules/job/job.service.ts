@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { JobStatus, Prisma, Role } from '@prisma/client';
@@ -14,13 +15,18 @@ import {
   PaginatedResponse,
   PaginationQueryDto,
 } from 'src/common/dto/pagination.dto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class JobService {
+  private readonly logger = new Logger(JobService.name);
+
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @InjectQueue('AI_QUEUE') private aiQueue: Queue,
   ) {}
 
   async create(userId: string, companyId: string, dto: JobDto) {
@@ -30,8 +36,8 @@ export class JobService {
           title: dto.title,
           description: dto.description,
           requirement: dto.requirement,
-          salaryMin: dto.salaryMin,
-          salaryMax: dto.salaryMax,
+          salaryMin: dto.salaryMin ? Math.round(dto.salaryMin) : null,
+          salaryMax: dto.salaryMax ? Math.round(dto.salaryMax) : null,
           isSalaryNegotiable: dto.isSalaryNegotiable || false,
           jobType: dto.jobType || 'FULL_TIME',
           requiredExperience: dto.requiredExperience,
@@ -52,6 +58,13 @@ export class JobService {
           userId,
           assignedById: userId,
         },
+      });
+
+      // Đẩy vào hàng đợi AI ngay trong transaction (hoặc ngay sau đó)
+      this.logger.log(`Pushing Job ID ${createdJob.id} to AI_QUEUE for analysis...`);
+      await this.aiQueue.add('analyze-job', {
+        jobId: createdJob.id,
+        type: 'job',
       });
 
       return createdJob;
@@ -264,7 +277,136 @@ export class JobService {
     return job;
   }
 
-  async findAllForAdmin(
+  async getRecommendedJobs(userId: string, limit: number = 6) {
+    // 1. Lấy CV mặc định hoặc mới nhất đã được parse
+    const resume = await this.prisma.resume.findFirst({
+      where: {
+        candidateId: userId,
+        isDeleted: false,
+        parsedSkills: { not: null },
+      },
+      orderBy: [{ isDefault: 'desc' }, { uploadedAt: 'desc' }],
+    });
+
+    let candidateSkills: string[] = [];
+    let candidateJobTitle = '';
+
+    if (resume?.parsedSkills) {
+      candidateSkills = resume.parsedSkills
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      candidateJobTitle = resume.parsedJobTitle?.toLowerCase() || '';
+      this.logger.log(`Matching using Resume: ${resume.resumeName} (ID: ${resume.id})`);
+    } else {
+      // Fallback: Lấy kỹ năng từ profile user
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (user?.skills) {
+        candidateSkills = user.skills
+          .split(',')
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
+      }
+      this.logger.log(`Matching using User Profile Skills (No AI Resume found)`);
+    }
+
+    this.logger.debug(`Candidate Skills: [${candidateSkills.join(', ')}]`);
+    this.logger.debug(`Candidate Job Title: ${candidateJobTitle}`);
+
+    if (candidateSkills.length === 0 && !candidateJobTitle) {
+      return this.getFallbackJobs(limit);
+    }
+
+    // 2. Lấy tất cả Job Active để tính điểm (Có thể tối ưu bằng FTS sau này)
+    const activeJobs = await this.prisma.job.findMany({
+      where: {
+        status: JobStatus.ACTIVE,
+        isDeleted: false,
+        OR: [
+          { expiredDate: null },
+          { expiredDate: { gt: new Date() } },
+        ],
+      },
+      include: {
+        company: {
+          select: { id: true, name: true, logoUrl: true, isPremium: true },
+        },
+        category: true,
+      },
+    });
+
+    // 3. Thuật toán tính điểm (Scoring Engine)
+    const scoredJobs = activeJobs.map((job) => {
+      let score = 0;
+      const jobParsedSkills = job.parsedSkills
+        ? job.parsedSkills
+            .split(',')
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean)
+        : [];
+      
+      const jobTitle = job.title.toLowerCase();
+
+      // Tiêu chí 1: Khớp Job Title (Trọng số cao: 50đ)
+      if (candidateJobTitle && jobTitle.includes(candidateJobTitle)) {
+        score += 50;
+      } else if (candidateJobTitle) {
+        // Khớp từng từ trong job title (vd: "Frontend" trong "Frontend Developer")
+        const titleWords = candidateJobTitle.split(/\s+/).filter(w => w.length > 2);
+        for (const word of titleWords) {
+          if (jobTitle.includes(word)) score += 15;
+        }
+      }
+
+      // Tiêu chí 2: Khớp Kỹ năng (Trọng số: 10đ/kỹ năng)
+      for (const skill of candidateSkills) {
+        // Kiểm tra trong parsedSkills của Job (đã qua AI)
+        if (jobParsedSkills.includes(skill)) {
+          score += 15;
+        } 
+        // Kiểm tra trong title/requirement (phòng trường hợp AI chưa parse kịp)
+        else if (jobTitle.includes(skill) || job.requirement.toLowerCase().includes(skill)) {
+          score += 5;
+        }
+      }
+
+      // Tiêu chí 3: Ưu tiên công ty Premium (+5đ)
+      if (job.company.isPremium) score += 5;
+
+      return { ...job, score };
+    });
+
+    // 4. Lọc bỏ job điểm 0 và sắp xếp
+    let results = scoredJobs
+      .filter((j) => j.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((j) => ({ ...j, isAiMatched: true }));
+
+    // Fallback nếu không tìm thấy gì
+    if (results.length === 0) {
+      results = await this.getFallbackJobs(limit);
+    }
+
+    return results;
+  }
+
+  private async getFallbackJobs(limit: number) {
+    const fallbackJobs = await this.prisma.job.findMany({
+      where: { status: JobStatus.ACTIVE, isDeleted: false },
+      include: {
+        company: {
+          select: { id: true, name: true, logoUrl: true, isPremium: true },
+        },
+        category: true,
+      },
+      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+    });
+    return fallbackJobs.map((job) => ({ ...job, isAiMatched: false, score: 0 }));
+  }  async findAllForAdmin(
     pagination: PaginationQueryDto,
     status?: JobStatus,
   ): Promise<PaginatedResponse<any>> {
@@ -433,11 +575,19 @@ export class JobService {
         ...dto,
         expiredDate: dto.expiredDate ? new Date(dto.expiredDate) : undefined,
         jobType: dto.jobType,
-        salaryMin: dto.salaryMin,
-        salaryMax: dto.salaryMax,
+        salaryMin: dto.salaryMin ? Math.round(dto.salaryMin) : null,
+        salaryMax: dto.salaryMax ? Math.round(dto.salaryMax) : null,
         isSalaryNegotiable: dto.isSalaryNegotiable,
       },
     });
+
+    // Nếu thay đổi các trường quan trọng, trigger AI phân tích lại Job
+    if (dto.title || dto.description || dto.requirement) {
+      await this.aiQueue.add('analyze-job', {
+        jobId: updated.id,
+        type: 'job',
+      });
+    }
 
     await this.cacheManager.del(`job_detail_${id}`);
     return updated;

@@ -53,6 +53,15 @@ export class JobController {
   }
 
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lấy danh sách việc làm gợi ý dựa trên AI/CV (Candidate)' })
+  @Get('recommended')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CANDIDATE)
+  async getRecommended(@Request() req) {
+    return this.jobService.getRecommendedJobs(req.user.userId);
+  }
+
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Cập nhật trạng thái tin tuyển dụng (Admin phê duyệt/từ chối)' })
   @Patch(':id/status/admin')
   @UseGuards(JwtAuthGuard, RolesGuard)

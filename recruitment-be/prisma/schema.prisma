@@ -52,8 +52,6 @@ model Company {
   description     String
   websiteUrl      String?          @map("website_url")
   logoUrl         String?          @map("logo_url")
-  coverUrl        String?          @map("cover_url")
-  location        String?
   status          CompanyStatus    @default(PENDING)
   isPremium       Boolean          @default(false) @map("is_premium")
   isDeleted       Boolean          @default(false) @map("is_deleted")
@@ -61,6 +59,8 @@ model Company {
   updatedAt       DateTime         @updatedAt @map("updated_at")
   ownerId         String           @unique @map("owner_id") @db.Char(36)
   createdById     String?          @map("created_by") @db.Char(36)
+  coverUrl        String?          @map("cover_url")
+  location        String?
   owner           User             @relation("CompanyOwner", fields: [ownerId], references: [id])
   jobs            Job[]
   joinRequests    JoinRequest[]
@@ -101,38 +101,32 @@ model JobCategory {
   @@map("job_categories")
 }
 
-enum JobType {
-  FULL_TIME
-  PART_TIME
-  INTERNSHIP
-  REMOTE
-}
-
 model Job {
-  id                String        @id @default(uuid()) @db.Char(36)
-  categoryId        String        @map("category_id") @db.Char(36)
-  companyId         String        @map("company_id") @db.Char(36)
-  title             String
-  description       String
-  requirement       String
-  salaryMin         Int?          @map("salary_min")
-  salaryMax         Int?          @map("salary_max")
+  id                 String        @id @default(uuid()) @db.Char(36)
+  categoryId         String        @map("category_id") @db.Char(36)
+  companyId          String        @map("company_id") @db.Char(36)
+  title              String
+  description        String
+  requirement        String
+  location           String
+  status             JobStatus     @default(PENDING)
+  isFeatured         Boolean       @default(false) @map("is_featured")
+  viewCount          Int           @default(0) @map("view_count")
+  isDeleted          Boolean       @default(false) @map("is_deleted")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  createdById        String?       @map("created_by") @db.Char(36)
+  expiredDate        DateTime?     @map("expired_date")
   isSalaryNegotiable Boolean       @default(false) @map("is_salary_negotiable")
-  jobType           JobType       @default(FULL_TIME) @map("job_type")
-  requiredExperience String?      @map("required_experience")
-  location          String
-  status            JobStatus     @default(PENDING)
-  isFeatured   Boolean       @default(false) @map("is_featured")
-  viewCount    Int           @default(0) @map("view_count")
-  isDeleted    Boolean       @default(false) @map("is_deleted")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  createdById  String?       @map("created_by") @db.Char(36)
-  expiredDate  DateTime?     @map("expired_date")
-  applications Application[]
-  assignees    JobAssignee[]
-  category     JobCategory   @relation(fields: [categoryId], references: [id])
-  company      Company       @relation(fields: [companyId], references: [id])
+  jobType            JobType       @default(FULL_TIME) @map("job_type")
+  salaryMax          Int?          @map("salary_max")
+  salaryMin          Int?          @map("salary_min")
+  requiredExperience String?       @map("required_experience")
+  parsedSkills       String?       @map("parsed_skills")
+  applications       Application[]
+  assignees          JobAssignee[]
+  category           JobCategory   @relation(fields: [categoryId], references: [id])
+  company            Company       @relation(fields: [companyId], references: [id])
 
   @@index([status, isDeleted, categoryId, createdAt])
   @@index([companyId, isDeleted, createdAt])
@@ -157,15 +151,17 @@ model JobAssignee {
 }
 
 model Resume {
-  id           String        @id @default(uuid()) @db.Char(36)
-  candidateId  String        @map("candidate_id") @db.Char(36)
-  resumeName   String        @map("resume_name")
-  fileUrl      String        @map("file_url")
-  isDefault    Boolean       @default(false) @map("is_default")
-  isDeleted    Boolean       @default(false) @map("is_deleted")
-  uploadedAt   DateTime      @default(now()) @map("uploaded_at")
-  applications Application[]
-  candidate    User          @relation(fields: [candidateId], references: [id])
+  id             String        @id @default(uuid()) @db.Char(36)
+  candidateId    String        @map("candidate_id") @db.Char(36)
+  resumeName     String        @map("resume_name")
+  fileUrl        String        @map("file_url")
+  isDefault      Boolean       @default(false) @map("is_default")
+  isDeleted      Boolean       @default(false) @map("is_deleted")
+  uploadedAt     DateTime      @default(now()) @map("uploaded_at")
+  parsedJobTitle String?       @map("parsed_job_title")
+  parsedSkills   String?       @map("parsed_skills")
+  applications   Application[]
+  candidate      User          @relation(fields: [candidateId], references: [id])
 
   @@map("resumes")
 }
@@ -178,10 +174,10 @@ model Application {
   applyDate          DateTime             @default(now()) @map("apply_date")
   status             ApplicationStatus    @default(PENDING)
   employerNote       String?              @map("employer_note")
-  candidateNote      String?              @map("candidate_note") @db.Text
   employerActionDate DateTime?            @map("employer_action_date")
   isDeleted          Boolean              @default(false) @map("is_deleted")
   employerActionById String?              @map("employer_action_by_id") @db.Char(36)
+  candidateNote      String?              @map("candidate_note")
   histories          ApplicationHistory[]
   candidate          User                 @relation(fields: [candidateId], references: [id])
   employerActionBy   User?                @relation("ApplicationActionBy", fields: [employerActionById], references: [id])
@@ -311,6 +307,21 @@ model PremiumRequest {
   @@map("premium_requests")
 }
 
+model NewsletterSubscription {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("newsletter_subscriptions")
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  INTERNSHIP
+  REMOTE
+}
+
 enum Role {
   ADMIN
   EMPLOYER
@@ -371,11 +382,4 @@ enum TargetType {
 enum SavedItemScope {
   PERSONAL
   COMPANY
-}
-model NewsletterSubscription {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
-
-  @@map("newsletter_subscriptions")
 }
