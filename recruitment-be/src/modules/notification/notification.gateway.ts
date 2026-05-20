@@ -23,12 +23,17 @@ export class NotificationGateway
 
   async handleConnection(client: Socket) {
     try {
-      const token =
+      let token =
         client.handshake.auth.token ||
         client.handshake.headers.authorization?.split(' ')[1];
       if (!token) {
         client.disconnect();
         return;
+      }
+
+      // Loại bỏ tiền tố 'Bearer ' nếu có
+      if (token.startsWith('Bearer ')) {
+        token = token.split(' ')[1];
       }
 
       const payload = await this.jwtService.verifyAsync(token);

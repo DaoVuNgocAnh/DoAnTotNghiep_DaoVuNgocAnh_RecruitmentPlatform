@@ -86,12 +86,15 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       role: user.role,
-      companyId: user.companyId, // Thêm companyId vào payload
+      companyId: user.companyId,
     };
+
+    const tokens = await this.getTokens(payload);
+    await this.updateRefreshToken(user.id, tokens.refresh_token);
 
     return {
       message: 'Đăng nhập thành công!',
-      access_token: await this.jwtService.signAsync(payload),
+      ...tokens,
       user: {
         id: user.id,
         email: user.email,
@@ -101,6 +104,58 @@ export class AuthService {
         isOwner: user.company ? user.company.ownerId === user.id : false,
         companyStatus: user.company?.status,
       },
+    };
+  }
+
+  async refreshTokens(userId: string, refreshToken: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !user.refreshToken) {
+      throw new ForbiddenException('Access Denied');
+    }
+
+    const refreshTokenMatches = await bcrypt.compare(
+      refreshToken,
+      user.refreshToken,
+    );
+    if (!refreshTokenMatches) {
+      throw new ForbiddenException('Access Denied');
+    }
+
+    const tokens = await this.getTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      companyId: user.companyId,
+    });
+    await this.updateRefreshToken(user.id, tokens.refresh_token);
+
+    return tokens;
+  }
+
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: hashedRefreshToken },
+    });
+  }
+
+  async getTokens(payload: any) {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        expiresIn: '15m',
+      }),
+      this.jwtService.signAsync(payload, {
+        expiresIn: '7d',
+      }),
+    ]);
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
     };
   }
 }

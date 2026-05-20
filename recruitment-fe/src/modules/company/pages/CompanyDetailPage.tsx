@@ -26,9 +26,10 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 // UI COMPONENTS
+// ... rest of imports
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +67,29 @@ export const CompanyDetailPage = () => {
     queryFn: () => companyApi.getCompanyById(id!).then(res => res.data),
     enabled: !!id,
   });
+
+  const displayIndustry = useMemo(() => {
+    if (!company?.jobs || company.jobs.length === 0) return "Chưa cập nhật";
+    
+    // Đếm số lượng job cho mỗi category
+    const categoryCounts: Record<string, number> = {};
+    company.jobs.forEach((job: any) => {
+      const catName = job.category?.name;
+      if (catName) {
+        categoryCounts[catName] = (categoryCounts[catName] || 0) + 1;
+      }
+    });
+
+    // Sắp xếp các category theo số lượng giảm dần
+    const sortedCategories = Object.keys(categoryCounts).sort(
+      (a, b) => categoryCounts[b] - categoryCounts[a]
+    );
+
+    if (sortedCategories.length === 0) return "Chưa cập nhật";
+    if (sortedCategories.length <= 2) return sortedCategories.join(", ");
+    
+    return `${sortedCategories[0]}, ${sortedCategories[1]} và ${sortedCategories.length - 2} lĩnh vực khác`;
+  }, [company?.jobs]);
 
   const { data: jobsData, isLoading: jobsLoading } = useAllJobs({
     companyId: id,
@@ -313,7 +337,7 @@ export const CompanyDetailPage = () => {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lĩnh vực</p>
-                        <p className="text-sm font-bold text-slate-700 uppercase">Công nghệ thông tin</p>
+                        <p className="text-sm font-bold text-slate-700 uppercase">{displayIndustry}</p>
                       </div>
                     </div>
                   </div>

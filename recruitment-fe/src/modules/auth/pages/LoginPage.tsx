@@ -48,14 +48,14 @@ export const LoginPage = () => {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       const res = await authApi.login(values);
-      const { access_token } = res.data;
+      const { access_token, refresh_token, user } = res.data;
 
       // 1. XÓA SẠCH CACHE CỦA NGƯỜI DÙNG TRƯỚC (QUAN TRỌNG NHẤT)
       // Việc này ép useUser() phải gọi lại API để lấy role của người vừa đăng nhập
       queryClient.clear();
 
       // 2. LƯU TOKEN VÀO ZUSTAND
-      setAuth(access_token);
+      setAuth(user.id, access_token, refresh_token);
       
       toast.success('Đăng nhập thành công!');
       

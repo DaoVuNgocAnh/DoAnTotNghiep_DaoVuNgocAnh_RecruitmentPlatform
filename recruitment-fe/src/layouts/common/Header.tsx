@@ -20,6 +20,7 @@ import {
   Search,
   MapPin,
   Building2,
+  LayoutDashboard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
@@ -230,6 +231,18 @@ export const Header = () => {
                     >
                       <UserIcon size={18} /> Hồ sơ cá nhân
                     </DropdownMenuItem>
+
+                    {(user.role === 'ADMIN' || user.role === 'EMPLOYER') && (
+                      <DropdownMenuItem 
+                        onClick={() => {
+                          if (user.role === 'ADMIN') navigate('/admin/dashboard');
+                          else navigate('/employer/dashboard');
+                        }} 
+                        className="gap-3 p-3 cursor-pointer rounded-xl font-bold text-primary"
+                      >
+                        <LayoutDashboard size={18} /> Trang quản trị
+                      </DropdownMenuItem>
+                    )}
 
                     {user.role === 'CANDIDATE' && (
                       <>

@@ -39,6 +39,7 @@ model User {
   resumes               Resume[]
   savedItems            SavedItem[]
   logs                  SystemLog[]
+  refreshToken          String?              @map("refresh_token")
   company               Company?             @relation("CompanyMembers", fields: [companyId], references: [id])
 
   @@index([companyId, role, isDeleted, createdAt])

@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ErrorBoundary } from 'react-error-boundary';
+import { GlobalErrorFallback } from '@/components/shared/GlobalErrorFallback';
 import './index.css';
 import App from './App.tsx';
 
@@ -27,8 +29,13 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {/* 2. Bọc App trong Provider để sử dụng React Query toàn hệ thống */}
     <QueryClientProvider client={queryClient}>
-      <App />
-      
+      <ErrorBoundary 
+        FallbackComponent={GlobalErrorFallback}
+        onReset={() => window.location.reload()}
+      >
+        <App />
+      </ErrorBoundary>
+
       {/* 3. Công cụ hỗ trợ Debug dữ liệu (Chỉ xuất hiện khi phát triển) */}
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

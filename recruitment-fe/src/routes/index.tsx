@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import MainLayout from '@/layouts/MainLayout';
 import EmployerLayout from '@/layouts/EmployerLayout';
@@ -7,43 +8,55 @@ import { Role } from '@/types/role';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUser } from '@/modules/user/hooks/useUser';
 import { Loader2 } from 'lucide-react';
+import { GlobalErrorFallback } from '@/components/shared/GlobalErrorFallback';
+import { useRouteError } from 'react-router-dom';
 
-// Import các trang
-import { HomePage } from '@/modules/home/pages/HomePage';
-import { JobDetailPage } from '@/modules/home/pages/JobDetailPage';
-import { LoginPage } from '@/modules/auth/pages/LoginPage';
-import { RegisterPage } from '@/modules/auth/pages/RegisterPage';
-import { EmployerDashboard } from '@/modules/employer/pages/EmployerDashboard';
-import { CompanyProfilePage } from '@/modules/employer/pages/CompanyProfilePage';
-import { ManageJobsPage } from '@/modules/employer/pages/ManageJobsPage';
-import { EmployerSetupPage } from '@/modules/employer/pages/EmployerSetupPage';
-import { AdminVerifyCompany } from '@/modules/admin/pages/AdminVerifyCompany';
-import { AdminUserList } from '@/modules/admin/pages/AdminUserList';
-import { PendingApprovalPage } from '@/modules/employer/pages/PendingApprovalPage';
-import { BlacklistPage } from '@/modules/employer/pages/BlacklistPage';
-import { RejectedPage } from '@/modules/employer/pages/RejectedPage';
-import { ManageMembers } from '@/modules/employer/pages/ManageMembers';
-import { JoinPendingPage } from '@/modules/employer/pages/JoinPendingPage';
-import { ProfilePage } from '@/modules/user/pages/ProfilePage';
-import { AdminVerifyJobs } from '@/modules/admin/pages/AdminVerifyJobs';
-import { AdminDashboard } from '@/modules/admin/pages/AdminDashboard';
-import { AdminJobCategory } from '@/modules/admin/pages/AdminJobCategory';
-import { EmployerManageJobs } from '@/modules/employer/pages/EmployerManageJobs';
-import { AnalyticsDashboard } from '@/modules/employer/pages/AnalyticsDashboard';
-import { MyResumesPage } from '@/modules/resume/pages/MyResumesPage';
-import { MyApplicationsPage } from '@/modules/application/pages/MyApplicationsPage';
-import { CandidateDetailPage } from '@/modules/employer/pages/candidate/CandidateDetailPage';
-import { EmployerCandidatesPage } from '@/modules/employer/pages/EmployerCandidatesPage';
-import { MyInterviewsPage } from '@/modules/interview/pages/MyInterviewsPage';
-import { EmployerInterviewsPage } from '@/modules/employer/pages/EmployerInterviewsPage';
-import SavedJobsPage from '@/modules/saved-items/pages/SavedJobsPage';
-import SavedCandidatesPage from '@/modules/saved-items/pages/SavedCandidatesPage';
-import { CompaniesPage } from '@/modules/company/pages/CompaniesPage';
-import { CompanyDetailPage } from '@/modules/company/pages/CompanyDetailPage';
-import { JobSearchPage } from '@/modules/job/pages/JobSearchPage';
-import { AdminSystemHistory } from '@/modules/admin/pages/AdminSystemHistory';
-import { AdminFeedbackPage } from '@/modules/admin/pages/AdminFeedbackPage';
-import { AdminPremiumRequests } from '@/modules/admin/pages/AdminPremiumRequests';
+const RouterErrorElement = () => {
+  const error = useRouteError();
+  return (
+    <GlobalErrorFallback
+      error={error instanceof Error ? error : new Error('Unknown Error')}
+      resetErrorBoundary={() => window.location.reload()}
+    />
+  );
+};
+
+// Lazy load các trang
+const HomePage = lazy(() => import('@/modules/home/pages/HomePage').then(m => ({ default: m.HomePage })));
+const JobDetailPage = lazy(() => import('@/modules/home/pages/JobDetailPage').then(m => ({ default: m.JobDetailPage })));
+const LoginPage = lazy(() => import('@/modules/auth/pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('@/modules/auth/pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const EmployerDashboard = lazy(() => import('@/modules/employer/pages/EmployerDashboard').then(m => ({ default: m.EmployerDashboard })));
+const CompanyProfilePage = lazy(() => import('@/modules/employer/pages/CompanyProfilePage').then(m => ({ default: m.CompanyProfilePage })));
+const ManageJobsPage = lazy(() => import('@/modules/employer/pages/ManageJobsPage').then(m => ({ default: m.ManageJobsPage })));
+const EmployerSetupPage = lazy(() => import('@/modules/employer/pages/EmployerSetupPage').then(m => ({ default: m.EmployerSetupPage })));
+const AdminVerifyCompany = lazy(() => import('@/modules/admin/pages/AdminVerifyCompany').then(m => ({ default: m.AdminVerifyCompany })));
+const AdminUserList = lazy(() => import('@/modules/admin/pages/AdminUserList').then(m => ({ default: m.AdminUserList })));
+const PendingApprovalPage = lazy(() => import('@/modules/employer/pages/PendingApprovalPage').then(m => ({ default: m.PendingApprovalPage })));
+const BlacklistPage = lazy(() => import('@/modules/employer/pages/BlacklistPage').then(m => ({ default: m.BlacklistPage })));
+const RejectedPage = lazy(() => import('@/modules/employer/pages/RejectedPage').then(m => ({ default: m.RejectedPage })));
+const ManageMembers = lazy(() => import('@/modules/employer/pages/ManageMembers').then(m => ({ default: m.ManageMembers })));
+const JoinPendingPage = lazy(() => import('@/modules/employer/pages/JoinPendingPage').then(m => ({ default: m.JoinPendingPage })));
+const ProfilePage = lazy(() => import('@/modules/user/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const AdminVerifyJobs = lazy(() => import('@/modules/admin/pages/AdminVerifyJobs').then(m => ({ default: m.AdminVerifyJobs })));
+const AdminDashboard = lazy(() => import('@/modules/admin/pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AdminJobCategory = lazy(() => import('@/modules/admin/pages/AdminJobCategory').then(m => ({ default: m.AdminJobCategory })));
+const EmployerManageJobs = lazy(() => import('@/modules/employer/pages/EmployerManageJobs').then(m => ({ default: m.EmployerManageJobs })));
+const AnalyticsDashboard = lazy(() => import('@/modules/employer/pages/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
+const MyResumesPage = lazy(() => import('@/modules/resume/pages/MyResumesPage').then(m => ({ default: m.MyResumesPage })));
+const MyApplicationsPage = lazy(() => import('@/modules/application/pages/MyApplicationsPage').then(m => ({ default: m.MyApplicationsPage })));
+const CandidateDetailPage = lazy(() => import('@/modules/employer/pages/candidate/CandidateDetailPage').then(m => ({ default: m.CandidateDetailPage })));
+const EmployerCandidatesPage = lazy(() => import('@/modules/employer/pages/EmployerCandidatesPage').then(m => ({ default: m.EmployerCandidatesPage })));
+const MyInterviewsPage = lazy(() => import('@/modules/interview/pages/MyInterviewsPage').then(m => ({ default: m.MyInterviewsPage })));
+const EmployerInterviewsPage = lazy(() => import('@/modules/employer/pages/EmployerInterviewsPage').then(m => ({ default: m.EmployerInterviewsPage })));
+const SavedJobsPage = lazy(() => import('@/modules/saved-items/pages/SavedJobsPage'));
+const SavedCandidatesPage = lazy(() => import('@/modules/saved-items/pages/SavedCandidatesPage'));
+const CompaniesPage = lazy(() => import('@/modules/company/pages/CompaniesPage').then(m => ({ default: m.CompaniesPage })));
+const CompanyDetailPage = lazy(() => import('@/modules/company/pages/CompanyDetailPage').then(m => ({ default: m.CompanyDetailPage })));
+const JobSearchPage = lazy(() => import('@/modules/job/pages/JobSearchPage').then(m => ({ default: m.JobSearchPage })));
+const AdminSystemHistory = lazy(() => import('@/modules/admin/pages/AdminSystemHistory').then(m => ({ default: m.AdminSystemHistory })));
+const AdminFeedbackPage = lazy(() => import('@/modules/admin/pages/AdminFeedbackPage').then(m => ({ default: m.AdminFeedbackPage })));
+const AdminPremiumRequests = lazy(() => import('@/modules/admin/pages/AdminPremiumRequests').then(m => ({ default: m.AdminPremiumRequests })));
 
 const GuardLoader = ({ message }: { message: string }) => (
   <div className="h-screen w-full flex flex-col items-center justify-center bg-[#f4f7f6] gap-4 text-center">
@@ -53,6 +66,8 @@ const GuardLoader = ({ message }: { message: string }) => (
     </p>
   </div>
 );
+
+const PageLoader = () => <GuardLoader message="Đang tải trang..." />;
 
 /**
  * 1. AuthedRedirect: Dùng bọc trang Login/Register.
@@ -86,11 +101,11 @@ const RootRedirect = () => {
   const { isLoading } = useUser();
   const { isAuthenticated } = useAuthStore();
 
-  if (!isAuthenticated) return <HomePage />;
+  if (!isAuthenticated) return <Suspense fallback={<PageLoader />}><HomePage /></Suspense>;
   if (isLoading) return <GuardLoader message="Đang tải dữ liệu hệ thống..." />;
 
   // Admin/Employer vẫn cho xem trang chủ thay vì đá vào Dashboard
-  return <HomePage />;
+  return <Suspense fallback={<PageLoader />}><HomePage /></Suspense>;
 };
 
 /**
@@ -105,13 +120,13 @@ const EmployerGuard = ({ children }: { children: React.ReactNode }) => {
 
   if (user.role === Role.EMPLOYER) {
     if (user.companyId) {
-      if (user.companyStatus === 'PENDING') return <PendingApprovalPage />;
-      if (user.companyStatus === 'REJECTED') return <RejectedPage />;
-      if (user.companyStatus === 'BLACKLIST') return <BlacklistPage />;
+      if (user.companyStatus === 'PENDING') return <Suspense fallback={<PageLoader />}><PendingApprovalPage /></Suspense>;
+      if (user.companyStatus === 'REJECTED') return <Suspense fallback={<PageLoader />}><RejectedPage /></Suspense>;
+      if (user.companyStatus === 'BLACKLIST') return <Suspense fallback={<PageLoader />}><BlacklistPage /></Suspense>;
       return <>{children}</>;
     }
-    if (user.pendingJoinRequest) return <JoinPendingPage />;
-    return <EmployerSetupPage />;
+    if (user.pendingJoinRequest) return <Suspense fallback={<PageLoader />}><JoinPendingPage /></Suspense>;
+    return <Suspense fallback={<PageLoader />}><EmployerSetupPage /></Suspense>;
   }
 
   // Nếu nhầm role, đẩy về trang chủ
@@ -132,19 +147,20 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <MainLayout />,
+    errorElement: <RouterErrorElement />,
     children: [
       { path: '', element: <RootRedirect /> },
-      { path: 'jobs', element: <JobSearchPage /> },
-      { path: 'jobs/:id', element: <JobDetailPage /> },
-      { path: 'companies', element: <CompaniesPage /> },
-      { path: 'companies/:id', element: <CompanyDetailPage /> },
+      { path: 'jobs', element: <Suspense fallback={<PageLoader />}><JobSearchPage /></Suspense> },
+      { path: 'jobs/:id', element: <Suspense fallback={<PageLoader />}><JobDetailPage /></Suspense> },
+      { path: 'companies', element: <Suspense fallback={<PageLoader />}><CompaniesPage /></Suspense> },
+      { path: 'companies/:id', element: <Suspense fallback={<PageLoader />}><CompanyDetailPage /></Suspense> },
       {
         path: 'profile',
         element: (
           <ProtectedRoute
             allowedRoles={[Role.CANDIDATE]}
           >
-            <ProfilePage />
+            <Suspense fallback={<PageLoader />}><ProfilePage /></Suspense>
           </ProtectedRoute>
         ),
       },
@@ -152,7 +168,7 @@ export const router = createBrowserRouter([
         path: 'resumes',
         element: (
           <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
-            <MyResumesPage />
+            <Suspense fallback={<PageLoader />}><MyResumesPage /></Suspense>
           </ProtectedRoute>
         ),
       },
@@ -160,7 +176,7 @@ export const router = createBrowserRouter([
         path: 'my-applications',
         element: (
           <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
-            <MyApplicationsPage />
+            <Suspense fallback={<PageLoader />}><MyApplicationsPage /></Suspense>
           </ProtectedRoute>
         ),
       },
@@ -168,7 +184,7 @@ export const router = createBrowserRouter([
         path: 'interviews',
         element: (
           <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
-            <MyInterviewsPage />
+            <Suspense fallback={<PageLoader />}><MyInterviewsPage /></Suspense>
           </ProtectedRoute>
         ),
       },
@@ -176,7 +192,7 @@ export const router = createBrowserRouter([
         path: 'saved-jobs',
         element: (
           <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
-            <SavedJobsPage />
+            <Suspense fallback={<PageLoader />}><SavedJobsPage /></Suspense>
           </ProtectedRoute>
         ),
       },
@@ -191,36 +207,37 @@ export const router = createBrowserRouter([
         </EmployerGuard>
       </ProtectedRoute>
     ),
+    errorElement: <RouterErrorElement />,
     children: [
-      { path: 'dashboard', element: <EmployerDashboard /> },
-      { path: 'analytics', element: <AnalyticsDashboard /> },
-      { path: 'company', element: <CompanyProfilePage /> },
-      { path: 'profile', element: <ProfilePage /> },
-      { path: 'jobs', element: <EmployerManageJobs /> },
-      { path: 'jobs/create', element: <ManageJobsPage /> },
+      { path: 'dashboard', element: <Suspense fallback={<PageLoader />}><EmployerDashboard /></Suspense> },
+      { path: 'analytics', element: <Suspense fallback={<PageLoader />}><AnalyticsDashboard /></Suspense> },
+      { path: 'company', element: <Suspense fallback={<PageLoader />}><CompanyProfilePage /></Suspense> },
+      { path: 'profile', element: <Suspense fallback={<PageLoader />}><ProfilePage /></Suspense> },
+      { path: 'jobs', element: <Suspense fallback={<PageLoader />}><EmployerManageJobs /></Suspense> },
+      { path: 'jobs/create', element: <Suspense fallback={<PageLoader />}><ManageJobsPage /></Suspense> },
       {
         path: 'members',
         element: (
           <OwnerRoute>
-            <ManageMembers />
+            <Suspense fallback={<PageLoader />}><ManageMembers /></Suspense>
           </OwnerRoute>
         ),
       },
       {
         path: 'candidates',
-        element: <EmployerCandidatesPage />,
+        element: <Suspense fallback={<PageLoader />}><EmployerCandidatesPage /></Suspense>,
       },
       {
         path: 'candidates/:id',
-        element: <CandidateDetailPage />,
+        element: <Suspense fallback={<PageLoader />}><CandidateDetailPage /></Suspense>,
       },
       {
         path: 'interviews',
-        element: <EmployerInterviewsPage />,
+        element: <Suspense fallback={<PageLoader />}><EmployerInterviewsPage /></Suspense>,
       },
       {
         path: 'saved-candidates',
-        element: <SavedCandidatesPage />,
+        element: <Suspense fallback={<PageLoader />}><SavedCandidatesPage /></Suspense>,
       },
     ],
   },
@@ -231,31 +248,34 @@ export const router = createBrowserRouter([
         <AdminLayout />
       </ProtectedRoute>
     ),
+    errorElement: <RouterErrorElement />,
     children: [
-      { path: 'dashboard', element: <AdminDashboard /> },
-      { path: 'companies', element: <AdminVerifyCompany /> },
-      { path: 'jobs', element: <AdminVerifyJobs /> },
-      { path: 'profile', element: <ProfilePage /> },
-      { path: 'users', element: <AdminUserList /> },
-      { path: 'job-categories', element: <AdminJobCategory /> },
-      { path: 'system-history', element: <AdminSystemHistory   /> },
-      { path: 'feedback', element: <AdminFeedbackPage /> },
-      { path: 'premium-requests', element: <AdminPremiumRequests /> },
+      { path: 'dashboard', element: <Suspense fallback={<PageLoader />}><AdminDashboard /></Suspense> },
+      { path: 'companies', element: <Suspense fallback={<PageLoader />}><AdminVerifyCompany /></Suspense> },
+      { path: 'jobs', element: <Suspense fallback={<PageLoader />}><AdminVerifyJobs /></Suspense> },
+      { path: 'profile', element: <Suspense fallback={<PageLoader />}><ProfilePage /></Suspense> },
+      { path: 'users', element: <Suspense fallback={<PageLoader />}><AdminUserList /></Suspense> },
+      { path: 'job-categories', element: <Suspense fallback={<PageLoader />}><AdminJobCategory /></Suspense> },
+      { path: 'system-history', element: <Suspense fallback={<PageLoader />}><AdminSystemHistory   /></Suspense> },
+      { path: 'feedback', element: <Suspense fallback={<PageLoader />}><AdminFeedbackPage /></Suspense> },
+      { path: 'premium-requests', element: <Suspense fallback={<PageLoader />}><AdminPremiumRequests /></Suspense> },
     ],
   },
   {
     path: '/login',
+    errorElement: <RouterErrorElement />,
     element: (
       <AuthedRedirect>
-        <LoginPage />
+        <Suspense fallback={<PageLoader />}><LoginPage /></Suspense>
       </AuthedRedirect>
     ),
   },
   {
     path: '/register',
+    errorElement: <RouterErrorElement />,
     element: (
       <AuthedRedirect>
-        <RegisterPage />
+        <Suspense fallback={<PageLoader />}><RegisterPage /></Suspense>
       </AuthedRedirect>
     ),
   },

@@ -34,6 +34,12 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @ApiOperation({ summary: 'Làm mới Access Token' })
+  @Post('refresh')
+  refresh(@Body() body: { userId: string; refresh_token: string }) {
+    return this.authService.refreshTokens(body.userId, body.refresh_token);
+  }
+
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Test quyền của Employer (Chỉ dành cho môi trường dev/test)',

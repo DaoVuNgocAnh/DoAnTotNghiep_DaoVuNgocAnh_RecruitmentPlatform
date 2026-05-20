@@ -6,15 +6,16 @@ services:
     container_name: recruitment_db
     restart: always
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-recruitment_platform}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - recruitment_network
 
-  # Công cụ quản lý DB giao diện Web (tùy chọn nhưng nên có)
   pgadmin:
     image: dpage/pgadmin4
     container_name: recruitment_pgadmin
@@ -25,13 +26,64 @@ services:
       - "8080:80"
     depends_on:
       - db
+    networks:
+      - recruitment_network
 
-  # Redis dùng cho Caching và Queue (cho các tính năng nâng cao sau này)
   redis:
     image: redis:alpine
     container_name: recruitment_redis
     ports:
       - "6380:6379"
+    networks:
+      - recruitment_network
+
+  backend:
+    build:
+      context: ./recruitment-be
+      dockerfile: Dockerfile
+    container_name: recruitment_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-recruitment_platform}?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-secretKey}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASS=${MAIL_PASS}
+      - MAIL_FROM=${MAIL_FROM}
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - recruitment_network
+
+  frontend:
+    build:
+      context: ./recruitment-fe
+      dockerfile: Dockerfile
+    container_name: recruitment_frontend
+    restart: always
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - recruitment_network
+
+networks:
+  recruitment_network:
+    driver: bridge
 
 volumes:
   postgres_data:
