@@ -28,6 +28,32 @@ jobs:
         run: |
           docker compose -f docker-compose.dev.yml down
           docker compose -f docker-compose.dev.yml up -d --build
+          
+          echo "Waiting for database to be healthy..."
+          # Đợi cho đến khi container DB báo trạng thái healthy
+          MAX_RETRIES=12
+          COUNT=0
+          while [ $COUNT -lt $MAX_RETRIES ]; do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' recruitment_db_dev)
+            if [ "$STATUS" = "healthy" ]; then
+              echo "Database is healthy!"
+              break
+            fi
+            echo "Waiting... ($STATUS)"
+            sleep 5
+            COUNT=$((COUNT + 1))
+          done
+
+          if [ $COUNT -eq $MAX_RETRIES ]; then
+            echo "Database healthcheck timed out!"
+            exit 1
+          fi
+          
+          # Chạy migration để tạo bảng
+          docker compose -f docker-compose.dev.yml exec -T backend npx prisma migrate deploy
+          
+          # Chạy seed để tạo Admin mặc định
+          docker compose -f docker-compose.dev.yml exec -T backend npx prisma db seed
 
       - name: Cleanup old Docker images
         run: docker image prune -f
