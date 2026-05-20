@@ -26,8 +26,8 @@ jobs:
 
       - name: Deploy with Docker Compose Dev
         run: |
-          docker-compose -f docker-compose.dev.yml down
-          docker-compose -f docker-compose.dev.yml up -d --build
+          docker compose -f docker-compose.dev.yml down
+          docker compose -f docker-compose.dev.yml up -d --build
 
       - name: Cleanup old Docker images
         run: docker image prune -f
