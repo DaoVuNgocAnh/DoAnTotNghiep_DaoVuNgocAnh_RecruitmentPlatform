@@ -1,0 +1,33 @@
+name: Deploy Recruitment Platform (Dev)
+
+on:
+  push:
+    branches: [ "dev" ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env files
+        run: |
+          cat <<'EOF' > .env
+          ${{ secrets.ROOT_ENV }}
+          EOF
+          cat <<'EOF' > recruitment-be/.env
+          ${{ secrets.BE_ENV }}
+          EOF
+          cat <<'EOF' > recruitment-fe/.env
+          ${{ secrets.FE_ENV }}
+          EOF
+
+      - name: Deploy with Docker Compose Dev
+        run: |
+          docker-compose -f docker-compose.dev.yml down
+          docker-compose -f docker-compose.dev.yml up -d --build
+
+      - name: Cleanup old Docker images
+        run: docker image prune -f
