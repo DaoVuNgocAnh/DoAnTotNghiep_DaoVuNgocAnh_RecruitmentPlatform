@@ -7,6 +7,8 @@ services:
       - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
       - POSTGRES_DB=${DB_NAME:-recruitment_platform}
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
     networks:
