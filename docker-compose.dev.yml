@@ -82,6 +82,21 @@ services:
     networks:
       - recruitment_network_dev
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: recruitment_ngrok_dev
+    restart: always
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command:
+      - "http"
+      - "frontend:80"
+      - "--domain=${NGROK_DOMAIN}"
+    depends_on:
+      - frontend
+    networks:
+      - recruitment_network_dev
+
 networks:
   recruitment_network_dev:
     driver: bridge
