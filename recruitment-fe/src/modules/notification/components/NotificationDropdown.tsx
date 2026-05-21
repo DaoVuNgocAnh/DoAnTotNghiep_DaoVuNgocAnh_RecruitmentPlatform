@@ -16,7 +16,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '@/store/useAuthStore';
 import { useSocketStore } from '@/store/useSocketStore';
 
 const NotificationDropdown = () => {
@@ -24,7 +23,6 @@ const NotificationDropdown = () => {
     useNotifications();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const token = useAuthStore((state) => state.token);
   const socket = useSocketStore((state) => state.socket);
 
   useEffect(() => {
