@@ -15,9 +15,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSocketStore } from '@/store/useSocketStore';
 
 const NotificationDropdown = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
@@ -25,25 +25,20 @@ const NotificationDropdown = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);
+  const socket = useSocketStore((state) => state.socket);
 
   useEffect(() => {
-    if (!token) return;
-
-    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
-      auth: { token },
-    });
+    if (!socket) return;
 
     socket.on('newNotification', () => {
       // Invalidate queries to refresh list and count
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      // Hiển thị thông báo nhanh (ví dụ dùng sonner)
-      // toast.info(notification.title);
     });
 
     return () => {
-      socket.disconnect();
+      socket.off('newNotification');
     };
-  }, [queryClient, token]);
+  }, [queryClient, socket]);
 
   const handleNotificationClick = (notification: any) => {
     if (!notification.isRead) {

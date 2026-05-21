@@ -11,29 +11,28 @@ interface SocketState {
 }
 
 // Tính toán SOCKET_URL linh hoạt:
-// Nếu đang truy cập qua Domain/IP nào thì dùng chính Domain/IP đó để kết nối socket
-const getSocketUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL || '';
-  if (envUrl.includes(window.location.hostname)) {
-    return window.location.origin; // Dùng origin hiện tại (loại bỏ /api)
-  }
-  return envUrl.replace(/\/api$/, '') || window.location.origin;
-};
-
-const SOCKET_URL = getSocketUrl();
+// Luôn ưu tiên dùng Origin hiện tại của trình duyệt để tránh lỗi CORS và Namespace
+const SOCKET_URL = typeof window !== 'undefined' ? window.location.origin : (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/api$/, '');
 
 export const useSocketStore = create<SocketState>((set, get) => ({
   socket: null,
   isConnected: false,
 
   connect: (token: string) => {
+    // Nếu đã có socket và đang kết nối thì không tạo mới
     if (get().socket?.connected) return;
 
+    // Đảm bảo đóng socket cũ trước khi tạo mới (tránh rò rỉ session sid)
+    if (get().socket) {
+      get().socket?.disconnect();
+    }
+
     const socket = io(SOCKET_URL, {
-      auth: { token }, // Gửi raw token
-      transports: ['websocket'],
+      auth: { token },
+      transports: ['websocket'], // Chỉ dùng websocket để tránh lỗi polling 400 với Ngrok
       reconnectionAttempts: 5,
       reconnectionDelay: 5000,
+      forceNew: true, // Ép buộc tạo kết nối mới
     });
 
     socket.on('connect', () => {
