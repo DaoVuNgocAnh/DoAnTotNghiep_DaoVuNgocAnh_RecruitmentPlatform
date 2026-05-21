@@ -1,10 +1,21 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
+const getBaseURL = () => {
+  const envUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  // Nếu origin hiện tại chứa hostname của envUrl, hoặc đơn giản là dùng relative path để Nginx xử lý
+  // Điều này đảm bảo khi vào bằng IP hay Domain thì nó đều gọi chính nó.
+  if (typeof window !== 'undefined') {
+    return '/api';
+  }
+  return envUrl;
+};
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: getBaseURL(),
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 let isRefreshing = false;

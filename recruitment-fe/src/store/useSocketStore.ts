@@ -10,7 +10,17 @@ interface SocketState {
   disconnect: () => void;
 }
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Tính toán SOCKET_URL linh hoạt:
+// Nếu đang truy cập qua Domain/IP nào thì dùng chính Domain/IP đó để kết nối socket
+const getSocketUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL || '';
+  if (envUrl.includes(window.location.hostname)) {
+    return window.location.origin; // Dùng origin hiện tại (loại bỏ /api)
+  }
+  return envUrl.replace(/\/api$/, '') || window.location.origin;
+};
+
+const SOCKET_URL = getSocketUrl();
 
 export const useSocketStore = create<SocketState>((set, get) => ({
   socket: null,
