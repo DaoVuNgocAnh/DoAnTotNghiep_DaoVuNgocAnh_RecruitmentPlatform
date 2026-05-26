@@ -102,6 +102,20 @@ ________________________________________
 •	Weekly Newsletter: Tự động gửi gợi ý việc làm phù hợp hàng tuần.
 •	Talent Pool: Lưu trữ và quản lý ứng viên tiềm năng cho doanh nghiệp.
 
+### 🧮 Công thức & Thuật toán tính điểm
+
+#### 1. Điểm So Khớp Công Việc (Smart Matching Score)
+Tính độ phù hợp giữa Ứng viên và Tin tuyển dụng (Max ~100+đ):
+*   **Khớp Tiêu đề (Max 50đ):** Trùng cụm từ mong muốn (+50đ) hoặc trùng mỗi từ đơn (+15đ/từ).
+*   **Khớp Kỹ năng:** Trùng kỹ năng AI trích xuất (+15đ/kỹ năng) hoặc trùng trong văn bản thô (+5đ/kỹ năng).
+*   **Ưu tiên Doanh nghiệp:** Thuộc doanh nghiệp Premium (+5đ).
+
+#### 2. Điểm Xu Hướng (Hot / Trending Score)
+Công thức xếp hạng tin tuyển dụng nổi bật ở trang chủ (áp dụng thuật toán giảm nhiệt theo thời gian):
+$$\text{Hot Score} = \frac{\text{Lượt xem} \times 0.4 + \text{Lượt ứng tuyển} \times 0.6}{(\text{Tuổi của tin tính theo giờ} + 2)^{1.5}}$$
+
 ________________________________________
 © 2026 - Đồ án tốt nghiệp chuyên ngành Công nghệ phần mềm.
+
+docker compose -f docker-compose.dev.yml up -d
 

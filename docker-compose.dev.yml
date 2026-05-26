@@ -22,6 +22,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     container_name: recruitment_pgadmin_dev
+    restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@admin.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
@@ -35,6 +36,7 @@ services:
   redis:
     image: redis:alpine
     container_name: recruitment_redis_dev
+    restart: always
     networks:
       - recruitment_network_dev
 
