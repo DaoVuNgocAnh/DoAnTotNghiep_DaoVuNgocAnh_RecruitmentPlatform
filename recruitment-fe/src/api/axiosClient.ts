@@ -57,8 +57,14 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const { response, config } = error;
 
-    // Nếu Server trả về 401 (Hết hạn token) và request chưa được retry
-    if (response && response.status === 401 && !config._retry) {
+    const isAuthRoute = config.url && (
+      config.url.includes('/auth/login') ||
+      config.url.includes('/auth/register') ||
+      config.url.includes('/auth/refresh')
+    );
+
+    // Nếu Server trả về 401 (Hết hạn token) và request chưa được retry, và không phải route auth
+    if (response && response.status === 401 && !config._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -78,6 +84,7 @@ axiosClient.interceptors.response.use(
       const { userId, refreshToken, logout, setTokens } = useAuthStore.getState();
 
       if (!refreshToken || !userId) {
+        isRefreshing = false;
         logout();
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';

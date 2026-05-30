@@ -112,9 +112,14 @@ Tính độ phù hợp giữa Ứng viên và Tin tuyển dụng (Max ~100+đ):
 
 #### 2. Điểm Xu Hướng (Hot / Trending Score)
 Công thức xếp hạng tin tuyển dụng nổi bật ở trang chủ (áp dụng thuật toán giảm nhiệt theo thời gian):
-$$\text{Hot Score} = \frac{\text{Lượt xem} \times 0.4 + \text{Lượt ứng tuyển} \times 0.6}{(\text{Tuổi của tin tính theo giờ} + 2)^{1.5}}$$
+Hot Score = (0.4 × Lượt xem + 0.6 × Lượt ứng tuyển) / (Tuổi tin theo giờ + 2)^1.5
 
-________________________________________
+Chia cho (Tuổi tin + 2)^1.5 giúp tin cũ giảm điểm tự nhiên
+Tin càng lâu → điểm càng giảm, tránh trường hợp tin cũ mãi nằm top.
+Lũy thừa 1.5 khiến điểm giảm nhanh hơn tuyến tính nhưng không quá gắt như mũ 2.
+"+ 2" giúp tránh chia cho 0 và giúp tin mới đăng 1–2 giờ không bị tăng đột biến quá mạnh.
+
+________________________________________  
 © 2026 - Đồ án tốt nghiệp chuyên ngành Công nghệ phần mềm.
 
 docker compose -f docker-compose.dev.yml up -d
