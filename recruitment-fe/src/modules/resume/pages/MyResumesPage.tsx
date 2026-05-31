@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useResumes,
   useUploadResume,
@@ -42,10 +43,12 @@ import { cn } from '@/lib/utils';
 import { Pagination } from '@/components/shared/Pagination';
 
 export const MyResumesPage = () => {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const limit = 10;
   const { data: resumesData, isLoading } = useResumes({ page, limit });
   const resumes = resumesData?.data || [];
+  const officialResumes = resumes.filter((r: any) => !r.isDraft);
   const uploadMutation = useUploadResume();
   const deleteMutation = useDeleteResume();
   const setDefaultMutation = useSetDefaultResume();
@@ -53,6 +56,31 @@ export const MyResumesPage = () => {
   const [file, setFile] = useState<File | null>(null);
   const [resumeName, setResumeName] = useState('');
   const [open, setOpen] = useState(false);
+
+  const [draftsDialogOpen, setDraftsDialogOpen] = useState(false);
+  const [drafts, setDrafts] = useState<any[]>([]);
+
+  const handleOpenDrafts = () => {
+    const serverDrafts = resumes.filter((r: any) => r.isDraft).map((r: any) => {
+      let parsedData = {};
+      try {
+        parsedData = r.draftData ? JSON.parse(r.draftData) : {};
+      } catch (e) {
+        console.error(e);
+      }
+      return {
+        id: r.id,
+        name: r.resumeName,
+        updatedAt: r.uploadedAt,
+        fileUrl: r.fileUrl,
+        ...parsedData
+      };
+    });
+
+    serverDrafts.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    setDrafts(serverDrafts);
+    setDraftsDialogOpen(true);
+  };
 
   const handleUpload = async () => {
     if (!file || !resumeName)
@@ -91,12 +119,96 @@ export const MyResumesPage = () => {
           <p className="text-slate-500 font-medium italic mt-1">Quản lý các phiên bản CV để tối ưu khả năng ứng tuyển.</p>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 rounded-2xl gap-2 font-black shadow-lg shadow-primary/20 h-12 px-8 uppercase tracking-widest text-xs transition-all active:scale-95">
-              <Plus size={18} /> Tải lên CV mới
-            </Button>
-          </DialogTrigger>
+        <div className="flex flex-wrap gap-4">
+          <Button
+            onClick={handleOpenDrafts}
+            className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 rounded-2xl gap-2 font-black shadow-sm h-12 px-8 uppercase tracking-widest text-xs transition-all active:scale-95"
+          >
+            <Plus size={18} className="text-primary" /> Tự tạo CV online
+          </Button>
+
+          <Dialog open={draftsDialogOpen} onOpenChange={setDraftsDialogOpen}>
+            <DialogContent className="rounded-[2rem] max-w-lg border-none">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-black uppercase text-slate-900">Danh sách bản nháp CV</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4 max-h-[300px] overflow-y-auto pr-1">
+                {drafts.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 font-medium italic text-xs">
+                    Chưa có bản nháp nào được lưu.
+                  </div>
+                ) : (
+                  drafts.map((draft) => (
+                    <div key={draft.id} className="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-2xl border border-slate-100 transition-colors">
+                      <div className="min-w-0 flex-1 pr-4">
+                        <h4 className="font-bold text-slate-800 text-xs truncate uppercase leading-none mb-1">{draft.name || 'CV Chưa đặt tên'}</h4>
+                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
+                          Cập nhật: {new Date(draft.updatedAt).toLocaleString('vi-VN')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setDraftsDialogOpen(false);
+                            navigate(`/resumes/create?draftId=${draft.id}`);
+                          }}
+                          className="bg-primary hover:bg-primary/95 text-white rounded-xl text-[10px] font-black h-8 px-3 uppercase tracking-wider"
+                        >
+                          Sửa tiếp
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            if (confirm('Bạn có chắc chắn muốn xóa bản nháp này?')) {
+                              deleteMutation.mutate(draft.id, {
+                                onSuccess: () => {
+                                  toast.success('Đã xóa bản nháp thành công!');
+                                  setDrafts(prev => prev.filter((d: any) => d.id !== draft.id));
+                                }
+                              });
+                            }
+                          }}
+                          disabled={deleteMutation.isPending}
+                          className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl h-8 w-8"
+                        >
+                          {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              <DialogFooter className="sm:justify-between flex-col sm:flex-row gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setDraftsDialogOpen(false)}
+                  className="rounded-xl font-bold text-xs uppercase h-11 border-slate-200"
+                >
+                  Đóng
+                </Button>
+                <Button
+                  onClick={() => {
+                    setDraftsDialogOpen(false);
+                    navigate('/resumes/create');
+                  }}
+                  className="bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-xs uppercase h-11 px-5 tracking-wider shadow-md"
+                >
+                  <Plus size={16} className="mr-1.5" /> Tạo CV mới
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 rounded-2xl gap-2 font-black shadow-lg shadow-primary/20 h-12 px-8 uppercase tracking-widest text-xs transition-all active:scale-95">
+                <Upload size={18} /> Tải lên CV mới
+              </Button>
+            </DialogTrigger>
           <DialogContent className="rounded-[2rem] max-w-md border-none">
             <DialogHeader>
               <DialogTitle className="text-xl font-black uppercase text-slate-900">Tải lên hồ sơ mới</DialogTitle>
@@ -139,12 +251,13 @@ export const MyResumesPage = () => {
           </DialogContent>
         </Dialog>
       </div>
+    </div>
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2].map(i => <div key={i} className="h-40 bg-white rounded-3xl animate-pulse shadow-sm border border-slate-50"></div>)}
         </div>
-      ) : resumes?.length === 0 ? (
+      ) : officialResumes?.length === 0 ? (
         <Card className="border-dashed border-2 py-32 text-center rounded-[3rem] bg-white shadow-inner">
           <FileText className="mx-auto text-slate-200 mb-6 opacity-20" size={80} />
           <p className="text-slate-500 font-black uppercase tracking-widest text-lg">Chưa có CV nào</p>
@@ -152,7 +265,7 @@ export const MyResumesPage = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {resumes?.map((resume) => (
+          {officialResumes?.map((resume: any) => (
             <Card
               key={resume.id}
               className={cn(
@@ -172,13 +285,19 @@ export const MyResumesPage = () => {
                       </h3>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    <div className="flex flex-wrap items-center gap-2.5 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                        <span className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(resume.uploadedAt).toLocaleDateString('vi-VN')}</span>
-                       {resume.isDefault && (
-                        <Badge className="bg-primary text-white text-[9px] font-black px-2 py-0.5 uppercase border-none rounded-full flex items-center gap-1">
-                          <FileCheck size={10} /> Mặc định
+                       {resume.isDraft ? (
+                        <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-black px-2 py-0.5 uppercase border-none rounded-full">
+                          Bản nháp
                         </Badge>
-                      )}
+                       ) : (
+                         resume.isDefault && (
+                          <Badge className="bg-primary text-white text-[9px] font-black px-2 py-0.5 uppercase border-none rounded-full flex items-center gap-1">
+                            <FileCheck size={10} /> Mặc định
+                          </Badge>
+                        )
+                       )}
                     </div>
 
                     <div className="flex gap-4 mt-6">
@@ -190,14 +309,23 @@ export const MyResumesPage = () => {
                       >
                         <ExternalLink size={12} /> Xem online
                       </a>
-                      {!resume.isDefault && (
+                      {resume.isDraft ? (
                         <button
-                          onClick={() => setDefaultMutation.mutate(resume.id)}
-                          disabled={setDefaultMutation.isPending}
-                          className="text-[10px] font-black text-primary hover:underline flex items-center gap-1.5 uppercase tracking-[0.15em]"
+                          onClick={() => navigate(`/resumes/create?draftId=${resume.id}`)}
+                          className="text-[10px] font-black text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1.5 uppercase tracking-[0.15em]"
                         >
-                          <CheckCircle size={12} /> Đặt mặc định
+                          <FileText size={12} /> Sửa tiếp
                         </button>
+                      ) : (
+                        !resume.isDefault && (
+                          <button
+                            onClick={() => setDefaultMutation.mutate(resume.id)}
+                            disabled={setDefaultMutation.isPending}
+                            className="text-[10px] font-black text-primary hover:underline flex items-center gap-1.5 uppercase tracking-[0.15em]"
+                          >
+                            <CheckCircle size={12} /> Đặt mặc định
+                          </button>
+                        )
                       )}
                     </div>
                   </div>

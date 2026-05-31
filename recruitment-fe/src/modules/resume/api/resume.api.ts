@@ -7,6 +7,9 @@ export const resumeApi = {
   getMyResumes: (params?: { page?: number; limit?: number }) => 
     apiClient.get<PaginatedResponse<Resume>>("/resumes/my", { params }),
   
+  getResumeById: (id: string) =>
+    apiClient.get<Resume>(`/resumes/${id}`),
+
   uploadResume: (formData: FormData) => apiClient.post("/resumes/upload", formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
@@ -22,6 +25,12 @@ export const useResumes = (params?: { page?: number; limit?: number }, enabled: 
   queryKey: ['resumes', params?.page, params?.limit],
   queryFn: () => resumeApi.getMyResumes(params).then(res => res.data),
   enabled,
+});
+
+export const useResumeDetail = (id: string | null, enabled: boolean = true) => useQuery({
+  queryKey: ['resume', id],
+  queryFn: () => resumeApi.getResumeById(id!).then(res => res.data),
+  enabled: enabled && !!id,
 });
 
 export const useUploadResume = () => {

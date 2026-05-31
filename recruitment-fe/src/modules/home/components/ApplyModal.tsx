@@ -23,7 +23,7 @@ export const ApplyModal = ({ jobId, jobTitle }: { jobId: string, jobTitle: strin
   const { data: resumesData, isLoading } = useResumes(undefined, isAuthenticated && open);
   const applyMutation = useApplyJob();
 
-  const resumes = resumesData?.data || [];
+  const resumes = (resumesData?.data || []).filter(r => !r.isDraft);
   const defaultResume = resumes.find(r => r.isDefault);
 
   const handleOpenChange = (nextOpen: boolean) => {

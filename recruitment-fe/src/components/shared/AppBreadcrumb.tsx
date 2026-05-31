@@ -21,6 +21,71 @@ const segmentMap: Record<string, string> = {
   create: 'Đăng tin mới',
   members: 'Thành viên',
   profile: 'Trang cá nhân',
+  resumes: 'Hồ sơ & CV',
+  'my-applications': 'Lịch sử ứng tuyển',
+  interviews: 'Lịch phỏng vấn',
+  'saved-jobs': 'Việc làm đã lưu',
+  'saved-candidates': 'Ứng viên đã lưu',
+  candidates: 'Danh sách ứng viên',
+  analytics: 'Báo cáo thống kê',
+  'job-categories': 'Danh mục ngành nghề',
+  'system-history': 'Lịch sử hệ thống',
+  feedback: 'Quản lý phản hồi',
+  'premium-requests': 'Duyệt nâng cấp',
+};
+
+const pathMap: Record<string, string> = {
+  // Candidate / General Paths
+  '/resumes': 'Hồ sơ & CV của tôi',
+  '/resumes/create': 'Tự tạo CV online',
+  '/jobs': 'Tìm việc làm',
+  '/companies': 'Danh sách công ty',
+  '/my-applications': 'Hồ sơ ứng tuyển',
+  '/interviews': 'Lịch hẹn phỏng vấn',
+  '/saved-jobs': 'Công việc đã lưu',
+  '/profile': 'Trang cá nhân',
+
+  // Employer Paths
+  '/employer/dashboard': 'Bảng điều khiển',
+  '/employer/analytics': 'Báo cáo thống kê',
+  '/employer/company': 'Thông tin doanh nghiệp',
+  '/employer/profile': 'Thông tin cá nhân',
+  '/employer/jobs': 'Danh sách tin tuyển dụng',
+  '/employer/jobs/create': 'Đăng tin tuyển dụng',
+  '/employer/members': 'Thành viên công ty',
+  '/employer/candidates': 'Danh sách ứng viên',
+  '/employer/interviews': 'Quản lý lịch phỏng vấn',
+  '/employer/saved-candidates': 'Ứng viên đã lưu',
+
+  // Admin Paths
+  '/admin/dashboard': 'Bảng điều khiển',
+  '/admin/companies': 'Phê duyệt doanh nghiệp',
+  '/admin/jobs': 'Phê duyệt tin tuyển dụng',
+  '/admin/profile': 'Thông tin cá nhân',
+  '/admin/users': 'Quản lý tài khoản',
+  '/admin/job-categories': 'Danh mục ngành nghề',
+  '/admin/system-history': 'Lịch sử hệ thống',
+  '/admin/feedback': 'Quản lý phản hồi',
+  '/admin/premium-requests': 'Duyệt nâng cấp Premium',
+};
+
+const resolveLabel = (to: string, value: string): string => {
+  if (pathMap[to]) {
+    return pathMap[to];
+  }
+  
+  // Xử lý các đường dẫn chi tiết động chứa ID dài
+  if (to.startsWith('/jobs/') && value.length > 20) {
+    return 'Chi tiết tuyển dụng';
+  }
+  if (to.startsWith('/companies/') && value.length > 20) {
+    return 'Chi tiết doanh nghiệp';
+  }
+  if (to.startsWith('/employer/candidates/') && value.length > 20) {
+    return 'Chi tiết ứng viên';
+  }
+
+  return segmentMap[value] || value;
 };
 
 export function AppBreadcrumb() {
@@ -50,12 +115,7 @@ export function AppBreadcrumb() {
 
         {breadcrumbItems.map((item, index) => {
           const last = index === breadcrumbItems.length - 1;
-          
-          // Ánh xạ nhãn tiếng Việt
-          let label = segmentMap[item.value] || item.value;
-          
-          // Xử lý logic cho ID
-          if (item.value.length > 20) label = 'Chi tiết';
+          const label = resolveLabel(item.to, item.value);
 
           return (
             <React.Fragment key={item.to}>

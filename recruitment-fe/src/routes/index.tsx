@@ -44,6 +44,7 @@ const AdminJobCategory = lazy(() => import('@/modules/admin/pages/AdminJobCatego
 const EmployerManageJobs = lazy(() => import('@/modules/employer/pages/EmployerManageJobs').then(m => ({ default: m.EmployerManageJobs })));
 const AnalyticsDashboard = lazy(() => import('@/modules/employer/pages/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
 const MyResumesPage = lazy(() => import('@/modules/resume/pages/MyResumesPage').then(m => ({ default: m.MyResumesPage })));
+const CVBuilderPage = lazy(() => import('@/modules/resume/pages/CVBuilderPage').then(m => ({ default: m.CVBuilderPage })));
 const MyApplicationsPage = lazy(() => import('@/modules/application/pages/MyApplicationsPage').then(m => ({ default: m.MyApplicationsPage })));
 const CandidateDetailPage = lazy(() => import('@/modules/employer/pages/candidate/CandidateDetailPage').then(m => ({ default: m.CandidateDetailPage })));
 const EmployerCandidatesPage = lazy(() => import('@/modules/employer/pages/EmployerCandidatesPage').then(m => ({ default: m.EmployerCandidatesPage })));
@@ -169,6 +170,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
             <Suspense fallback={<PageLoader />}><MyResumesPage /></Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'resumes/create',
+        element: (
+          <ProtectedRoute allowedRoles={[Role.CANDIDATE]}>
+            <Suspense fallback={<PageLoader />}><CVBuilderPage /></Suspense>
           </ProtectedRoute>
         ),
       },

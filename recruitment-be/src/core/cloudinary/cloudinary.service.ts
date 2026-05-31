@@ -44,4 +44,37 @@ export class CloudinaryService {
       streamifier.createReadStream(file.buffer).pipe(upload);
     });
   }
+
+  extractPublicId(fileUrl: string): string | null {
+    if (!fileUrl) return null;
+    const marker = 'smartcv_resumes/';
+    const index = fileUrl.indexOf(marker);
+    if (index === -1) return null;
+    const pathAfterMarker = fileUrl.substring(index);
+    const isPdf = fileUrl.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+      return pathAfterMarker.replace(/\.pdf$/i, '');
+    }
+    return pathAfterMarker;
+  }
+
+  async deleteFile(fileUrl: string): Promise<any> {
+    const publicId = this.extractPublicId(fileUrl);
+    if (!publicId) return null;
+
+    const isPdf = fileUrl.toLowerCase().endsWith('.pdf');
+    const resourceType = isPdf ? 'image' : 'raw';
+
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.destroy(
+        publicId,
+        { resource_type: resourceType },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        },
+      );
+    });
+  }
 }
+

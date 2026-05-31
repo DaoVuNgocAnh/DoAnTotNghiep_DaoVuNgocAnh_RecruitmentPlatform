@@ -10,4 +10,25 @@ export class CreateResumeDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   isDefault?: boolean;
+
+  @IsOptional()
+  @IsString()
+  parsedJobTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  parsedSkills?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isDraft?: boolean;
+
+  @IsOptional()
+  @IsString()
+  draftData?: string;
+
+  @IsOptional()
+  @IsString()
+  id?: string;
 }

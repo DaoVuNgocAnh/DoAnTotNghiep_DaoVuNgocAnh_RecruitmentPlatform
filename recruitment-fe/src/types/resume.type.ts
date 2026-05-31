@@ -4,4 +4,6 @@ export interface Resume {
   fileUrl: string;
   isDefault: boolean;
   uploadedAt: string;
+  isDraft?: boolean;
+  draftData?: string | null;
 }

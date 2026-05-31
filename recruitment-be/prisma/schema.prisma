@@ -158,6 +158,8 @@ model Resume {
   fileUrl        String        @map("file_url")
   isDefault      Boolean       @default(false) @map("is_default")
   isDeleted      Boolean       @default(false) @map("is_deleted")
+  isDraft        Boolean       @default(false) @map("is_draft")
+  draftData      String?       @map("draft_data") @db.Text
   uploadedAt     DateTime      @default(now()) @map("uploaded_at")
   parsedJobTitle String?       @map("parsed_job_title")
   parsedSkills   String?       @map("parsed_skills")

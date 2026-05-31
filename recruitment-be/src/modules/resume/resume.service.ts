@@ -71,6 +71,79 @@ export class ResumeService {
     file: Express.Multer.File,
     dto: CreateResumeDto,
   ) {
+    const isDraft = dto.isDraft === true;
+
+    // A. HỖ TRỢ CẬP NHẬT CV (NẾU CÓ DTO.ID)
+    if (dto.id) {
+      const existing = await this.prisma.resume.findFirst({
+        where: { id: dto.id, candidateId: userId, isDeleted: false },
+      });
+      if (!existing) {
+        throw new BadRequestException('Không tìm thấy CV cần cập nhật');
+      }
+
+      let fileUrl = existing.fileUrl;
+      let ext = '.pdf';
+      if (file) {
+        ext = path.extname(file.originalname).toLowerCase();
+        const allowedExtensions = ['.pdf', '.doc', '.docx'];
+        const allowedMimeTypes = [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        if (
+          !allowedExtensions.includes(ext) ||
+          !allowedMimeTypes.includes(file.mimetype)
+        ) {
+          throw new BadRequestException(
+            'Định dạng file không hợp lệ. Chỉ chấp nhận PDF, DOC, DOCX',
+          );
+        }
+        const uploadRes = await this.cloudinary.uploadFile(file);
+        if (existing.fileUrl) {
+          try {
+            await this.cloudinary.deleteFile(existing.fileUrl);
+          } catch (delError) {
+            console.error('Lỗi khi xóa file cũ trên Cloudinary:', delError);
+          }
+        }
+        fileUrl = uploadRes.secure_url;
+      }
+
+      // Nếu set làm mặc định (và không phải nháp)
+      if (dto.isDefault && !isDraft) {
+        await this.prisma.resume.updateMany({
+          where: { candidateId: userId },
+          data: { isDefault: false },
+        });
+      }
+
+      const updatedResume = await this.prisma.resume.update({
+        where: { id: dto.id },
+        data: {
+          resumeName: dto.resumeName,
+          fileUrl,
+          isDraft,
+          draftData: dto.draftData || null,
+          isDefault: isDraft ? false : (dto.isDefault ?? existing.isDefault),
+          parsedJobTitle: dto.parsedJobTitle || existing.parsedJobTitle,
+          parsedSkills: dto.parsedSkills || existing.parsedSkills,
+        },
+      });
+
+      // Cập nhật kỹ năng ứng viên nếu không phải nháp
+      if (dto.parsedSkills && !isDraft) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { skills: dto.parsedSkills },
+        });
+      }
+
+      return updatedResume;
+    }
+
+    // B. TẠO MỚI CV (NẾU KHÔNG CÓ DTO.ID)
     if (!file)
       throw new BadRequestException('Vui lòng tải lên file CV (PDF/Docx)');
 
@@ -96,18 +169,18 @@ export class ResumeService {
     const uploadRes = await this.cloudinary.uploadFile(file);
 
     // 3. Nếu chọn làm mặc định, bỏ mặc định của các CV cũ
-    if (dto.isDefault) {
+    if (dto.isDefault && !isDraft) {
       await this.prisma.resume.updateMany({
         where: { candidateId: userId },
         data: { isDefault: false },
       });
     }
 
-    // 4. Nếu là CV đầu tiên, tự động set làm mặc định
+    // 4. Nếu là CV đầu tiên, tự động set làm mặc định (chỉ khi không phải bản nháp)
     const count = await this.prisma.resume.count({
-      where: { candidateId: userId, isDeleted: false },
+      where: { candidateId: userId, isDeleted: false, isDraft: false },
     });
-    const shouldBeDefault = count === 0 ? true : dto.isDefault;
+    const shouldBeDefault = (!isDraft && count === 0) ? true : (isDraft ? false : dto.isDefault);
 
     // 5. Lưu vào Database
     const resume = await this.prisma.resume.create({
@@ -115,19 +188,45 @@ export class ResumeService {
         resumeName: dto.resumeName,
         fileUrl: uploadRes.secure_url,
         isDefault: !!shouldBeDefault,
+        isDraft,
+        draftData: dto.draftData || null,
         candidateId: userId,
+        parsedJobTitle: dto.parsedJobTitle || null,
+        parsedSkills: dto.parsedSkills || null,
       },
     });
 
-    // 6. Đẩy vào hàng đợi AI xử lý (Hỗ trợ PDF và DOCX)
-    if (ext === '.pdf' || ext === '.docx' || ext === '.doc') {
-      await this.aiQueue.add('analyze-resume', {
-        resumeId: resume.id,
-        fileUrl: resume.fileUrl,
-        type: 'resume',
-      });
+    // 6. Đẩy vào hàng đợi AI xử lý (Chỉ chạy nếu không có sẵn thông tin kỹ năng/vị trí và không phải nháp)
+    if (!isDraft && !dto.parsedJobTitle && !dto.parsedSkills) {
+      if (ext === '.pdf' || ext === '.docx' || ext === '.doc') {
+        await this.aiQueue.add('analyze-resume', {
+          resumeId: resume.id,
+          fileUrl: resume.fileUrl,
+          type: 'resume',
+        });
+      }
+    } else if (!isDraft) {
+      // Nếu có sẵn parsedSkills, cập nhật luôn trường skills của User (để tiện khớp việc làm nhanh)
+      if (dto.parsedSkills) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            skills: dto.parsedSkills,
+          },
+        });
+      }
     }
 
+    return resume;
+  }
+
+  async findOne(userId: string, id: string) {
+    const resume = await this.prisma.resume.findFirst({
+      where: { id, candidateId: userId, isDeleted: false },
+    });
+    if (!resume) {
+      throw new NotFoundException('Không tìm thấy CV yêu cầu');
+    }
     return resume;
   }
 
@@ -181,6 +280,14 @@ export class ResumeService {
     });
     if (!resume || resume.candidateId !== userId)
       throw new NotFoundException('Không tìm thấy CV');
+
+    if (resume.fileUrl) {
+      try {
+        await this.cloudinary.deleteFile(resume.fileUrl);
+      } catch (delError) {
+        console.error('Lỗi khi xóa file trên Cloudinary khi xóa CV:', delError);
+      }
+    }
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Đánh dấu xóa

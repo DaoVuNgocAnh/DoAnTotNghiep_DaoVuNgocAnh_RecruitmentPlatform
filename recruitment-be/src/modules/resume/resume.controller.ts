@@ -79,6 +79,13 @@ export class ResumeController {
     return this.resumeService.findMyResumes(req.user.userId, pagination);
   }
 
+  @ApiOperation({ summary: 'Lấy chi tiết một CV' })
+  @Get(':id')
+  @Roles(Role.CANDIDATE, Role.EMPLOYER)
+  findOne(@Request() req, @Param('id') id: string) {
+    return this.resumeService.findOne(req.user.userId, id);
+  }
+
   @ApiOperation({ summary: 'Đặt CV làm mặc định' })
   @Patch(':id/default')
   @Roles(Role.CANDIDATE)
